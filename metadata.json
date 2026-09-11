@@ -1,0 +1,7 @@
+{
+  "name": "نظام MeDo ERP المؤسسي - الهوية الكحلية والبيضاء الملكية (Deep Navy & Pure White Edition)",
+  "description": "منصة MeDo ERP المحاسبية والإدارية السحابية الهجينة وفق معايير SAP Business One (الهوية الكحلية والبيضاء الرسمية الفاخرة - مجموعة بن زياد التجارية وميدو تك)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

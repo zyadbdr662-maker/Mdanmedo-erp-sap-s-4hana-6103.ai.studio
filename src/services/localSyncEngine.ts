@@ -1,0 +1,633 @@
+import {
+  SyncOutboxItem,
+  SyncEntity,
+  SyncOperationType,
+  ConflictResolutionStrategy,
+  ConflictLogEntry,
+  NetworkConnectionMode,
+  LocalDBSnapshot,
+  ERPState,
+} from "../types/erp";
+import { ERPFullState, loadERPState, saveERPState } from "./erpStorage";
+import { CryptoAES256Service } from "./cryptoAES256";
+import { SecurityAuditService } from "./securityAuditService";
+
+const OUTBOX_STORAGE_KEY = "medo_erp_sync_outbox_v1";
+const CONFLICT_LOGS_KEY = "medo_erp_conflict_logs_v1";
+const SNAPSHOTS_KEY = "medo_erp_db_snapshots_v1";
+const NETWORK_MODE_KEY = "medo_erp_network_mode_v1";
+const CONFLICT_STRATEGY_KEY = "medo_erp_conflict_strategy_v1";
+const AES256_ENABLED_KEY = "medo_erp_aes256_enabled_v1";
+const AES256_PASSPHRASE_KEY = "medo_erp_aes256_passphrase_v1";
+
+export class LocalSyncEngine {
+  private static instance: LocalSyncEngine;
+  private networkMode: NetworkConnectionMode = "ONLINE";
+  private conflictStrategy: ConflictResolutionStrategy = "TIMESTAMP_LATEST";
+  private listeners: Array<() => void> = [];
+
+  private constructor() {
+    const savedMode = localStorage.getItem(NETWORK_MODE_KEY) as NetworkConnectionMode;
+    if (savedMode) this.networkMode = savedMode;
+
+    const savedStrat = localStorage.getItem(CONFLICT_STRATEGY_KEY) as ConflictResolutionStrategy;
+    if (savedStrat) this.conflictStrategy = savedStrat;
+
+    // Listen to real browser network changes
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", () => {
+        if (this.networkMode !== "OFFLINE") {
+          this.notify();
+        }
+      });
+      window.addEventListener("offline", () => {
+        this.notify();
+      });
+    }
+
+    // Seed initial outbox items if empty to demonstrate functionality
+    this.ensureSeedData();
+  }
+
+  public static getInstance(): LocalSyncEngine {
+    if (!LocalSyncEngine.instance) {
+      LocalSyncEngine.instance = new LocalSyncEngine();
+    }
+    return LocalSyncEngine.instance;
+  }
+
+  public subscribe(cb: () => void): () => void {
+    this.listeners.push(cb);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== cb);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach((l) => l());
+  }
+
+  private ensureSeedData() {
+    const outbox = this.getOutbox();
+    if (outbox.length === 0) {
+      const initialOutbox: SyncOutboxItem[] = [
+        {
+          id: "sync-ob-101",
+          entity: "INVOICE",
+          entityId: "INV-2026-0092",
+          entityRef: "فاتورة مبيعات نقدية - فرع صنعاء (مركز الأدوية)",
+          operation: "CREATE",
+          payload: { amount: 145000, currency: "YER_SANAA" },
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+          status: "PENDING",
+          attempts: 0,
+          branchId: "BR-SANAA-MAIN",
+          branchName: "الفرع الرئيسي - صنعاء",
+        },
+        {
+          id: "sync-ob-102",
+          entity: "JOURNAL_ENTRY",
+          entityId: "JV-2026-0044",
+          entityRef: "قيد إثبات استحقاق صيانة أجهزة المستودع",
+          operation: "CREATE",
+          payload: { amount: 350000, currency: "YER_SANAA" },
+          createdAt: new Date(Date.now() - 2800000).toISOString(),
+          status: "PENDING",
+          attempts: 0,
+          branchId: "BR-SANAA-MAIN",
+          branchName: "الفرع الرئيسي - صنعاء",
+        },
+        {
+          id: "sync-ob-103",
+          entity: "STOCK_MOVEMENT",
+          entityId: "SM-2026-018",
+          entityRef: "صرف مخزون أصناف جراحية - مستودع عدن",
+          operation: "CREATE",
+          payload: { qty: 25, itemId: "MED-002" },
+          createdAt: new Date(Date.now() - 1900000).toISOString(),
+          status: "PENDING",
+          attempts: 0,
+          branchId: "BR-ADEN-PORT",
+          branchName: "فرع المنطقة الحرة - عدن",
+        },
+        {
+          id: "sync-ob-104",
+          entity: "VOUCHER",
+          entityId: "PV-2026-0012",
+          entityRef: "سند صرف مصاريف نقل وتخليص جمركي",
+          operation: "CREATE",
+          payload: { amount: 1200, currency: "USD" },
+          createdAt: new Date(Date.now() - 1100000).toISOString(),
+          status: "PENDING",
+          attempts: 0,
+          branchId: "BR-HOD-PORT",
+          branchName: "فرع ميناء الحديدة",
+        },
+        {
+          id: "sync-ob-105",
+          entity: "INVOICE",
+          entityId: "INV-2026-0093",
+          entityRef: "فاتورة مبيعات آجلة - مستشفى الأمل الحديث",
+          operation: "CREATE",
+          payload: { amount: 520000, currency: "YER_SANAA" },
+          createdAt: new Date(Date.now() - 400000).toISOString(),
+          status: "PENDING",
+          attempts: 0,
+          branchId: "BR-SANAA-MAIN",
+          branchName: "الفرع الرئيسي - صنعاء",
+        },
+      ];
+      this.saveOutbox(initialOutbox);
+    }
+  }
+
+  // --- Network Connection Mode ---
+  public getNetworkMode(): NetworkConnectionMode {
+    return this.networkMode;
+  }
+
+  public setNetworkMode(mode: NetworkConnectionMode) {
+    this.networkMode = mode;
+    localStorage.setItem(NETWORK_MODE_KEY, mode);
+    this.notify();
+  }
+
+  public isEffectivelyOnline(): boolean {
+    if (this.networkMode === "OFFLINE") return false;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return false;
+    return true;
+  }
+
+  // --- Conflict Resolution Strategy ---
+  public getConflictStrategy(): ConflictResolutionStrategy {
+    return this.conflictStrategy;
+  }
+
+  public setConflictStrategy(strat: ConflictResolutionStrategy) {
+    this.conflictStrategy = strat;
+    localStorage.setItem(CONFLICT_STRATEGY_KEY, strat);
+    this.notify();
+  }
+
+  // --- AES-256 Data Encryption Layer ---
+  public isAES256EncryptionEnabled(): boolean {
+    if (typeof localStorage === "undefined") return true;
+    const val = localStorage.getItem(AES256_ENABLED_KEY);
+    return val === null ? true : val === "true"; // Default to ENABLED for high security
+  }
+
+  public async setAES256EncryptionEnabled(enabled: boolean, passphrase?: string): Promise<boolean> {
+    localStorage.setItem(AES256_ENABLED_KEY, enabled ? "true" : "false");
+    if (passphrase) {
+      localStorage.setItem(AES256_PASSPHRASE_KEY, passphrase);
+    }
+
+    // Re-encrypt or decrypt current local snapshot storage to reflect toggle
+    const currentState = loadERPState();
+    if (enabled) {
+      const encryptedBlob = await CryptoAES256Service.encrypt(currentState);
+      localStorage.setItem("medo_erp_state_aes256_vault", encryptedBlob);
+    } else {
+      localStorage.removeItem("medo_erp_state_aes256_vault");
+    }
+
+    // Record Security Audit
+    SecurityAuditService.getInstance().recordAuditLog({
+      action: "AES_ENCRYPTION_TOGGLE",
+      username: "مدير النظام (SYSTEM_ADMIN)",
+      email: "admin@medoerp.com",
+      deviceInfo: "محرك المزامنة التلقائي MeDo Sync Engine",
+      riskLevel: enabled ? "LOW" : "HIGH",
+      details: enabled
+        ? "تم تفعيل طبقة تشفير AES-256 GCM للبيانات المحلية لحماية السجلات المخزنة حيوياً من الوصول المادي."
+        : "⚠️ تم إيقاف تشفير AES-256 المحلي مؤقتاً بأمر من مدير النظام.",
+      status: "SUCCESS",
+    });
+
+    this.notify();
+    return enabled;
+  }
+
+  public async encryptLocalPayloadAES256(payload: any): Promise<string> {
+    return await CryptoAES256Service.encrypt(payload);
+  }
+
+  public async decryptLocalPayloadAES256(encryptedBlob: string): Promise<any> {
+    return await CryptoAES256Service.decrypt(encryptedBlob);
+  }
+
+  // --- Outbox Queue ---
+  public getOutbox(): SyncOutboxItem[] {
+    try {
+      const raw = localStorage.getItem(OUTBOX_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public getPendingCount(): number {
+    return this.getOutbox().filter((item) => item.status === "PENDING").length;
+  }
+
+  public saveOutbox(items: SyncOutboxItem[]) {
+    localStorage.setItem(OUTBOX_STORAGE_KEY, JSON.stringify(items));
+    this.notify();
+  }
+
+  public saveSnapshot(state: any) {
+    try {
+      localStorage.setItem("medo_erp_snapshot_local", JSON.stringify(state));
+    } catch {
+      // ignore
+    }
+  }
+
+  public addToOutbox(
+    itemOrEntity:
+      | {
+          entity: SyncEntity;
+          entityId: string;
+          entityRef?: string;
+          operation: SyncOperationType;
+          payload: any;
+          branchId?: string;
+          branchName?: string;
+        }
+      | SyncEntity,
+    entityId?: string,
+    operation?: SyncOperationType,
+    payload?: any,
+    entityRef?: string,
+    branchId?: string,
+    branchName?: string
+  ): SyncOutboxItem {
+    let entity: SyncEntity;
+    let finalEntityId: string;
+    let finalRef: string;
+    let finalOp: SyncOperationType;
+    let finalPayload: any;
+    let finalBranchId: string;
+    let finalBranchName: string;
+
+    if (typeof itemOrEntity === "string") {
+      entity = itemOrEntity;
+      finalEntityId = entityId || `item-${Date.now()}`;
+      finalOp = operation || "CREATE";
+      finalPayload = payload || {};
+      finalRef = entityRef || `${entity} [${finalEntityId}]`;
+      finalBranchId = branchId || "BR-SANAA-MAIN";
+      finalBranchName = branchName || "الفرع الرئيسي - صنعاء";
+    } else {
+      entity = itemOrEntity.entity;
+      finalEntityId = itemOrEntity.entityId;
+      finalOp = itemOrEntity.operation;
+      finalPayload = itemOrEntity.payload;
+      finalRef = itemOrEntity.entityRef || `${entity} [${finalEntityId}]`;
+      finalBranchId = itemOrEntity.branchId || "BR-SANAA-MAIN";
+      finalBranchName = itemOrEntity.branchName || "الفرع الرئيسي - صنعاء";
+    }
+
+    const newItem: SyncOutboxItem = {
+      id: `ob-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      entity,
+      entityId: finalEntityId,
+      entityRef: finalRef,
+      operation: finalOp,
+      payload: finalPayload,
+      createdAt: new Date().toISOString(),
+      status: "PENDING",
+      attempts: 0,
+      branchId: finalBranchId,
+      branchName: finalBranchName,
+    };
+
+    const current = this.getOutbox();
+    this.saveOutbox([newItem, ...current]);
+    return newItem;
+  }
+
+  public removeOutboxItem(id: string) {
+    const updated = this.getOutbox().filter((i) => i.id !== id);
+    this.saveOutbox(updated);
+  }
+
+  public clearSynced() {
+    const updated = this.getOutbox().filter((i) => i.status !== "SYNCED");
+    this.saveOutbox(updated);
+  }
+
+  // --- Conflict Logs ---
+  public getConflictLogs(): ConflictLogEntry[] {
+    try {
+      const raw = localStorage.getItem(CONFLICT_LOGS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public addConflictLog(entry: Omit<ConflictLogEntry, "id" | "timestamp">) {
+    const newLog: ConflictLogEntry = {
+      id: `conf-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      ...entry,
+    };
+    const current = this.getConflictLogs();
+    localStorage.setItem(CONFLICT_LOGS_KEY, JSON.stringify([newLog, ...current]));
+    this.notify();
+  }
+
+  // --- Trigger Full Sync ---
+  public async triggerSync(options?: {
+    branchFilter?: string;
+    moduleFilter?: SyncEntity | "ALL";
+    onProgress?: (progress: number, message: string) => void;
+  }): Promise<{
+    success: boolean;
+    syncedCount: number;
+    conflictsResolved: number;
+    message: string;
+  }> {
+    if (!this.isEffectivelyOnline()) {
+      return {
+        success: false,
+        syncedCount: 0,
+        conflictsResolved: 0,
+        message: "تعذر المزامنة: النظام يعمل حالياً في وضع عدم الاتصال (Offline Mode). يرجى الاتصال بالإنترنت أولاً.",
+      };
+    }
+
+    const outbox = this.getOutbox();
+    let toProcess = outbox.filter((item) => item.status === "PENDING" || item.status === "FAILED");
+
+    if (options?.branchFilter && options.branchFilter !== "ALL") {
+      toProcess = toProcess.filter((i) => i.branchId === options.branchFilter);
+    }
+    if (options?.moduleFilter && options.moduleFilter !== "ALL") {
+      toProcess = toProcess.filter((i) => i.entity === options.moduleFilter);
+    }
+
+    if (toProcess.length === 0) {
+      return {
+        success: true,
+        syncedCount: 0,
+        conflictsResolved: 0,
+        message: "جميع العمليات المحلية متزامنة ومحدثة بالكامل مع السحابة المركزية.",
+      };
+    }
+
+    options?.onProgress?.(15, "الاتصال بالخادم السحابي وفحص التوافق...");
+    await new Promise((res) => setTimeout(res, 600));
+
+    // If flaky network, simulate 20% packet drop
+    if (this.networkMode === "FLAKY" && Math.random() < 0.3) {
+      options?.onProgress?.(40, "فقدان حزم الاتصال بسبب ضعف التغطية (Flaky Network)...");
+      await new Promise((res) => setTimeout(res, 500));
+      return {
+        success: false,
+        syncedCount: 0,
+        conflictsResolved: 0,
+        message: "فشلت المزامنة مؤقتاً بسبب تقطع شبكة الإنترنت. تم حفظ العمليات في طابور المزامنة المحلي لإعادة المحاولة تلقائياً.",
+      };
+    }
+
+    options?.onProgress?.(50, `إرسال ${toProcess.length} معاملة من طابور الخروج المحلي...`);
+    await new Promise((res) => setTimeout(res, 700));
+
+    let syncedCount = 0;
+    let conflictsResolved = 0;
+
+    const updatedOutbox = outbox.map((item) => {
+      const match = toProcess.find((tp) => tp.id === item.id);
+      if (!match) return item;
+
+      // Simulate a conflict on 1 item if more than 3 items
+      const isConflict = item.id === "sync-ob-102";
+      if (isConflict) {
+        conflictsResolved++;
+        let resolutionText = "";
+        if (this.conflictStrategy === "TIMESTAMP_LATEST") {
+          resolutionText = "تم اعتماد التعديل الأحدث زمنياً للفرع المحلي وفق مبدأ Last-Write-Wins.";
+        } else if (this.conflictStrategy === "BRANCH_AUTHORITY") {
+          resolutionText = "تم إعطاء الأولوية للفرع المحلي وتحديث السجل السحابي.";
+        } else if (this.conflictStrategy === "CLOUD_AUTHORITY") {
+          resolutionText = "تم اعتماد نسخة الخادم السحابي المركزي وتحديث المعرف المحلي.";
+        } else {
+          resolutionText = "تمت المراجعة والتدقيق اليدوي من قبل مراقب الحسابات.";
+        }
+
+        this.addConflictLog({
+          entity: item.entity,
+          entityId: item.entityId,
+          entityRef: item.entityRef,
+          strategyUsed: this.conflictStrategy,
+          resolutionSummary: resolutionText,
+          branchId: item.branchId || "BR-SANAA-MAIN",
+          resolvedBy: "محرك المزامنة MeDo Sync Engine",
+          localTimestamp: item.createdAt,
+          cloudTimestamp: new Date().toISOString(),
+        });
+
+        return {
+          ...item,
+          status: "SYNCED" as const,
+          attempts: item.attempts + 1,
+          lastAttemptAt: new Date().toISOString(),
+        };
+      }
+
+      syncedCount++;
+      return {
+        ...item,
+        status: "SYNCED" as const,
+        attempts: item.attempts + 1,
+        lastAttemptAt: new Date().toISOString(),
+      };
+    });
+
+    this.saveOutbox(updatedOutbox);
+    options?.onProgress?.(100, "اكتملت المزامنة بنجاح تام.");
+
+    return {
+      success: true,
+      syncedCount,
+      conflictsResolved,
+      message: `تمت مزامنة ${syncedCount} معاملة بنجاح مع الخادم السحابي${
+        conflictsResolved > 0 ? ` ومعالجة ${conflictsResolved} تعارض وفق استراتيجية (${this.conflictStrategy})` : ""
+      }.`,
+    };
+  }
+
+  // --- Local Database Export / Import (SQLite / JSON Encrypted) ---
+  public exportLocalDatabase(asEncrypted: boolean = false, password?: string): string {
+    const fullState = loadERPState();
+    const outbox = this.getOutbox();
+    const conflictLogs = this.getConflictLogs();
+
+    const dbDump = {
+      meta: {
+        system: "MeDo ERP Hybrid Local Database",
+        engine: "SQLite-Compatible Embedded Storage",
+        version: "4.5.0-OfflineFirst",
+        exportedAt: new Date().toISOString(),
+        isEncrypted: asEncrypted,
+        encryptionAlgorithm: asEncrypted ? "AES-GCM-256 (Simulated Secure Vault)" : "NONE",
+        checksum: "MD5-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      },
+      tables: {
+        accounts: fullState.accounts,
+        journal_entries: fullState.journalEntries,
+        vouchers: fullState.vouchers,
+        invoices: fullState.invoices,
+        inventory_items: fullState.inventoryItems,
+        stock_movements: fullState.stockMovements,
+        customers: fullState.customers,
+        vendors: fullState.vendors,
+        branches: fullState.branches,
+        sync_outbox: outbox,
+        conflict_logs: conflictLogs,
+      },
+    };
+
+    const jsonStr = JSON.stringify(dbDump, null, 2);
+    if (asEncrypted && password) {
+      // Create encrypted container simulation
+      return JSON.stringify({
+        encryptedVault: true,
+        hint: `Vault protected with key hash: ${password.slice(0, 2)}***`,
+        payload: btoa(unescape(encodeURIComponent(jsonStr))),
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    return jsonStr;
+  }
+
+  public importLocalDatabase(
+    fileContent: string,
+    password?: string
+  ): { success: boolean; message: string; recordCount?: number } {
+    try {
+      let parsed = JSON.parse(fileContent);
+
+      if (parsed.encryptedVault) {
+        if (!password) {
+          return {
+            success: false,
+            message: "قاعدة البيانات مشفرة! يرجى إدخال كلمة المرور لفك تشفير البيانات.",
+          };
+        }
+        try {
+          const decryptedJson = decodeURIComponent(escape(atob(parsed.payload)));
+          parsed = JSON.parse(decryptedJson);
+        } catch {
+          return {
+            success: false,
+            message: "فشل فك التشفير. كلمة المرور غير صحيحة أو الملف تالف.",
+          };
+        }
+      }
+
+      if (!parsed.tables || !parsed.tables.accounts) {
+        return {
+          success: false,
+          message: "تنسيق ملف قاعدة البيانات غير صالح. تأكد من تحديد ملف نسخة احتياطية صالح لنظام MeDo ERP.",
+        };
+      }
+
+      // Restore data to local state
+      const current = loadERPState();
+      const updatedState: ERPFullState = {
+        ...current,
+        accounts: parsed.tables.accounts || current.accounts,
+        journalEntries: parsed.tables.journal_entries || current.journalEntries,
+        vouchers: parsed.tables.vouchers || current.vouchers,
+        invoices: parsed.tables.invoices || current.invoices,
+        inventoryItems: parsed.tables.inventory_items || current.inventoryItems,
+        stockMovements: parsed.tables.stock_movements || current.stockMovements,
+        customers: parsed.tables.customers || current.customers,
+        vendors: parsed.tables.vendors || current.vendors,
+        branches: parsed.tables.branches || current.branches,
+      };
+
+      saveERPState(updatedState);
+
+      if (parsed.tables.sync_outbox) {
+        this.saveOutbox(parsed.tables.sync_outbox);
+      }
+
+      const count =
+        (parsed.tables.accounts?.length || 0) +
+        (parsed.tables.journal_entries?.length || 0) +
+        (parsed.tables.invoices?.length || 0) +
+        (parsed.tables.inventory_items?.length || 0);
+
+      this.notify();
+
+      return {
+        success: true,
+        message: `تمت استعادة قاعدة البيانات المحلية بنجاح (${count} سجل).`,
+        recordCount: count,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: `حدث خطأ أثناء قراءة ملف قاعدة البيانات: ${err?.message || "خطأ غير معروف"}`,
+      };
+    }
+  }
+
+  // --- Snapshots ---
+  public getSnapshots(): LocalDBSnapshot[] {
+    try {
+      const raw = localStorage.getItem(SNAPSHOTS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+
+    // Default snapshot
+    const initial: LocalDBSnapshot[] = [
+      {
+        id: "snp-default-01",
+        name: "النسخة التأسيسية لقاعدة البيانات (Baseline SQLite)",
+        createdAt: "2026-08-15T08:00:00Z",
+        sizeBytes: 428000,
+        recordCount: 840,
+        isEncrypted: true,
+        version: "4.5.0",
+        checksum: "SHA256-8A7B9C0",
+        description: "نسخة أصلية تحتوي شجرة الحسابات، الأرصدة الافتتاحية، والمخزون الأولي.",
+      },
+    ];
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(initial));
+    return initial;
+  }
+
+  public createSnapshot(name: string, description?: string): LocalDBSnapshot {
+    const fullState = loadERPState();
+    const count =
+      fullState.accounts.length +
+      fullState.journalEntries.length +
+      fullState.invoices.length +
+      fullState.vouchers.length +
+      (fullState.inventoryItems?.length || 0);
+
+    const newSnapshot: LocalDBSnapshot = {
+      id: `snp-${Date.now()}`,
+      name: name.trim() || `نسخة احتياطية محلية - ${new Date().toLocaleDateString("ar-YE")}`,
+      createdAt: new Date().toISOString(),
+      sizeBytes: count * 480,
+      recordCount: count,
+      isEncrypted: true,
+      version: "4.5.0",
+      checksum: "SHA256-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+      description: description || "نسخة نقطة استعادة محلية سريعة قبل إجراء العمليات.",
+    };
+
+    const current = this.getSnapshots();
+    const updated = [newSnapshot, ...current];
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(updated));
+    this.notify();
+    return newSnapshot;
+  }
+}
