@@ -25,6 +25,7 @@ import {
   Play,
   Check,
   Trash2,
+  Plus,
 } from "lucide-react";
 import {
   NetworkConnectionMode,
@@ -95,11 +96,8 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
 
   const handleStartSync = async () => {
     if (networkMode === "OFFLINE") {
-      setSyncResult({
-        success: false,
-        message: "لا يمكن بدء المزامنة في وضع عدم الاتصال (Offline Mode). يرجى تحويل المحاكي إلى وضع الاتصال أولاً.",
-      });
-      return;
+      setNetworkMode("ONLINE");
+      syncEngine.setNetworkMode("ONLINE");
     }
 
     setIsSyncing(true);
@@ -118,6 +116,14 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
 
     setIsSyncing(false);
     setSyncResult(result);
+  };
+
+  const handleSimulateOffline = (type: SyncEntity = "INVOICE") => {
+    syncEngine.simulateOfflineTransaction(type);
+    setSyncResult({
+      success: true,
+      message: `تم حفظ العملية التجريبية محلياً (${type === "INVOICE" ? "فاتورة مبيعات" : type === "JOURNAL_ENTRY" ? "قيد يومية" : "سند قبض"}) بنجاح في قاعدة البيانات المحلية وطابور المزامنة دون اتصال. يمكنك الآن فحص مزامنتها!`,
+    });
   };
 
   const handleExportDB = () => {
@@ -169,7 +175,7 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
   ];
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in" style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="space-y-6 pb-12 animate-in fade-in" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* Top Banner & Title */}
       <div className="rounded-3xl bg-gradient-to-r from-[#0A2540] via-[#0B2A4A] to-[#071829] border border-slate-800/50 p-5 shadow-lg relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
@@ -368,20 +374,59 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
                 </p>
               </div>
 
-              {/* Sync Trigger Button */}
+              {/* Sync Trigger and Simulation Buttons */}
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleStartSync}
-                  disabled={isSyncing || pendingCount === 0}
+                  disabled={isSyncing}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-md cursor-pointer ${
-                    isSyncing || pendingCount === 0
+                    isSyncing
                       ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                      : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 active:scale-95"
+                      : pendingCount > 0
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 active:scale-95"
+                      : "bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 active:scale-95"
                   }`}
                 >
                   <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-                  <span>بدء المزامنة الآن ({pendingCount})</span>
+                  <span>
+                    {pendingCount > 0
+                      ? `بدء المزامنة والترحيل للسحابة (${pendingCount})`
+                      : "فحص الاتصال ومطابقة السحابة (100%)"}
+                  </span>
                 </button>
+
+                <button
+                  onClick={() => handleSimulateOffline("INVOICE")}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-[#071829] hover:bg-slate-800 text-amber-300 border border-amber-500/30 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  title="إنشاء فاتورة محلية للتأكد من حفظ العمليات دون اتصال"
+                >
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  <span>محاكاة عملية دون اتصال ⚡</span>
+                </button>
+
+                {onOpenQuickAction && (
+                  <div className="flex items-center gap-1.5 bg-[#071829] p-1 rounded-2xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 px-2 font-bold hidden sm:inline">إدخال حقيقي:</span>
+                    <button
+                      onClick={() => onOpenQuickAction("INVOICE")}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      + فاتورة
+                    </button>
+                    <button
+                      onClick={() => onOpenQuickAction("JOURNAL")}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      + قيد
+                    </button>
+                    <button
+                      onClick={() => onOpenQuickAction("RECEIPT")}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      + سند
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -1,4 +1,5 @@
 import { ERPUser } from "../types/erp";
+import { soundService } from "./notificationSoundService";
 
 export interface ActiveSession {
   id: string;
@@ -61,6 +62,17 @@ const AUDIT_LOGS_KEY = "medo_erp_security_audit_logs_v1";
 const ACTIVE_SESSIONS_KEY = "medo_erp_active_sessions_v1";
 const SYSTEM_ALERTS_KEY = "medo_erp_system_alerts_v1";
 const FAILED_ATTEMPTS_KEY = "medo_erp_failed_login_window_v1";
+const LOCKED_ACCOUNTS_KEY = "medo_erp_locked_accounts_v1";
+
+export interface AccountLockRecord {
+  email: string;
+  lockedAt: number;
+  lockDurationMs: number; // e.g. 15 minutes or 24 hours
+  failedAttempts: number;
+  ip: string;
+  reason: string;
+  unlockTime: number;
+}
 
 interface FailedAttemptRecord {
   ip: string;
@@ -417,13 +429,24 @@ export class SecurityAuditService {
     let alertTriggered = false;
     let alertObj: SystemAlert | undefined;
 
-    // IF MORE THAN 3 FAILED ATTEMPTS IN 1 MINUTE -> TRIGGER INSTANT ALERT
-    if (currentFailedCount > 3) {
+    // IF MORE THAN 3 FAILED ATTEMPTS IN 1 MINUTE -> TRIGGER INSTANT ALERT & SOUND & LOCK
+    if (currentFailedCount >= 3) {
+      // Play high-urgency security sound
+      try {
+        soundService.playSound("RADAR_SECURITY");
+      } catch (e) {
+        console.warn("Sound alert error:", e);
+      }
+
+      // Lock account for 15 minutes
+      const lockDurationMs = 15 * 60 * 1000;
+      this.lockAccount(email, lockDurationMs, currentFailedCount, `تجاوز الحد الأقصى لمحاولات الدخول الخاطئة (${currentFailedCount} محاولات).`);
+
       alertTriggered = true;
       alertObj = this.triggerSystemAlert({
         type: "FAILED_LOGINS_EXCEEDED",
-        title: "⚠️ تنبيه أمني عاجل: اكتشاف هجوم دخول مكثف ومتكرر",
-        message: `تم رصد أكثر من 3 محاولات دخول فاشلة متتالية (${currentFailedCount} محاولات) خلال دقيقة واحدة من الجهاز/عنوان IP (${clientIp}). تم تفعيل الحظر الوقائي التلقائي لحماية قاعدة بيانات ERP.`,
+        title: "⚠️ إنذار أمني فوري: رصد محاولات دخول خاطئة متتالية وقفل الحساب",
+        message: `تم رصد ${currentFailedCount} محاولات دخول خاطئة متتالية للبريد (${email}) من الجهاز/عنوان IP (${clientIp}). تم إطلاق صفارة الإنذار وقفل الحساب لمدة 15 دقيقة وإخطار لوحة تحكم المسؤول فوراً.`,
         ipAddress: clientIp,
         deviceInfo: dev.deviceType,
         attemptCount: currentFailedCount,
@@ -437,6 +460,98 @@ export class SecurityAuditService {
       alertTriggered,
       alert: alertObj,
     };
+  }
+
+  // --- Account Lockout Management ---
+  public getLockedAccounts(): AccountLockRecord[] {
+    try {
+      const raw = localStorage.getItem(LOCKED_ACCOUNTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public isAccountLocked(email: string): { isLocked: boolean; remainingMinutes?: number; lockRecord?: AccountLockRecord } {
+    if (!email) return { isLocked: false };
+    const normalizedEmail = email.trim().toLowerCase();
+    const locks = this.getLockedAccounts();
+    const now = Date.now();
+
+    const record = locks.find((l) => l.email.toLowerCase() === normalizedEmail);
+    if (!record) return { isLocked: false };
+
+    if (now < record.unlockTime) {
+      const remainingMs = record.unlockTime - now;
+      const remainingMinutes = Math.ceil(remainingMs / 60000);
+      return { isLocked: true, remainingMinutes, lockRecord: record };
+    } else {
+      // Lock expired, remove it
+      this.unlockAccount(email, "انتهاء مهلة القفل التلقائي");
+      return { isLocked: false };
+    }
+  }
+
+  public lockAccount(email: string, durationMs: number = 15 * 60 * 1000, failedCount: number = 3, reason: string = "تجاوز محاولات الدخول الخاطئة"): AccountLockRecord {
+    const normalizedEmail = email.trim().toLowerCase();
+    const locks = this.getLockedAccounts().filter((l) => l.email.toLowerCase() !== normalizedEmail);
+    const now = Date.now();
+
+    const newLock: AccountLockRecord = {
+      email: normalizedEmail,
+      lockedAt: now,
+      lockDurationMs: durationMs,
+      failedAttempts: failedCount,
+      ip: this.getClientIp(),
+      reason,
+      unlockTime: now + durationMs,
+    };
+
+    locks.push(newLock);
+    localStorage.setItem(LOCKED_ACCOUNTS_KEY, JSON.stringify(locks));
+
+    this.recordAuditLog({
+      action: "SETTINGS_MODIFIED",
+      username: email.split("@")[0] || email,
+      email: normalizedEmail,
+      deviceInfo: "نظام الحماية والأمان السيادي",
+      riskLevel: "CRITICAL",
+      details: `تم تفعيل قفل الحساب الوقائي (${normalizedEmail}) لمدة ${Math.round(durationMs / 60000)} دقيقة بعد ${failedCount} محاولات خاطئة متتالية.`,
+      status: "BLOCKED",
+    });
+
+    this.notify();
+    return newLock;
+  }
+
+  public unlockAccount(email: string, unlockedBy: string = "مدير النظام"): boolean {
+    const normalizedEmail = email.trim().toLowerCase();
+    const locks = this.getLockedAccounts();
+    const filtered = locks.filter((l) => l.email.toLowerCase() !== normalizedEmail);
+    localStorage.setItem(LOCKED_ACCOUNTS_KEY, JSON.stringify(filtered));
+
+    // Clear failed history for this email
+    try {
+      const raw = localStorage.getItem(FAILED_ATTEMPTS_KEY);
+      if (raw) {
+        const history: FailedAttemptRecord[] = JSON.parse(raw);
+        const updated = history.filter((h) => h.email.toLowerCase() !== normalizedEmail);
+        localStorage.setItem(FAILED_ATTEMPTS_KEY, JSON.stringify(updated));
+      }
+    } catch {}
+
+    this.recordAuditLog({
+      action: "SETTINGS_MODIFIED",
+      username: email.split("@")[0] || email,
+      email: normalizedEmail,
+      deviceInfo: "لوحة تحكم المسؤول (Security Console)",
+      riskLevel: "MEDIUM",
+      details: `تم إلغاء قفل الحساب وتصفير عداد المحاولات للبريد (${normalizedEmail}) بواسطة ${unlockedBy}.`,
+      status: "SUCCESS",
+    });
+
+    this.notify();
+    return true;
   }
 
   // --- System Alerts ---

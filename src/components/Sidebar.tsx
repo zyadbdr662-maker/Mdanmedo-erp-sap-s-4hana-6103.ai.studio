@@ -356,6 +356,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       section: "الإعدادات والنظام",
     },
     {
+      id: "CLOUD_SYNC",
+      labelAr: "محرك العمل دون اتصال والمزامنة",
+      labelEn: "Offline Engine & Sync Center",
+      icon: DatabaseBackup,
+      badge: "Offline Ready ⚡",
+      badgeColor: "bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold",
+      section: "الإعدادات والنظام",
+    },
+    {
       id: "THEME_STUDIO",
       labelAr: "محرر الثيمات والسمات",
       labelEn: "Theme & Style Studio",

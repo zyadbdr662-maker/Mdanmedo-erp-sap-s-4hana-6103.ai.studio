@@ -67,7 +67,7 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
       <div 
         id="legal-policies-modal-container"
         className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
-        style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}
+        style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-950 via-sap-primary/30 to-slate-950 border-b border-slate-800 p-5 sm:p-6 flex items-center justify-between">

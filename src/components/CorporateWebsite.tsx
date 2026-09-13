@@ -95,37 +95,79 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
       num: "01",
       icon: <FileSpreadsheet className="w-7 h-7 text-sap-secondary" />,
       title: "المحاسبة والمالية (مستوى بنكي)",
-      desc: "دليل حسابات شجري غير محدود المستويات، قيود يومية آلية، معالجة فورية لفوارق العملة اليمنية (صنعاء/عدن)، وقوائم مالية آلية متوافقة مع معايير IFRS/GAAP."
+      desc: "دليل حسابات شجري غير محدود المستويات، قيود يومية آلية، معالجة فورية لفوارق العملة اليمنية (صنعاء/عدن)، وقوائم مالية آلية متوافقة مع معايير IFRS/GAAP.",
+      badge: "IFRS 15 / GAAP Certified",
+      features: [
+        "دليل حسابات شجري غير محدود مع فروع ومراكز تكلفة متعددة الأبعاد",
+        "معالجة تسويات الفروقات بين العملة القديمة والجديدة بآلية مصرفية دقيقة",
+        "توليد ميزان المراجعة، قائمة الدخل، والمركز المالي بلحظة واحدة مع تصدير Excel و PDF",
+        "إغلاق الفترات المالية المحاسبية وترحيل الأرصدة الافتتاحية مع حماية التدقيق"
+      ]
     },
     {
       num: "02",
       icon: <ShoppingCart className="w-7 h-7 text-sap-secondary" />,
       title: "إدارة المبيعات ونقاط البيع (POS)",
-      desc: "فواتير سريعة ذكية، مردودات ومستخلصات، نقاط بيع تعمل دون إنترنت (Offline-First) مع مزامنة لحظية، ودعم ماسحات الباركود والفاتورة الإلكترونية."
+      desc: "فواتير سريعة ذكية، مردودات ومستخلصات، نقاط بيع تعمل دون إنترنت (Offline-First) مع مزامنة لحظية، ودعم ماسحات الباركود والفاتورة الإلكترونية.",
+      badge: "Offline-First & ZATCA Stage 2",
+      features: [
+        "نظام كاشير فائق السرعة يعمل باستقلالية تامة حتى في حال انقطاع الإنترنت",
+        "طباعة الإيصالات الحرارية والفواتير الضريبية وتوليد QR Code المشفر فورياً",
+        "إدارة تسعير مرنة، خصومات ترويجية، كشوف حسابات العملاء ومتابعة سقف الائتمان",
+        "سجل مبيعات متكامل بالمندوبين ونقاط التوزيع مع احتساب العمولات التلقائية"
+      ]
     },
     {
       num: "03",
       icon: <Package className="w-7 h-7 text-sap-secondary" />,
       title: "إدارة المشتريات والمخزون",
-      desc: "تتبع دقيق للمخزون لحظياً متعدد المستودعات والفروع، تنبيهات حد الطلب ونفاذ الأصناف، إدارة دورة المشتريات والموردين وتقييم المخزون (FIFO / متوسط التكلفة)."
+      desc: "تتبع دقيق للمخزون لحظياً متعدد المستودعات والفروع، تنبيهات حد الطلب ونفاذ الأصناف، إدارة دورة المشتريات والموردين وتقييم المخزون (FIFO / متوسط التكلفة).",
+      badge: "Multi-Warehouse & FIFO",
+      features: [
+        "تتبع الحركات المستودعية (تحويل بين الفروع، إذن صرف، إذن استلام، جرد آلي)",
+        "تنبيهات استباقية بالحد الأدنى للأصناف وتواريخ انتهاء الصلاحية ورقم الوجبة (Batch)",
+        "أتمتة دورة المشتريات من طلب الشراء إلى أمر التوريد ومطابقة فواتير الموردين",
+        "احتساب تكلفة المخزون بدقة متناهية وفق سياسات FIFO والمتوسط المرجح"
+      ]
     },
     {
       num: "04",
       icon: <Users className="w-7 h-7 text-sap-secondary" />,
       title: "إدارة الموارد البشرية والرواتب",
-      desc: "سجلات شاملة للموظفين، احتساب الرواتب والبدلات والخصميات آلياً، إدارة الورديات وسجلات الحضور، وتوليد مسيرات الرواتب بضغطة زر واحدة."
+      desc: "سجلات شاملة للموظفين، احتساب الرواتب والبدلات والخصميات آلياً، إدارة الورديات وسجلات الحضور، وتوليد مسيرات الرواتب بضغطة زر واحدة.",
+      badge: "Automated Payroll & HR",
+      features: [
+        "سجلات إلكترونية كاملة لملفات الموظفين، العقود، والتأمينات الاجتماعية",
+        "احتساب مسيرات الرواتب الشهرية والبدلات، الخصومات، والسلف تلقائياً مع توليد القيود المحاسبية",
+        "إدارة الإجازات، الورديات، ومطابقة سجلات البصمة الإلكترونية",
+        "تقييم أداء الموظفين وإصدار قسائم الرواتب الفردية وطباعتها"
+      ]
     },
     {
       num: "05",
       icon: <Cpu className="w-7 h-7 text-sap-secondary" />,
       title: "إدارة وتتبع الأصول الثابتة",
-      desc: "تتبع الأصول الرأسمالية ومواقعها، حساب مجمعات الإهلاك الدوري تلقائياً وفق المعيار الدولي (IAS 16)، مع ربط مراكز التكلفة وجداول الصيانة الدورية."
+      desc: "تتبع الأصول الرأسمالية ومواقعها، حساب مجمعات الإهلاك الدوري تلقائياً وفق المعيار الدولي (IAS 16)، مع ربط مراكز التكلفة وجداول الصيانة الدورية.",
+      badge: "IAS 16 Asset Life-Cycle",
+      features: [
+        "ترميز الأصول بالباركود وتعيين العهد للموظفين والمواقع والأقسام",
+        "حساب الإهلاك التلقائي (القسط الثابت، المتناقص، ساعات التشغيل) وترحيله مالياً",
+        "جدولة الصيانة الوقائية والتصحيحية للأصول مع تتبع تكاليف الإصلاح الرأسمالية",
+        "معالجة استبعاد، بيع، أو تخريد الأصول مع احتساب أرباح وخسائر التخلص تلقائياً"
+      ]
     },
     {
       num: "06",
       icon: <Sparkles className="w-7 h-7 text-sap-secondary" />,
       title: "التحليل المالي الذكي (Gemini AI)",
-      desc: "تحليل استباقي لحظي للربحية والسيولة، كشف مبكر للشذوذ ومحاولات التلاعب المالي، وتوقعات تدفقات نقدية ذكية مستندة إلى أحدث نماذج الذكاء الاصطناعي."
+      desc: "تحليل استباقي لحظي للربحية والسيولة، كشف مبكر للشذوذ ومحاولات التلاعب المالي، وتوقعات تدفقات نقدية ذكية مستندة إلى أحدث نماذج الذكاء الاصطناعي.",
+      badge: "Powered by Gemini 2.5",
+      features: [
+        "فحص وتدقيق القيود اليومية لكشف المعاملات الشاذة أو المضاعفة آلياً",
+        "توقعات التدفقات النقدية والسيولة المستقبلية بناءً على السلوك المالي السابق",
+        "توليد تقارير الأداء المالي التنفيذي وتلخيص نتائج الأعمال للإدارة العليا",
+        "مستشار مالي ذكي فوري يجيب على الاستفسارات المحاسبية المعقدة للمنشأة"
+      ]
     }
   ];
 
@@ -198,7 +240,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col justify-between" dir="rtl" style={{ fontFamily: "'Alexandria', 'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col justify-between" dir="rtl" style={{ fontFamily: "'Alexandria', 'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* Navigation */}
       <nav id="corporate-navbar" className="sticky top-0 z-40 bg-[#0B192C]/95 backdrop-blur-xl border-b border-[#1E3A8A]/50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -543,44 +585,123 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
         {activeTab === "MODULES" && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 animate-fadeIn space-y-12">
             <div className="text-center space-y-4 max-w-3xl mx-auto">
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-sap-secondary/15 text-sap-secondary border border-sap-secondary/30">
-                منظومة متكاملة
+              <span className="text-xs font-bold px-3.5 py-1.5 rounded-full bg-sap-secondary/15 text-sap-secondary border border-sap-secondary/30 shadow-sm">
+                منظومة معمارية متكاملة
               </span>
               <h2 className="text-3xl sm:text-5xl font-black text-white">الوحدات والأنظمة الفرعية</h2>
               <p className="text-base text-slate-300">
-                تعرف بالتفصيل على إمكانيات MeDo ERP لتغطية كافة متطلبات إدارتك ومؤسستك.
+                استكشف بالتفصيل إمكانيات MeDo ERP لتغطية كافة العمليات المحاسبية، الإدارية، والتنفيذية وفق أعلى المعايير المصرفية الدولية.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {coreModules.map((mod, i) => (
-                <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-slate-800 border border-slate-700 rounded-2xl text-sap-secondary">
-                      {mod.icon}
-                    </div>
-                    <div>
-                      <span className="text-xs text-sap-secondary font-mono font-bold">وحدة رقم {mod.num}</span>
-                      <h3 className="text-xl font-black text-white">{mod.title}</h3>
+                <div 
+                  key={i} 
+                  className="bg-slate-900/90 border border-slate-800 hover:border-sap-secondary/50 rounded-3xl p-8 space-y-6 shadow-xl transition-all hover:shadow-sap-secondary/5 relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-sap-secondary/5 rounded-bl-full pointer-events-none group-hover:bg-sap-secondary/10 transition-colors" />
+                  
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-sap-secondary shadow-md group-hover:scale-105 transition-transform">
+                        {mod.icon}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-sap-secondary font-mono font-bold">وحدة رقم {mod.num}</span>
+                          {mod.badge && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                              {mod.badge}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-black text-white group-hover:text-sap-secondary transition-colors mt-0.5">{mod.title}</h3>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-slate-300 text-sm leading-relaxed">{mod.desc}</p>
-                  <ul className="space-y-2 text-xs text-slate-400 border-t border-slate-800 pt-4">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>تصدير فوري للتقارير (Excel، PDF، وتنسيقات الطباعة الحرارية)</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>صلاحيات دقيقة للمستخدمين وفق الأدوار والمستويات الإدارية</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>سجل رقابي وتدقيقي كامل (Audit Trail) لكافة التعديلات</span>
-                    </li>
-                  </ul>
+
+                  <p className="text-slate-300 text-sm leading-relaxed font-normal">{mod.desc}</p>
+                  
+                  <div className="space-y-3 border-t border-slate-800/90 pt-5">
+                    <h4 className="text-xs font-bold text-slate-200">أبرز الخصائص التشغيلية والتقنية:</h4>
+                    <ul className="space-y-2.5 text-xs text-slate-300">
+                      {mod.features ? (
+                        mod.features.map((feat, fIdx) => (
+                          <li key={fIdx} className="flex items-start gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                            <span className="leading-relaxed">{feat}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>تصدير فوري للتقارير (Excel، PDF، وتنسيقات الطباعة الحرارية)</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>صلاحيات دقيقة للمستخدمين وفق الأدوار والمستويات الإدارية</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>سجل رقابي وتدقيقي كامل (Audit Trail) لكافة التعديلات</span>
+                          </li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-800/60">
+                    <button
+                      onClick={() => {
+                        setDefaultShowSaaSOnboarding(true);
+                        setShowLogin(true);
+                      }}
+                      className="inline-flex items-center gap-2 text-xs font-bold text-sap-secondary hover:text-amber-300 transition-colors cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>تجربة هذه الوحدة مجاناً</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLogin(true);
+                      }}
+                      className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-medium"
+                    >
+                      <span>دخول المستخدمين</span>
+                      <ArrowLeft className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ))}
+            </div>
+
+            {/* Bottom Call to Action */}
+            <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#0F1C2E] via-slate-900 to-[#0F1C2E] border border-slate-800 text-center space-y-6 shadow-2xl">
+              <div className="max-w-2xl mx-auto space-y-3">
+                <h3 className="text-2xl sm:text-3xl font-black text-white">هل تحتاج مواءمة مخصصة أو دمج وحدات إضافية؟</h3>
+                <p className="text-sm text-slate-300">
+                  فريقنا الهندسي جاهز لربط منظومة MeDo ERP مع أجهزتك، فروقات عملاتك، أو أنظمتك القائمة بكل سلاسة.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button
+                  onClick={() => {
+                    setDefaultShowSaaSOnboarding(true);
+                    setShowLogin(true);
+                  }}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-sm shadow-xl cursor-pointer transition active:scale-95"
+                >
+                  ابدأ التجربة المجانية 30 يوماً
+                </button>
+                <button
+                  onClick={() => setActiveTab("CONTACT")}
+                  className="px-6 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-sm cursor-pointer transition"
+                >
+                  طلب استشارة وديمو حي
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1168,7 +1289,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
       <footer 
         id="corporate-footer" 
         className="marketing-footer-box bg-slate-950 border-t border-slate-800/90 py-8 px-4 text-center mt-12"
-        style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}
+        style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}
       >
         <div className="max-w-4xl mx-auto space-y-4">
           

@@ -20,6 +20,9 @@ import {
   ShieldX,
   Mail,
   SmartphoneNfc,
+  Volume2,
+  UserX,
+  Sparkles,
 } from "lucide-react";
 import {
   AdminPortalSecurityService,
@@ -29,10 +32,14 @@ import {
   MASTER_DEVICE_ENROLL_PIN,
   DEFAULT_MASTER_PASSWORD_PLAIN,
 } from "../services/adminPortalSecurityService";
+import { SecurityAuditService, AccountLockRecord } from "../services/securityAuditService";
+import { soundService } from "../services/soundService";
+import { SystemPromptsHistoryDashboard } from "./SystemPromptsHistoryDashboard";
 
 export const AdminDeviceManagerView: React.FC = () => {
   const [devices, setDevices] = useState<AuthorizedDevice[]>([]);
   const [auditLogs, setAuditLogs] = useState<AdminAccessAuditLog[]>([]);
+  const [lockedAccounts, setLockedAccounts] = useState<AccountLockRecord[]>([]);
   const [currentFp, setCurrentFp] = useState<string>("");
 
   // New Device Modal / Form
@@ -56,10 +63,35 @@ export const AdminDeviceManagerView: React.FC = () => {
   const [emailDispatches, setEmailDispatches] = useState<any[]>([]);
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
   const [testAlertSuccess, setTestAlertSuccess] = useState<string | null>(null);
+  const [testAlertError, setTestAlertError] = useState<string | null>(null);
+  const [adminSectionTab, setAdminSectionTab] = useState<"DEVICES_SECURITY" | "PROMPTS_TIMELINE">("DEVICES_SECURITY");
+  const [emailConfigStatus, setEmailConfigStatus] = useState<{
+    configured: boolean;
+    hasSmtpPassword: boolean;
+    hasResendApiKey: boolean;
+    host: string;
+    user: string;
+    transportType: string;
+  } | null>(null);
 
   useEffect(() => {
     loadData();
+    checkEmailConfig();
+    const unsub = SecurityAuditService.getInstance().subscribe(() => {
+      loadData();
+    });
+    return () => unsub();
   }, []);
+
+  const checkEmailConfig = async () => {
+    try {
+      const res = await fetch("/api/security/email-status");
+      if (res.ok) {
+        const data = await res.json();
+        setEmailConfigStatus(data);
+      }
+    } catch {}
+  };
 
   const loadData = async () => {
     const list = AdminPortalSecurityService.getAuthorizedDevices();
@@ -73,6 +105,9 @@ export const AdminDeviceManagerView: React.FC = () => {
 
     setIsLockedOut(AdminPortalSecurityService.isLockoutActive());
 
+    // Load Locked Accounts
+    setLockedAccounts(SecurityAuditService.getInstance().getLockedAccounts());
+
     // Load Email Security Dispatches
     try {
       const rawDispatches = localStorage.getItem("medo_erp_security_email_dispatches_v1");
@@ -80,9 +115,29 @@ export const AdminDeviceManagerView: React.FC = () => {
     } catch {}
   };
 
+  const handleUnlockUserAccount = (email: string) => {
+    if (confirm(`هل أنت متأكد من رغبتك في إلغاء قفل الحساب للبريد (${email}) وتصفير عداد المحاولات الخاطئة؟`)) {
+      SecurityAuditService.getInstance().unlockAccount(email, "مدير النظام الأعلى (بدر)");
+      try {
+        soundService.playSound("SUCCESS_CHIME");
+      } catch {}
+      loadData();
+      alert(`✓ تم فك القفل بنجاح عن الحساب (${email}) وأصبح قادراً على تسجيل الدخول فوراً.`);
+    }
+  };
+
+  const handleTestSoundAlert = (type: "RADAR_SECURITY" | "ENCRYPTION_VIOLATION_ALARM" | "ROYAL_BANK_CHIME") => {
+    try {
+      soundService.playSound(type);
+    } catch (e) {
+      console.warn("Sound play error:", e);
+    }
+  };
+
   const handleSendTestSecurityEmail = async () => {
     setIsSendingTestAlert(true);
     setTestAlertSuccess(null);
+    setTestAlertError(null);
     try {
       const res = await fetch("/api/security/admin-alert", {
         method: "POST",
@@ -91,7 +146,7 @@ export const AdminDeviceManagerView: React.FC = () => {
           toEmail: MASTER_ADMIN_EMAIL,
           alertType: "MANUAL_SECURITY_TEST",
           title: "فحص واختبار إشعار الأمان للبوابة السيادية",
-          message: "إشعار تجريبي للتأكد من ربط البريد الإلكتروني ونظام الإنذار الأمني الفوري.",
+          message: "إشعار تجريبي فوري للتأكد من ربط البريد الإلكتروني ونظام الإنذار الأمني السيادي بنجاح.",
           severity: "HIGH",
           deviceFingerprint: currentFp || "ADMIN_FP_ACTIVE",
           ipAddress: "127.0.0.1",
@@ -106,19 +161,26 @@ export const AdminDeviceManagerView: React.FC = () => {
         timestamp: new Date().toISOString(),
         toEmail: MASTER_ADMIN_EMAIL,
         title: "فحص واختبار أمان البوابة",
-        message: "تم إرسال تنبيه تجريبي لتأكيد وصول الإشعارات لبريد الإدارة.",
+        message: data.note || "تم معالجة التنبيه وتوثيقه في سجل الرقابة المشفر.",
         severity: "HIGH",
-        status: "SENT_TO_INBOX",
-        channel: `EMAIL (${MASTER_ADMIN_EMAIL})`,
+        status: data.emailSent ? "SENT_TO_INBOX" : "LOGGED_AWAITING_SMTP",
+        channel: data.transportMethod || `EMAIL (${MASTER_ADMIN_EMAIL})`,
       };
       
       const updated = [newLog, ...emailDispatches].slice(0, 50);
       setEmailDispatches(updated);
       localStorage.setItem("medo_erp_security_email_dispatches_v1", JSON.stringify(updated));
-      setTestAlertSuccess(`✓ تم إرسال إشعار أمني تجريبي وتأكيد الربط مع: ${MASTER_ADMIN_EMAIL}`);
-      setTimeout(() => setTestAlertSuccess(null), 5000);
+      
+      if (data.emailSent) {
+        setTestAlertSuccess(`✓ تم إرسال البريد الأمني بنجاح إلى صندوق الوارد: ${MASTER_ADMIN_EMAIL}`);
+      } else {
+        setTestAlertSuccess(`✓ تم توثيق التنبيه الأمني برقم (${data.alertId}). ${data.note || ''}`);
+      }
+      setTimeout(() => setTestAlertSuccess(null), 8000);
+      checkEmailConfig();
     } catch (e: any) {
-      alert("فشل إرسال الإشعار: " + e.message);
+      setTestAlertError("فشل إرسال الإشعار: " + e.message);
+      setTimeout(() => setTestAlertError(null), 8000);
     } finally {
       setIsSendingTestAlert(false);
     }
@@ -288,6 +350,46 @@ export const AdminDeviceManagerView: React.FC = () => {
         </div>
       )}
 
+      {/* Navigation Subtabs: Security vs Prompts History */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#070e1b] border border-blue-500/30 rounded-2xl p-2 shadow-lg">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAdminSectionTab("DEVICES_SECURITY")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              adminSectionTab === "DEVICES_SECURITY"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 border border-blue-400/40"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>الأجهزة المصرحة والرقابة الأمنية</span>
+          </button>
+
+          <button
+            onClick={() => setAdminSectionTab("PROMPTS_TIMELINE")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              adminSectionTab === "PROMPTS_TIMELINE"
+                ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-400/40"
+                : "text-slate-400 hover:text-white hover:bg-slate-900"
+            }`}
+          >
+            <History className="w-4 h-4 text-amber-300" />
+            <span>سجل المحادثات والطلبات والإجراءات</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-black border border-amber-400/30">
+              شامل
+            </span>
+          </button>
+        </div>
+
+        <span className="text-[11px] text-slate-400 font-mono hidden sm:inline px-3">
+          لوحة الإدارة العليا السيادية • MeDo ERP Master Console
+        </span>
+      </div>
+
+      {adminSectionTab === "PROMPTS_TIMELINE" ? (
+        <SystemPromptsHistoryDashboard />
+      ) : (
+        <>
       {/* Quick Security Credentials Card for Master Admin */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-[#0B192C]/80 border border-blue-500/30 p-5 rounded-2xl space-y-2">
@@ -506,24 +608,102 @@ export const AdminDeviceManagerView: React.FC = () => {
       </div>
 
       {/* Real-time Email & Incident Dispatches Log */}
-      <div className="bg-[#0B192C]/90 border border-emerald-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-            <Mail className="w-5 h-5 text-emerald-400" />
-            <span>سجل الإشعارات الأمنية المرسلة للبريد ({emailDispatches.length})</span>
-          </h3>
-          <span className="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-            {MASTER_ADMIN_EMAIL}
-          </span>
+      <div className="bg-[#0B192C]/90 border border-emerald-500/30 rounded-3xl p-6 space-y-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <Mail className="w-5 h-5 text-emerald-400" />
+              <span>منظومة إشعارات البريد الإلكتروني الفورية (Email Dispatch Center)</span>
+            </h3>
+            <p className="text-xs text-slate-300 mt-1">
+              يتم إرسال إشعار فوري وتنبيه أمني مباشر إلى بريد الإدارة العليا عند رصد محاولات الدخول الخاطئة أو أي سلوك أمني مشبوه.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSendTestSecurityEmail}
+              disabled={isSendingTestAlert}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+            >
+              {isSendingTestAlert ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Mail className="w-3.5 h-3.5" />
+              )}
+              <span>{isSendingTestAlert ? "جاري الإرسال والتحقق..." : "إرسال إشعار بريد تجريبي"}</span>
+            </button>
+          </div>
         </div>
 
+        {/* Live SMTP Status & Quick Guide Card */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400">البريد المعتمد لاستلام التنبيهات:</span>
+            <p className="font-mono text-sm text-emerald-400 font-bold">{MASTER_ADMIN_EMAIL}</p>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400">حالة خادم البريد (SMTP / Provider):</span>
+            <div className="flex items-center gap-2">
+              {emailConfigStatus?.configured ? (
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>متصل بنجاح ({emailConfigStatus.transportType})</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>في انتظار تعيين كلمة مرور التطبيقات (SMTP_PASS)</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1">
+            <span className="text-[11px] text-slate-400">خادم الإرسال:</span>
+            <p className="font-mono text-xs text-blue-300 font-bold">
+              {emailConfigStatus?.host || "smtp.gmail.com"} (SSL 465)
+            </p>
+          </div>
+        </div>
+
+        {/* Guidance if SMTP credentials are required */}
+        {(!emailConfigStatus?.configured) && (
+          <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/40 text-xs text-slate-200 space-y-2">
+            <div className="flex items-center gap-2 font-bold text-blue-300">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+              <span>توجيهات تفعيل إرسال البريد الفوري لصندوق الوارد (Gmail App Password):</span>
+            </div>
+            <p className="text-slate-300 leading-relaxed text-[11px]">
+              لإرسال إشعارات الأمان الفعلية إلى بريدك (<strong className="text-white font-mono">{MASTER_ADMIN_EMAIL}</strong>)، افتح حساب Google الخاص بك &gt; <strong>الأمان (Security)</strong> &gt; <strong>التحقق بخطوتين</strong> &gt; <strong>كلمات مرور التطبيقات (App Passwords)</strong>، ثم أنشئ كلمة مرور مكونة من 16 حرفاً وضعها في متغير البيئة <code className="text-amber-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded">SMTP_PASS</code>.
+            </p>
+          </div>
+        )}
+
+        {/* Test Alert Feedback Banners */}
+        {testAlertSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>{testAlertSuccess}</span>
+          </div>
+        )}
+
+        {testAlertError && (
+          <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-200 text-xs font-bold flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{testAlertError}</span>
+          </div>
+        )}
+
+        {/* Dispatches Table */}
         <div className="overflow-x-auto max-h-64 overflow-y-auto">
           {emailDispatches.length === 0 ? (
             <div className="text-center py-8 text-slate-400 text-xs font-medium space-y-2">
               <Mail className="w-8 h-8 text-slate-600 mx-auto" />
-              <p>لا توجد تنبيهات أمنية حرجة سابقة تم إرسالها للبريد.</p>
+              <p>لا توجد تنبيهات أمنية سابقة تم إرسالها للبريد.</p>
               <p className="text-[11px] text-slate-500">
-                يتم إرسال الإشعار تلقائياً عند حدوث أي محاولة دخول خاطئة أو تجاوز محاولات كلمة المرور.
+                يتم تسجيل وإرسال الإشعار تلقائياً عند حدوث أي محاولة دخول خاطئة أو تجاوز محاولات كلمة المرور.
               </p>
             </div>
           ) : (
@@ -534,6 +714,7 @@ export const AdminDeviceManagerView: React.FC = () => {
                   <th className="py-2.5 px-3">التوقيت</th>
                   <th className="py-2.5 px-3">العنوان / الحادثة</th>
                   <th className="py-2.5 px-3">الوجهة المستلمة</th>
+                  <th className="py-2.5 px-3">قناة الإرسال</th>
                   <th className="py-2.5 px-3">حالة التسليم</th>
                 </tr>
               </thead>
@@ -546,10 +727,17 @@ export const AdminDeviceManagerView: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 text-slate-200 font-sans font-bold">{disp.title}</td>
                     <td className="py-2.5 px-3 text-slate-300">{disp.toEmail}</td>
+                    <td className="py-2.5 px-3 text-slate-400 text-[11px]">{disp.channel || "EMAIL"}</td>
                     <td className="py-2.5 px-3 font-sans">
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                        ✓ تم الإرسال للبريد
-                      </span>
+                      {disp.status === "SENT_TO_INBOX" ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                          ✓ تم الإرسال لصندوق الوارد
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold">
+                          ✓ مسجل في الرقابة المشفرة
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -558,6 +746,101 @@ export const AdminDeviceManagerView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Locked Accounts & Sound Alert Controls */}
+      <div className="bg-[#0B192C]/90 border border-rose-500/40 rounded-3xl p-6 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <UserX className="w-5 h-5 text-rose-400" />
+              <span>الحسابات المقفلة مؤقتاً وقفل الحماية الآلي ({lockedAccounts.length})</span>
+            </h3>
+            <p className="text-xs text-slate-300 mt-1">
+              يتم قفل أي حساب تلقائياً وإطلاق إنذار صوتي فوري عبر <span className="font-mono text-amber-300">soundService</span> عند رصد أكثر من 3 محاولات دخول خاطئة متتالية.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleTestSoundAlert("RADAR_SECURITY")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 border border-rose-500/50 text-xs font-bold transition-colors cursor-pointer"
+              title="تجربة صوت إنذار الرادار الأمني"
+            >
+              <Volume2 className="w-4 h-4" />
+              <span>فحص صفارة الإنذار</span>
+            </button>
+            <button
+              onClick={loadData}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="تحديث"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto max-h-64 overflow-y-auto">
+          {lockedAccounts.length === 0 ? (
+            <div className="text-center py-6 text-slate-400 text-xs font-medium space-y-2">
+              <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto" />
+              <p className="text-emerald-300 font-bold">لا توجد أي حسابات مقفلة حالياً. كافة الحسابات آمنة ونشطة.</p>
+              <p className="text-[11px] text-slate-500">
+                عند تسجيل أكثر من 3 محاولات دخول خاطئة لأي حساب مستخدم، سيظهر هنا فوراً مع زر الفك اليدوي ومؤقت المهلة التلقائية.
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-right text-xs">
+              <thead className="sticky top-0 bg-[#0B192C] z-10">
+                <tr className="border-b border-slate-800 text-slate-400">
+                  <th className="py-2.5 px-3">البريد الإلكتروني / الحساب</th>
+                  <th className="py-2.5 px-3">عدد المحاولات الفاشلة</th>
+                  <th className="py-2.5 px-3">عنوان IP / الجهاز</th>
+                  <th className="py-2.5 px-3">وقت القفل</th>
+                  <th className="py-2.5 px-3">المهلة المتبقية</th>
+                  <th className="py-2.5 px-3 text-center">الإجراء</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-mono">
+                {lockedAccounts.map((lock) => {
+                  const now = Date.now();
+                  const remainingMinutes = Math.max(0, Math.ceil((lock.unlockTime - now) / 60000));
+                  return (
+                    <tr key={lock.email} className="hover:bg-slate-900/50 transition-colors bg-rose-950/20">
+                      <td className="py-2.5 px-3 font-sans font-bold text-rose-300 flex items-center gap-2">
+                        <UserX className="w-4 h-4 text-rose-400" />
+                        <span>{lock.email}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-amber-300 font-bold">
+                        {lock.failedAttempts} محاولات متتالية
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-300 text-[11px]">{lock.ip}</td>
+                      <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap font-sans text-[11px]">
+                        {new Date(lock.lockedAt).toLocaleTimeString("ar-EG")}
+                      </td>
+                      <td className="py-2.5 px-3 font-sans">
+                        <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">
+                          مقفل ({remainingMinutes} دقيقة متبقية)
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <button
+                          onClick={() => handleUnlockUserAccount(lock.email)}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-sans text-[11px] font-bold rounded-lg transition-all shadow cursor-pointer flex items-center gap-1 mx-auto"
+                        >
+                          <Unlock className="w-3.5 h-3.5" />
+                          <span>إلغاء القفل الآن</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+        </>
+      )}
 
       {/* Change Password Modal */}
       {showPwdModal && (

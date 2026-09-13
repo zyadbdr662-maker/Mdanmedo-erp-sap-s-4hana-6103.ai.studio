@@ -21,6 +21,7 @@ import { NavTab } from "./Sidebar";
 import { CurrencyCode, CurrencyInfo, ERPUser, CalendarType } from "../types/erp";
 import { LocalSyncEngine } from "../services/localSyncEngine";
 import { useCalendar } from "../utils/calendarUtils";
+import { SyncStatusIndicator } from "./SyncStatusIndicator";
 
 interface MobileTopBarProps {
   activeTab: NavTab | "HOME_HUB";
@@ -247,27 +248,11 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             )}
           </button>
 
-          {/* Network & Offline Status Button */}
-          <button
-            onClick={() => setActiveTab("CLOUD_SYNC")}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all active:scale-95 ${
-              networkMode === "OFFLINE"
-                ? "bg-rose-950/80 border-rose-800 text-rose-400 shadow-sm shadow-rose-950"
-                : networkMode === "FLAKY"
-                ? "bg-amber-950/80 border-amber-800 text-amber-400"
-                : "bg-slate-950 border-slate-800 text-emerald-400"
-            }`}
-            title={networkMode === "OFFLINE" ? "وضع عدم الاتصال" : "متصل بالسحابة"}
-            aria-label="حالة الاتصال"
-          >
-            {networkMode === "OFFLINE" ? (
-              <WifiOff className="w-3.5 h-3.5 animate-pulse" />
-            ) : networkMode === "FLAKY" ? (
-              <Radio className="w-3.5 h-3.5" />
-            ) : (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            )}
-          </button>
+          {/* Network & Offline Sync Status Indicator */}
+          <SyncStatusIndicator
+            isCompact={true}
+            onNavigateToSync={() => setActiveTab("CLOUD_SYNC")}
+          />
 
           {/* Light/Dark Mode Toggle Switch */}
           {onToggleDarkMode && (

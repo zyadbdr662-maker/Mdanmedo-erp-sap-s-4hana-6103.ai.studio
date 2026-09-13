@@ -9,14 +9,14 @@ export const MarketingLayout = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-['Alexandria','Cairo',sans-serif]">
       <AnalyticsTracker />
-      <header className="bg-[#0B192C] text-white p-4 shadow-lg border-b border-[#1E3A8A]/60 sticky top-0 z-50 backdrop-blur-md">
+      <header className="bg-[#050B14]/95 text-white p-4 shadow-lg border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
         <nav className="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
           <Link to="/" className="text-2xl font-black text-white flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] border border-blue-400/50 flex items-center justify-center text-white shadow-md font-black text-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#d4af37] to-[#f39c12] border border-[#d4af37]/30 flex items-center justify-center text-white shadow-md font-black text-lg">
               M
             </div>
             <span className="tracking-tight text-white">MeDo ERP</span>
-            <span className="text-xs bg-blue-500/20 text-blue-300 font-bold px-2.5 py-0.5 rounded-full border border-blue-400/30">v4.5</span>
+            <span className="text-xs bg-[#d4af37]/10 text-[#d4af37] font-bold px-3 py-1 rounded-full border border-[#d4af37]/30">v4.5</span>
           </Link>
           <div className="flex items-center gap-3 sm:gap-6 flex-wrap text-sm font-bold">
             <Link to="/" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
@@ -28,7 +28,7 @@ export const MarketingLayout = () => {
             <button onClick={toggleLang} className="text-blue-300 font-bold border border-blue-400/40 px-3 py-1 rounded-lg text-xs hover:bg-blue-600 hover:text-white transition">
               {lang === 'ar' ? 'EN' : 'عربي'}
             </button>
-            <Link to="/erp" className="bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#1D4ED8] text-white px-5 py-2 rounded-xl font-black hover:from-[#2563EB] hover:to-[#1E3A8A] transition text-sm shadow-md shadow-blue-950/50 border border-blue-300/40">
+            <Link to="/erp" className="bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a1525] px-6 py-2.5 rounded-xl font-black hover:from-[#f39c12] hover:to-[#d4af37] transition text-sm shadow-md shadow-[0_5px_15px_rgba(212,175,55,0.3)] border border-[#b8860b]">
               {lang === 'ar' ? 'الدخول للنظام' : 'Login'}
             </Link>
           </div>

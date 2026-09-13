@@ -93,7 +93,7 @@ export async function exportInvoiceToPdf(
   container.style.backgroundColor = "#ffffff";
   container.style.color = "#1A2B4C";
   container.style.padding = "24px";
-  container.style.fontFamily = "'Cairo', 'Tajawal', sans-serif";
+  container.style.fontFamily = "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif";
   container.style.direction = "rtl";
 
   const todayDate = getTodayFormattedDate();
@@ -325,7 +325,7 @@ export async function exportFinancialReportToPdf(
   container.style.backgroundColor = "#ffffff";
   container.style.color = "#1A2B4C";
   container.style.padding = "24px";
-  container.style.fontFamily = "'Cairo', 'Tajawal', sans-serif";
+  container.style.fontFamily = "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif";
   container.style.direction = "rtl";
 
   let bodyContentHtml = "";

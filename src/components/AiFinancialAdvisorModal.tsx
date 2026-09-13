@@ -450,7 +450,7 @@ export const AiFinancialAdvisorModal: React.FC<AiFinancialAdvisorModalProps> = (
         className={`bg-[#071829] border border-slate-800 rounded-3xl shadow-2xl flex flex-col text-right overflow-hidden transition-all duration-300 w-full ${
           isMaximized ? "h-[98vh] max-w-[98vw]" : "h-[90vh] max-w-7xl"
         }`}
-        style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}
+        style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}
       >
         {/* ========================================================
             1. UNIFIED HEADER (الشريط العلوي الموحد)

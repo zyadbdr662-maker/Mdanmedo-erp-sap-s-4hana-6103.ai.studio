@@ -33,6 +33,7 @@ import { IS_ADMIN_ENV } from "../config/env";
 import { SecurityAuditService, SystemAlert } from "../services/securityAuditService";
 import { useCalendar } from "../utils/calendarUtils";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { SyncStatusIndicator } from "./SyncStatusIndicator";
 import { NavTab } from "./Sidebar";
 
 interface HeaderProps {
@@ -477,42 +478,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden lg:inline">الثيمات والسمات</span>
           </button>
 
-          {/* Network & Offline Status Badge */}
-          <button
-            onClick={() => setActiveTab("CLOUD_SYNC")}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-              syncStatus.networkMode === "OFFLINE"
-                ? "bg-rose-950/80 border-rose-700/80 text-rose-300 hover:text-white shadow-sm shadow-rose-950/40"
-                : syncStatus.networkMode === "FLAKY"
-                ? "bg-amber-950/80 border-amber-700/80 text-amber-300 hover:text-white shadow-sm shadow-amber-950/40"
-                : "bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white"
-            }`}
-            title={
-              syncStatus.networkMode === "OFFLINE"
-                ? "النظام في وضع عدم الاتصال (Offline Mode). اضغط لفتح مركز المزامنة"
-                : "النظام متصل بالسحابة. اضغط لإدارة المزامنة"
-            }
-          >
-            {syncStatus.networkMode === "OFFLINE" ? (
-              <WifiOff className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-            ) : (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            )}
-            <span className="hidden md:inline">
-              {syncStatus.networkMode === "OFFLINE" ? "غير متصل" : "متصل"}
-            </span>
-            {syncStatus.pendingCount > 0 && (
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                  syncStatus.networkMode === "OFFLINE"
-                    ? "bg-rose-900 text-rose-200"
-                    : "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                }`}
-              >
-                🔄 {syncStatus.pendingCount}
-              </span>
-            )}
-          </button>
+          {/* Automatic Cloud Sync & Offline Status Indicator */}
+          <SyncStatusIndicator onNavigateToSync={() => setActiveTab("CLOUD_SYNC")} />
 
           {/* PWA Install Button */}
           <PWAInstallButton variant="header" />

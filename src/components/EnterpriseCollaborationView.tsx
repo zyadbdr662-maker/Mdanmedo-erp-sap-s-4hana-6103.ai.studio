@@ -1243,7 +1243,7 @@ export const EnterpriseCollaborationView: React.FC<EnterpriseCollaborationViewPr
   });
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in select-none text-slate-100" style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="space-y-6 pb-12 animate-in fade-in select-none text-slate-100" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* Toast Notification Banner */}
       {toastMessage && (
         <div className="fixed bottom-6 left-6 z-50 bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border border-emerald-500/60 text-emerald-200 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom duration-300">

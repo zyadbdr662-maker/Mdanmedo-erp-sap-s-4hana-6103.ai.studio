@@ -38,6 +38,7 @@ import { ImmutableAuditTrailView } from "./ImmutableAuditTrailView";
 import { TrialExtensionDashboardView } from "./TrialExtensionDashboardView";
 import { SystemAlertCenterView } from "./SystemAlertCenterView";
 import { AdminDeviceManagerView } from "./AdminDeviceManagerView";
+import { SystemPromptsHistoryDashboard } from "./SystemPromptsHistoryDashboard";
 import { ERPState, SystemSettings } from "../types/erp";
 import { soundService, SoundType, WhatsAppNotificationPayload } from "../services/notificationSoundService";
 
@@ -68,6 +69,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
     | "BACKUP"
     | "AUDIO_WHATSAPP_ALERTS"
     | "DEVICE_WHITELIST"
+    | "PROMPTS_HISTORY"
   >("SETTINGS");
 
   // Audio & WhatsApp Settings State
@@ -368,6 +370,18 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
         >
           <ShieldCheck className="w-4 h-4 text-amber-300" />
           <span>11. الأجهزة المصرح بها والحماية 🔐</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("PROMPTS_HISTORY")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            activeTab === "PROMPTS_HISTORY"
+              ? "bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white shadow-lg shadow-indigo-950/60 border border-indigo-400/40"
+              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+          }`}
+        >
+          <History className="w-4 h-4 text-amber-300" />
+          <span>12. سجل المحادثات والطلبات الكامل 📜</span>
         </button>
       </div>
 
@@ -679,6 +693,11 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
       {/* TAB 11: DEVICE WHITELIST & SECURITY */}
       {activeTab === "DEVICE_WHITELIST" && (
         <AdminDeviceManagerView />
+      )}
+
+      {/* TAB 12: PROMPTS & ACTIONS TIMELINE HISTORY */}
+      {activeTab === "PROMPTS_HISTORY" && (
+        <SystemPromptsHistoryDashboard />
       )}
     </div>
   );

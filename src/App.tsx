@@ -1819,7 +1819,11 @@ export default function App() {
                   <>
                     {activeTab === "HOME_HUB" && (
                 <MobileHomeHub
-                  onSelectModule={(mod) => setActiveTab(mod)}
+                  onSelectModule={(mod) => {
+                    React.startTransition(() => {
+                      setActiveTab(mod);
+                    });
+                  }}
                   erpState={erpState}
                   displayCurrency={selectedCurrency}
                   currencies={erpState.currencies}
@@ -2234,7 +2238,7 @@ export default function App() {
                   onPrintDocument={handleOpenPrintDoc}
                 />
               )}
-              {isMasterAdminActive && activeTab === "CLOUD_SYNC" && (
+              {activeTab === "CLOUD_SYNC" && (
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-2.5">
                     <div className="flex items-center gap-2">
@@ -2270,6 +2274,11 @@ export default function App() {
                       onStateRestored={(restored) => {
                         setErpState(restored);
                         saveERPState(restored);
+                      }}
+                      onOpenQuickAction={(actionType) => {
+                        if (actionType === "INVOICE") setActiveTab("SALES_RETURNS");
+                        else if (actionType === "JOURNAL") setActiveTab("JOURNAL_ENTRIES");
+                        else if (actionType === "RECEIPT" || actionType === "PAYMENT") setActiveTab("VOUCHERS");
                       }}
                     />
                   ) : (

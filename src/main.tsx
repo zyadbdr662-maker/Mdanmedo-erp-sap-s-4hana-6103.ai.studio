@@ -1,7 +1,20 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
+
+// Register PWA service worker with auto-update for 100% offline functionality
+const updateSW = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    console.log('[MeDo PWA] تفعيل التحديث الجديد تلقائياً...');
+    updateSW(true);
+  },
+  onOfflineReady() {
+    console.log('[MeDo PWA] محرك العمل بدون اتصال (Offline-First) جاهز ونشط محلياً 100%!');
+  },
+});
 import { MarketingLayout } from './components/marketing/MarketingLayout.tsx';
 import { HomePage } from './pages/marketing/HomePage.tsx';
 import { AboutPage } from './pages/marketing/AboutPage.tsx';

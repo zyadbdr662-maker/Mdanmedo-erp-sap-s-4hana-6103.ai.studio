@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Users,
   Plus,
@@ -283,25 +283,24 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
     setShowAddInvoiceModal(false);
   };
 
-  const filteredCustomers = customers.filter((c) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return c.nameAr.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filteredCustomers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter(
+      (c) => c.nameAr.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+    );
+  }, [customers, searchQuery]);
 
-  const filteredInvoices = invoices.filter((i) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
+  const filteredInvoices = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return invoices;
+    return invoices.filter(
+      (i) =>
         i.invoiceNumber.toLowerCase().includes(q) ||
         i.customerName?.toLowerCase().includes(q) ||
         i.notes?.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+    );
+  }, [invoices, searchQuery]);
 
   return (
     <div className="space-y-5 animate-in fade-in">

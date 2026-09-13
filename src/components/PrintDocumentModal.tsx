@@ -513,7 +513,7 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
             backgroundColor: colors.canvasBg,
             color: colors.body,
             borderColor: colors.border,
-            fontFamily: "'Cairo', 'Tajawal', sans-serif",
+            fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif",
           }}
         >
           {/* 1. Header with Enterprise Branding */}

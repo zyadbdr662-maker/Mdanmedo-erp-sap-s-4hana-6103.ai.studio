@@ -30,63 +30,113 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [micError, setMicError] = useState<string | null>(null);
+  const [manualText, setManualText] = useState("");
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [suggestedAction, setSuggestedAction] = useState<{ tab?: NavTab; label?: string } | null>(null);
   const [draftJournal, setDraftJournal] = useState<VoiceDraftJournal | null>(null);
   const [createdJournalNumber, setCreatedJournalNumber] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>("");
 
   useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setMicError(null);
     if (typeof window !== "undefined") {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = "ar-SA";
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = "ar-SA";
 
-        recognition.onstart = () => {
-          setIsListening(true);
-        };
+          recognition.onstart = () => {
+            setIsListening(true);
+            setMicError(null);
+          };
 
-        recognition.onresult = (event: any) => {
-          let currentTranscript = "";
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-          }
-          setTranscript(currentTranscript);
-        };
+          recognition.onresult = (event: any) => {
+            let currentTranscript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              currentTranscript += event.results[i][0].transcript;
+            }
+            setTranscript(currentTranscript);
+            transcriptRef.current = currentTranscript;
+          };
 
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error", event.error);
-          setIsListening(false);
-        };
+          recognition.onerror = (event: any) => {
+            console.warn("Speech recognition error:", event.error);
+            setIsListening(false);
+            if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+              setMicError("⚠️ إذن استخدام الميكروفون مرفوض أو غير متاح في هذا البيئة. يمكنك استخدام الأوامر السريعة أو الكتابة النصية أدناه.");
+            } else if (event.error === "no-speech") {
+              setMicError("لم يتم سماع أي صوت. يرجى محاولة التحدث بوضوح وإعادة الضغط.");
+            } else if (event.error !== "aborted") {
+              setMicError(`تنبيه استماع الصوت: ${event.error}`);
+            }
+          };
 
-        recognition.onend = () => {
-          setIsListening(false);
-          if (transcript.trim().length > 0) {
-            processVoiceQuery(transcript);
-          }
-        };
+          recognition.onend = () => {
+            setIsListening(false);
+            const textToProcess = transcriptRef.current;
+            if (textToProcess && textToProcess.trim().length > 0) {
+              processVoiceQuery(textToProcess);
+            }
+          };
 
-        recognitionRef.current = recognition;
+          recognitionRef.current = recognition;
+        } catch (e) {
+          console.warn("SpeechRecognition creation failed", e);
+        }
       }
     }
-  }, [transcript]);
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, [isOpen]);
 
   const startListening = () => {
+    setMicError(null);
     setTranscript("");
+    transcriptRef.current = "";
     setAiResponse(null);
     setSuggestedAction(null);
     setDraftJournal(null);
     setCreatedJournalNumber(null);
+
     if (recognitionRef.current) {
       try {
+        if (isListening) {
+          try {
+            recognitionRef.current.stop();
+          } catch (e) {
+            // ignore
+          }
+        }
         recognitionRef.current.start();
-      } catch (e) {
-        console.error(e);
         setIsListening(true);
+      } catch (e: any) {
+        console.warn("Speech recognition start caught exception:", e);
+        if (e.name === "InvalidStateError" || (e.message && e.message.includes("already started"))) {
+          setIsListening(true);
+        } else {
+          setIsListening(false);
+          setMicError("تعذر تشغيل الميكروفون. يمكنك كتابة الطلب يدوياً بالأسفل.");
+        }
       }
     } else {
       setIsListening(true);
@@ -94,23 +144,24 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
       setTimeout(() => {
         const sampleQuery = "إنشاء قيد مصروف إيجار بقيمة 5000 ريال";
         setTranscript(sampleQuery);
+        transcriptRef.current = sampleQuery;
         setIsListening(false);
         processVoiceQuery(sampleQuery);
-      }, 2500);
+      }, 2000);
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && isListening) {
       try {
         recognitionRef.current.stop();
       } catch (e) {
-        console.error(e);
+        console.warn(e);
       }
     }
     setIsListening(false);
-    if (transcript.trim()) {
-      processVoiceQuery(transcript);
+    if (transcriptRef.current.trim()) {
+      processVoiceQuery(transcriptRef.current);
     }
   };
 
@@ -406,6 +457,15 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
             </span>
           </div>
 
+          {/* Mic Permission / Error Alert Banner */}
+          {micError && (
+            <div className="mb-4 p-3 bg-amber-950/60 border border-amber-600/50 rounded-2xl text-xs text-amber-200 text-right space-y-1 shadow-md animate-fadeIn">
+              <p className="font-bold flex items-center justify-end gap-1.5 text-amber-300">
+                <span>{micError}</span>
+              </p>
+            </div>
+          )}
+
           {/* Transcript box */}
           <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 min-h-[65px] text-right mb-4">
             <div className="text-[10px] font-bold text-slate-500 mb-1">النص المنطوق (Transcript):</div>
@@ -413,6 +473,35 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
               {transcript || (isListening ? "استماع..." : "لم يتم نطق أي نص بعد. جرب قول: 'إنشاء قيد مصروف إيجار بقيمة 5000 ريال'")}
             </p>
           </div>
+
+          {/* Manual Text Input Fallback */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (manualText.trim()) {
+                setTranscript(manualText.trim());
+                transcriptRef.current = manualText.trim();
+                processVoiceQuery(manualText.trim());
+                setManualText("");
+              }
+            }}
+            className="flex gap-2 mb-4 text-right"
+          >
+            <input
+              type="text"
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              placeholder="أو اكتب طلبك كتابة هنا (مثال: كم رصيد النقدية والخزينة)..."
+              className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"
+            />
+            <button
+              type="submit"
+              disabled={!manualText.trim() || processing}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs transition-all cursor-pointer shrink-0"
+            >
+              إرسال
+            </button>
+          </form>
 
           {/* AI Response & Actions */}
           {processing && (

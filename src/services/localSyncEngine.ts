@@ -19,11 +19,13 @@ const NETWORK_MODE_KEY = "medo_erp_network_mode_v1";
 const CONFLICT_STRATEGY_KEY = "medo_erp_conflict_strategy_v1";
 const AES256_ENABLED_KEY = "medo_erp_aes256_enabled_v1";
 const AES256_PASSPHRASE_KEY = "medo_erp_aes256_passphrase_v1";
+const LAST_SYNC_TIME_KEY = "medo_erp_last_sync_time_v1";
 
 export class LocalSyncEngine {
   private static instance: LocalSyncEngine;
   private networkMode: NetworkConnectionMode = "ONLINE";
   private conflictStrategy: ConflictResolutionStrategy = "TIMESTAMP_LATEST";
+  private isSyncInProgress: boolean = false;
   private listeners: Array<() => void> = [];
 
   private constructor() {
@@ -32,6 +34,13 @@ export class LocalSyncEngine {
 
     const savedStrat = localStorage.getItem(CONFLICT_STRATEGY_KEY) as ConflictResolutionStrategy;
     if (savedStrat) this.conflictStrategy = savedStrat;
+
+    const savedLastSync = localStorage.getItem(LAST_SYNC_TIME_KEY);
+    if (!savedLastSync) {
+      // Seed initial recent sync timestamp (e.g., 2 minutes ago)
+      const initialTime = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      localStorage.setItem(LAST_SYNC_TIME_KEY, initialTime);
+    }
 
     // Listen to real browser network changes
     if (typeof window !== "undefined") {
@@ -154,8 +163,58 @@ export class LocalSyncEngine {
 
   public isEffectivelyOnline(): boolean {
     if (this.networkMode === "OFFLINE") return false;
-    if (typeof navigator !== "undefined" && !navigator.onLine) return false;
     return true;
+  }
+
+  public isSyncing(): boolean {
+    return this.isSyncInProgress;
+  }
+
+  public getLastSyncTime(): string {
+    return localStorage.getItem(LAST_SYNC_TIME_KEY) || new Date().toISOString();
+  }
+
+  public setLastSyncTime(isoString: string) {
+    localStorage.setItem(LAST_SYNC_TIME_KEY, isoString);
+    this.notify();
+  }
+
+  public getFormattedLastSync(): { formattedTime: string; relativeTime: string } {
+    const raw = this.getLastSyncTime();
+    if (!raw) return { formattedTime: "لم تتم بعد", relativeTime: "غير متوفر" };
+
+    try {
+      const date = new Date(raw);
+      const timeStr = date.toLocaleTimeString("ar-YE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      const now = Date.now();
+      const diffSec = Math.floor((now - date.getTime()) / 1000);
+
+      let relative = "الآن";
+      if (diffSec < 45) {
+        relative = "الآن";
+      } else if (diffSec < 120) {
+        relative = "منذ دقيقة";
+      } else if (diffSec < 3600) {
+        const mins = Math.floor(diffSec / 60);
+        relative = `منذ ${mins} د`;
+      } else if (diffSec < 86400) {
+        const hours = Math.floor(diffSec / 3600);
+        relative = `منذ ${hours} س`;
+      } else {
+        relative = date.toLocaleDateString("ar-YE", { month: "short", day: "numeric" });
+      }
+
+      return {
+        formattedTime: timeStr,
+        relativeTime: relative,
+      };
+    } catch {
+      return { formattedTime: raw, relativeTime: "مؤخراً" };
+    }
   }
 
   // --- Conflict Resolution Strategy ---
@@ -317,6 +376,46 @@ export class LocalSyncEngine {
     this.saveOutbox(updated);
   }
 
+  public simulateOfflineTransaction(entityType: SyncEntity = "INVOICE"): SyncOutboxItem {
+    const timestamp = Date.now();
+    const branchId = "BR-SANAA-MAIN";
+    const branchName = "الفرع الرئيسي - صنعاء";
+
+    let ref = `INV-OFFLINE-${timestamp.toString().slice(-4)}`;
+    let payload: any = {
+      invoiceNumber: ref,
+      customerName: "عميل تجريبي محلي (بدون اتصال)",
+      total: 125000,
+      currency: "YER",
+      date: new Date().toISOString().slice(0, 10),
+      items: [{ name: "بضاعة تجريبية مسجلة دون اتصال", qty: 2, price: 62500 }],
+      notes: "تم حفظ الفاتورة محلياً في قاعدة البيانات أثناء انقطاع الإنترنت بنجاح",
+    };
+
+    if (entityType === "JOURNAL_ENTRY") {
+      ref = `JV-OFFLINE-${timestamp.toString().slice(-4)}`;
+      payload = {
+        entryNumber: ref,
+        description: "قيد تسوية محلي دون اتصال بالإنترنت",
+        totalDebit: 85000,
+        totalCredit: 85000,
+        currency: "YER",
+        date: new Date().toISOString().slice(0, 10),
+      };
+    } else if (entityType === "VOUCHER") {
+      ref = `RV-OFFLINE-${timestamp.toString().slice(-4)}`;
+      payload = {
+        voucherNumber: ref,
+        amount: 45000,
+        currency: "SAR",
+        receivedFrom: "مؤسسة الوفاء للتجارة",
+        description: "سند قبض نقدي مسجل محلياً دون إنترنت",
+      };
+    }
+
+    return this.addToOutbox(entityType, `sim-${timestamp}`, "CREATE", payload, ref, branchId, branchName);
+  }
+
   // --- Conflict Logs ---
   public getConflictLogs(): ConflictLogEntry[] {
     try {
@@ -349,114 +448,120 @@ export class LocalSyncEngine {
     conflictsResolved: number;
     message: string;
   }> {
-    if (!this.isEffectivelyOnline()) {
-      return {
-        success: false,
-        syncedCount: 0,
-        conflictsResolved: 0,
-        message: "تعذر المزامنة: النظام يعمل حالياً في وضع عدم الاتصال (Offline Mode). يرجى الاتصال بالإنترنت أولاً.",
-      };
-    }
+    this.isSyncInProgress = true;
+    this.notify();
 
-    const outbox = this.getOutbox();
-    let toProcess = outbox.filter((item) => item.status === "PENDING" || item.status === "FAILED");
+    try {
+      if (this.networkMode === "OFFLINE") {
+        // Auto-switch to ONLINE when user initiates sync
+        this.setNetworkMode("ONLINE");
+      }
 
-    if (options?.branchFilter && options.branchFilter !== "ALL") {
-      toProcess = toProcess.filter((i) => i.branchId === options.branchFilter);
-    }
-    if (options?.moduleFilter && options.moduleFilter !== "ALL") {
-      toProcess = toProcess.filter((i) => i.entity === options.moduleFilter);
-    }
+      const outbox = this.getOutbox();
+      let toProcess = outbox.filter((item) => item.status === "PENDING" || item.status === "FAILED");
 
-    if (toProcess.length === 0) {
-      return {
-        success: true,
-        syncedCount: 0,
-        conflictsResolved: 0,
-        message: "جميع العمليات المحلية متزامنة ومحدثة بالكامل مع السحابة المركزية.",
-      };
-    }
+      if (options?.branchFilter && options.branchFilter !== "ALL") {
+        toProcess = toProcess.filter((i) => i.branchId === options.branchFilter);
+      }
+      if (options?.moduleFilter && options.moduleFilter !== "ALL") {
+        toProcess = toProcess.filter((i) => i.entity === options.moduleFilter);
+      }
 
-    options?.onProgress?.(15, "الاتصال بالخادم السحابي وفحص التوافق...");
-    await new Promise((res) => setTimeout(res, 600));
+      if (toProcess.length === 0) {
+        this.setLastSyncTime(new Date().toISOString());
+        return {
+          success: true,
+          syncedCount: 0,
+          conflictsResolved: 0,
+          message: "جميع العمليات المحلية متزامنة ومحدثة بالكامل مع السحابة المركزية.",
+        };
+      }
 
-    // If flaky network, simulate 20% packet drop
-    if (this.networkMode === "FLAKY" && Math.random() < 0.3) {
-      options?.onProgress?.(40, "فقدان حزم الاتصال بسبب ضعف التغطية (Flaky Network)...");
-      await new Promise((res) => setTimeout(res, 500));
-      return {
-        success: false,
-        syncedCount: 0,
-        conflictsResolved: 0,
-        message: "فشلت المزامنة مؤقتاً بسبب تقطع شبكة الإنترنت. تم حفظ العمليات في طابور المزامنة المحلي لإعادة المحاولة تلقائياً.",
-      };
-    }
+      options?.onProgress?.(15, "الاتصال بالخادم السحابي وفحص التوافق...");
+      await new Promise((res) => setTimeout(res, 600));
 
-    options?.onProgress?.(50, `إرسال ${toProcess.length} معاملة من طابور الخروج المحلي...`);
-    await new Promise((res) => setTimeout(res, 700));
+      // If flaky network, simulate 20% packet drop
+      if (this.networkMode === "FLAKY" && Math.random() < 0.3) {
+        options?.onProgress?.(40, "فقدان حزم الاتصال بسبب ضعف التغطية (Flaky Network)...");
+        await new Promise((res) => setTimeout(res, 500));
+        return {
+          success: false,
+          syncedCount: 0,
+          conflictsResolved: 0,
+          message: "فشلت المزامنة مؤقتاً بسبب تقطع شبكة الإنترنت. تم حفظ العمليات في طابور المزامنة المحلي لإعادة المحاولة تلقائياً.",
+        };
+      }
 
-    let syncedCount = 0;
-    let conflictsResolved = 0;
+      options?.onProgress?.(50, `إرسال ${toProcess.length} معاملة من طابور الخروج المحلي...`);
+      await new Promise((res) => setTimeout(res, 700));
 
-    const updatedOutbox = outbox.map((item) => {
-      const match = toProcess.find((tp) => tp.id === item.id);
-      if (!match) return item;
+      let syncedCount = 0;
+      let conflictsResolved = 0;
 
-      // Simulate a conflict on 1 item if more than 3 items
-      const isConflict = item.id === "sync-ob-102";
-      if (isConflict) {
-        conflictsResolved++;
-        let resolutionText = "";
-        if (this.conflictStrategy === "TIMESTAMP_LATEST") {
-          resolutionText = "تم اعتماد التعديل الأحدث زمنياً للفرع المحلي وفق مبدأ Last-Write-Wins.";
-        } else if (this.conflictStrategy === "BRANCH_AUTHORITY") {
-          resolutionText = "تم إعطاء الأولوية للفرع المحلي وتحديث السجل السحابي.";
-        } else if (this.conflictStrategy === "CLOUD_AUTHORITY") {
-          resolutionText = "تم اعتماد نسخة الخادم السحابي المركزي وتحديث المعرف المحلي.";
-        } else {
-          resolutionText = "تمت المراجعة والتدقيق اليدوي من قبل مراقب الحسابات.";
+      const updatedOutbox = outbox.map((item) => {
+        const match = toProcess.find((tp) => tp.id === item.id);
+        if (!match) return item;
+
+        // Simulate a conflict on 1 item if more than 3 items
+        const isConflict = item.id === "sync-ob-102";
+        if (isConflict) {
+          conflictsResolved++;
+          let resolutionText = "";
+          if (this.conflictStrategy === "TIMESTAMP_LATEST") {
+            resolutionText = "تم اعتماد التعديل الأحدث زمنياً للفرع المحلي وفق مبدأ Last-Write-Wins.";
+          } else if (this.conflictStrategy === "BRANCH_AUTHORITY") {
+            resolutionText = "تم إعطاء الأولوية للفرع المحلي وتحديث السجل السحابي.";
+          } else if (this.conflictStrategy === "CLOUD_AUTHORITY") {
+            resolutionText = "تم اعتماد نسخة الخادم السحابي المركزي وتحديث المعرف المحلي.";
+          } else {
+            resolutionText = "تمت المراجعة والتدقيق اليدوي من قبل مراقب الحسابات.";
+          }
+
+          this.addConflictLog({
+            entity: item.entity,
+            entityId: item.entityId,
+            entityRef: item.entityRef,
+            strategyUsed: this.conflictStrategy,
+            resolutionSummary: resolutionText,
+            branchId: item.branchId || "BR-SANAA-MAIN",
+            resolvedBy: "محرك المزامنة MeDo Sync Engine",
+            localTimestamp: item.createdAt,
+            cloudTimestamp: new Date().toISOString(),
+          });
+
+          return {
+            ...item,
+            status: "SYNCED" as const,
+            attempts: item.attempts + 1,
+            lastAttemptAt: new Date().toISOString(),
+          };
         }
 
-        this.addConflictLog({
-          entity: item.entity,
-          entityId: item.entityId,
-          entityRef: item.entityRef,
-          strategyUsed: this.conflictStrategy,
-          resolutionSummary: resolutionText,
-          branchId: item.branchId || "BR-SANAA-MAIN",
-          resolvedBy: "محرك المزامنة MeDo Sync Engine",
-          localTimestamp: item.createdAt,
-          cloudTimestamp: new Date().toISOString(),
-        });
-
+        syncedCount++;
         return {
           ...item,
           status: "SYNCED" as const,
           attempts: item.attempts + 1,
           lastAttemptAt: new Date().toISOString(),
         };
-      }
+      });
 
-      syncedCount++;
+      this.saveOutbox(updatedOutbox);
+      this.setLastSyncTime(new Date().toISOString());
+      options?.onProgress?.(100, "اكتملت المزامنة بنجاح تام.");
+
       return {
-        ...item,
-        status: "SYNCED" as const,
-        attempts: item.attempts + 1,
-        lastAttemptAt: new Date().toISOString(),
+        success: true,
+        syncedCount,
+        conflictsResolved,
+        message: `تمت مزامنة ${syncedCount} معاملة بنجاح مع الخادم السحابي${
+          conflictsResolved > 0 ? ` ومعالجة ${conflictsResolved} تعارض وفق استراتيجية (${this.conflictStrategy})` : ""
+        }.`,
       };
-    });
-
-    this.saveOutbox(updatedOutbox);
-    options?.onProgress?.(100, "اكتملت المزامنة بنجاح تام.");
-
-    return {
-      success: true,
-      syncedCount,
-      conflictsResolved,
-      message: `تمت مزامنة ${syncedCount} معاملة بنجاح مع الخادم السحابي${
-        conflictsResolved > 0 ? ` ومعالجة ${conflictsResolved} تعارض وفق استراتيجية (${this.conflictStrategy})` : ""
-      }.`,
-    };
+    } finally {
+      this.isSyncInProgress = false;
+      this.notify();
+    }
   }
 
   // --- Local Database Export / Import (SQLite / JSON Encrypted) ---

@@ -1,3 +1,4 @@
+@import "./styles/theme.css";
 @import "tailwindcss";
 
 @layer base {
@@ -5,11 +6,11 @@
      1. UNIFIED FONT FAMILY: ALEXANDRIA & CAIRO ACROSS ALL ELEMENTS
      ------------------------------------------------------------- */
   *, *::before, *::after {
-    font-family: 'Alexandria', 'Cairo', 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Cairo', sans-serif !important;
   }
 
   body {
-    font-family: 'Alexandria', 'Cairo', 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Cairo', sans-serif !important;
     direction: rtl;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -39,14 +40,14 @@
 
 /* عناوين الصفحات الرئيسية: 24px - 28px (26px) | Bold (700) أو Extra Bold (800) */
 h1, .page-title, .text-4xl {
-  font-size: 26px !important;
+  font-size: 32px !important;
   font-weight: 900 !important;
   line-height: 1.35 !important;
   letter-spacing: 0.5px !important;
 }
 
 h2, .section-title, .text-3xl {
-  font-size: 22px !important;
+  font-size: 28px !important;
   font-weight: 800 !important;
   line-height: 1.4 !important;
   letter-spacing: 0.5px !important;
@@ -54,13 +55,13 @@ h2, .section-title, .text-3xl {
 
 /* عناوين البطاقات (Cards): 18px - 20px (19px) | Semi Bold (600) أو Bold (700) */
 h3, .card-title, .card-header, .text-2xl {
-  font-size: 19px !important;
+  font-size: 24px !important;
   font-weight: 800 !important;
   line-height: 1.4 !important;
 }
 
 h4, h5, h6, .text-xl {
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 700 !important;
   line-height: 1.45 !important;
 }
@@ -137,7 +138,7 @@ sup,
 .text-money,
 .font-mono.font-bold,
 .font-mono.font-black {
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 700 !important;
   line-height: 1.3 !important;
   letter-spacing: 0.2px !important;
@@ -602,13 +603,13 @@ aside .text-slate-400, aside .text-slate-500 {
 .doc-font-cairo,
 .doc-canvas,
 .doc-canvas * {
-  font-family: 'Cairo', 'Tajawal', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Cairo', sans-serif !important;
   text-rendering: optimizeLegibility;
 }
 
 /* أحجام وأوزان الخطوط الموحدة - الخط الأساسي مقاس 14 غامق */
 .doc-title {
-  font-size: 22px !important;
+  font-size: 28px !important;
   font-weight: 700 !important;
   line-height: 1.35 !important;
   letter-spacing: normal;
@@ -1065,7 +1066,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .blog-article,
 .article-content,
 .article-wrapper {
-  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Cairo', sans-serif !important;
   color: #1A2B4C !important;
   line-height: 1.8 !important;
 }
@@ -1150,7 +1151,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .article-body,
 .article-p {
   font-family: 'Cairo', sans-serif !important;
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 500 !important;
   line-height: 1.8 !important;
   color: #1A2B4C !important;
@@ -1180,7 +1181,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .article-content li,
 .article-list-item {
   font-family: 'Cairo', sans-serif !important;
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 500 !important;
   line-height: 1.8 !important;
   color: #1A2B4C !important;
@@ -1221,7 +1222,7 @@ aside .text-slate-400, aside .text-slate-500 {
   border-left: none !important;
   background-color: rgba(184, 134, 11, 0.05) !important;
   color: #1A2B4C !important;
-  font-size: 18px !important;
+  font-size: 20px !important;
   line-height: 1.8 !important;
   font-weight: 600 !important;
   font-style: italic !important;
@@ -1344,3 +1345,155 @@ header, .navbar, nav.top-nav {
 .bg-\[\#D4AF37\] { background-color: var(--sap-secondary) !important; }
 .text-\[\#D4AF37\] { color: var(--sap-secondary) !important; }
 .border-\[\#D4AF37\] { border-color: var(--sap-secondary) !important; }
+
+/* ==========================================================================
+   ENTERPRISE THEME OVERRIDES - MEDO ERP
+   ========================================================================== */
+
+:root {
+    /* الألوان الأساسية */
+    --color-primary: #0a2540;
+    --color-secondary: #d4af37;
+    --color-accent: #1A6B3C;
+
+    /* الخلفيات */
+    --bg-page: #f4f7fc;
+    --bg-card: #ffffff;
+    --bg-table: #fafcff;
+
+    /* النصوص */
+    --text-primary: #1a2b4c;
+    --text-secondary: #6a7f9f;
+    --text-on-dark: #ffffff;
+
+    /* الحالات */
+    --color-success: #1e7e34;
+    --color-warning: #d68910;
+    --color-error: #c0392b;
+    --color-info: #2980b9;
+
+    /* الأحجام */
+    --radius-card: 20px;
+    --radius-button: 60px;
+    --radius-input: 12px;
+    --radius-table: 16px;
+
+    /* الظلال */
+    --shadow-card: 0 4px 15px rgba(0,0,0,0.05);
+    --shadow-hover: 0 8px 25px rgba(212,175,55,0.12);
+}
+
+/* Base Body Styles Overrides */
+body {
+    font-family: 'Cairo', sans-serif !important;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-primary);
+    background: var(--bg-page);
+}
+
+/* Base Typography Overrides */
+h1 { font-size: 32px !important; font-weight: 700 !important; color: #0a2540 !important; }
+h2 { font-size: 24px !important; font-weight: 600 !important; color: #1a3a6a !important; }
+h3 { font-size: 20px !important; font-weight: 600 !important; color: #1a3a6a !important; }
+p, span, div { font-family: 'Cairo', sans-serif; }
+
+/* 1. البطاقات (Cards) */
+.card, .enterprise-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
+    padding: 22px 25px;
+    box-shadow: var(--shadow-card);
+    border-right: 5px solid var(--color-secondary);
+    transition: 0.3s;
+}
+.card:hover, .enterprise-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+}
+
+/* 2. الأزرار (Buttons) */
+.btn-primary, .enterprise-btn {
+    background: var(--color-secondary) !important;
+    color: var(--color-primary) !important;
+    padding: 12px 30px !important;
+    border-radius: var(--radius-button) !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: 0.3s !important;
+    box-shadow: 0 6px 20px rgba(212,175,55,0.3) !important;
+}
+.btn-primary:hover, .enterprise-btn:hover {
+    background: #c49b2a !important;
+    transform: translateY(-2px) !important;
+}
+
+/* 3. الحقول (Inputs) */
+.input-field, .enterprise-input {
+    border: 1px solid #e0e6ed !important;
+    border-radius: var(--radius-input) !important;
+    padding: 12px 18px !important;
+    font-family: 'Cairo', sans-serif !important;
+    font-size: 16px !important;
+    color: var(--text-primary) !important;
+    transition: 0.3s !important;
+    background: #ffffff !important;
+}
+.input-field:focus, .enterprise-input:focus {
+    border-color: var(--color-secondary) !important;
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.15) !important;
+    outline: none !important;
+}
+
+/* 4. الجداول (Tables) */
+.table, .enterprise-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: var(--radius-table);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+.table th, .enterprise-table th {
+    background: var(--color-primary) !important;
+    color: var(--color-secondary) !important;
+    padding: 14px 18px !important;
+    text-align: right !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+}
+.table td, .enterprise-table td {
+    padding: 12px 18px !important;
+    border-bottom: 1px solid #e9edf4 !important;
+    background: var(--bg-table) !important;
+    font-size: 14px !important;
+    color: var(--text-primary) !important;
+}
+.table tr:hover td, .enterprise-table tr:hover td {
+    background: #f5f7fa !important;
+}
+
+/* 5. الوضع الليلي (Dark Mode) */
+html.dark body, body.dark, body.dark-mode {
+    background: #0d1a2d !important;
+    color: #e8ecf1 !important;
+}
+html.dark .card, html.dark .enterprise-card,
+body.dark .card, body.dark-mode .card,
+body.dark .enterprise-card, body.dark-mode .enterprise-card {
+    background: #0a1525 !important;
+    border-right-color: var(--color-secondary) !important;
+}
+html.dark .table th, html.dark .enterprise-table th,
+body.dark .table th, body.dark-mode .table th,
+body.dark .enterprise-table th, body.dark-mode .enterprise-table th {
+    background: #1a3a6a !important;
+}
+html.dark .table td, html.dark .enterprise-table td,
+body.dark .table td, body.dark-mode .table td,
+body.dark .enterprise-table td, body.dark-mode .enterprise-table td {
+    background: #0a1525 !important;
+    color: #e8ecf1 !important;
+    border-bottom-color: #1e2f4a !important;
+}

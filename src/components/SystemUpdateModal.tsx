@@ -111,7 +111,7 @@ export const SystemUpdateModal: React.FC<SystemUpdateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn" dir="rtl" style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fadeIn" dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       <div className="bg-slate-900 border border-sap-primary/50 rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-6 shadow-2xl text-right relative overflow-hidden max-h-[92vh] overflow-y-auto">
         {/* Background glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-sap-primary/20 rounded-full blur-3xl pointer-events-none"></div>

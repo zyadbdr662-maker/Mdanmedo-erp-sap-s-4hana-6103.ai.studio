@@ -269,7 +269,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const pendingApprovals = journalEntries.filter((j) => j.status === "DRAFT");
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in" style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="space-y-6 pb-12 animate-in fade-in" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* 0. SAP Cloud Trial Countdown & Warning Notification Banner */}
       <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 p-5 shadow-2xl space-y-4">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">

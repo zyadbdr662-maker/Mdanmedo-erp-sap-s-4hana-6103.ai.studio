@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { executeRecaptchaV3 } from "../services/recaptcha";
 import { SecurityAuditService } from "../services/securityAuditService";
+import { generateClientPortalUrl, OFFICIAL_APP_DOMAIN } from "../config/appConfig";
 
 interface SaaSRegistrationPortalProps {
   onCancel: () => void;
@@ -108,7 +109,7 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
           .replace(/[^a-z0-9]/g, "")
           .substring(0, 15) || "erp";
         const randomId = Math.random().toString(36).substring(2, 8);
-        const tenantUrl = `https://${slug}-${randomId}.medoerp.com/trial`;
+        const tenantUrl = generateClientPortalUrl(`${slug}-${randomId}`);
         const licenseKey = `MEDO-TRIAL-${randomId.toUpperCase()}-${new Date().getFullYear()}`;
 
         setTenantData({

@@ -14,7 +14,8 @@ import {
   Clock, 
   TrendingUp,
   Headphones,
-  Laptop
+  Laptop,
+  Zap
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { trackEvent } from '../../components/marketing/AnalyticsTracker';
@@ -78,74 +79,95 @@ export const HomePage = () => {
   ];
 
   return (
-    <div className="bg-slate-50 font-['Alexandria','Cairo',sans-serif]">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-[#0B192C] via-[#0F284E] to-[#081220] text-white pt-20 pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-[#1E3A8A]/50">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-blue-600/15 blur-[130px] rounded-full pointer-events-none" />
+    <div className="bg-slate-50 font-['Cairo',sans-serif]">
+      {/* Jaw-Dropping Hero Section */}
+      <section className="relative bg-[#050B14] text-white pt-28 pb-36 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-white/5">
+        {/* Dynamic Glowing Orbs Background */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-[#d4af37]/30 to-[#f39c12]/10 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-bl from-[#1E3A8A]/40 to-[#0A2540]/20 blur-[150px] rounded-full pointer-events-none mix-blend-screen" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-[#1A6B3C]/15 blur-[160px] rounded-full pointer-events-none mix-blend-screen" />
         
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/40 text-blue-200 px-4 py-1.5 rounded-full text-xs font-black tracking-wide mb-6 shadow-sm">
-            <Building2 className="w-4 h-4 text-blue-300" />
-            <span>{lang === 'ar' ? 'ميدو تك للحلول البرمجية بالشراكة مع بن زياد المتحدة' : 'MeDo Tech Solutions & Bin Ziad United'}</span>
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto text-center relative z-10 flex flex-col items-center">
+          
+          {/* Top Badge */}
+          <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 backdrop-blur-xl text-white px-5 py-2 rounded-full text-sm font-bold tracking-wider mb-10 shadow-[0_0_25px_rgba(212,175,55,0.2)] hover:bg-white/10 transition-all cursor-default">
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d4af37] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d4af37]"></span>
+            </span>
+            <span className="text-[#d4af37]">v4.5</span>
+            <span className="h-4 w-px bg-white/20 mx-1"></span>
+            <span>{lang === 'ar' ? 'ميدو تك للحلول البرمجية - إبداع بلا حدود' : 'MeDo Tech Solutions - Limitless Innovation'}</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight mb-6 leading-tight">
-            {lang === 'ar' ? '🏢 نظام MeDo ERP' : '🏢 MeDo ERP System'}
+          {/* Main Title - Stunning Gradient */}
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-8 leading-[1.15] drop-shadow-2xl">
+            {lang === 'ar' ? (
+              <>
+                مستقبل إدارة الأعمال <br className="hidden sm:block" />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#e67e22] filter drop-shadow-lg">
+                  يبدأ من هنا.
+                </span>
+              </>
+            ) : (
+              <>
+                The Future of Enterprise <br className="hidden sm:block" />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#e67e22] filter drop-shadow-lg">
+                  Begins Here.
+                </span>
+              </>
+            )}
           </h1>
 
-          <p className="text-xl sm:text-2xl text-slate-100 font-bold mb-4 max-w-3xl mx-auto leading-relaxed">
+          {/* Subtitle */}
+          <p className="text-xl sm:text-2xl text-slate-300 font-medium mb-12 max-w-4xl mx-auto leading-relaxed drop-shadow-md">
             {lang === 'ar'
-              ? 'منصة سحابية متكاملة لإدارة المؤسسات وفق معايير عالمية (IFRS/GAAP)، مع ربط لحظي لكافة الأقسام والفروع.'
-              : 'An integrated cloud platform for enterprise management compliant with international standards (IFRS/GAAP), with real-time sync across departments & branches.'}
-          </p>
-
-          <p className="text-base text-slate-300 mb-10 max-w-2xl mx-auto font-medium">
-            {lang === 'ar'
-              ? 'مصمم خصيصاً ليلائم واقع السوق المحلي والإقليمي، مع أمان بمستوى بنكي ودعم كامل لفرق العملات والمحافظ الإلكترونية وتعدد الفروع والمستودعات.'
-              : 'Designed to fit local market realities with bank-grade security, currency exchange handling, and multi-branch management.'}
+              ? 'منظومة MeDo ERP السحابية.. قوة الأداء، أناقة التصميم، وأمان بمستوى بنكي. نُعيد صياغة معايير الأنظمة الإدارية والمحاسبية لنجعل من تعقيدات العمل متعة بصرية وعملية.'
+              : 'MeDo ERP Cloud Platform.. Power, Elegance, and Bank-grade Security. Redefining enterprise management standards to turn business complexities into visual and operational delight.'}
           </p>
 
           {/* Action CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
             <Link 
               to="/pricing" 
               onClick={() => handleTrialClick('hero_free_trial')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#1D4ED8] hover:from-[#2563EB] hover:to-[#1E3A8A] text-white px-8 py-4 rounded-xl text-base font-black shadow-lg shadow-blue-950/60 border border-blue-300/40 transition transform hover:-translate-y-0.5"
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] px-10 py-5 rounded-2xl text-lg font-black shadow-[0_10px_40px_rgba(212,175,55,0.4)] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(212,175,55,0.6)] border-b-4 border-[#b8860b]"
             >
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span>{lang === 'ar' ? '🚀 جرب مجاناً (30 يوماً)' : '🚀 Try Free (30 Days)'}</span>
+              <Sparkles className="w-6 h-6 text-[#0a1525] group-hover:animate-pulse" />
+              <span>{lang === 'ar' ? 'ابدأ رحلة النجاح الآن' : 'Start Your Journey Now'}</span>
             </Link>
-
+            
             <Link 
-              to="/contact" 
-              onClick={() => handleTrialClick('hero_request_demo')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white px-8 py-4 rounded-xl text-base font-bold transition transform hover:-translate-y-0.5 backdrop-blur-sm"
+              to="/erp" 
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#0a1525]/80 hover:bg-[#0a1525] border border-white/10 hover:border-[#d4af37]/50 text-white px-10 py-5 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:-translate-y-1 backdrop-blur-xl shadow-xl hover:shadow-[0_10px_30px_rgba(10,37,64,0.5)]"
             >
-              <Laptop className="w-5 h-5 text-blue-300" />
-              <span>{lang === 'ar' ? 'اطلب عرضاً توضيحياً لفريقك' : 'Request a Demo'}</span>
+              <Building2 className="w-6 h-6 text-[#d4af37]" />
+              <span>{lang === 'ar' ? 'تسجيل الدخول للنظام' : 'Login to System'}</span>
             </Link>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-slate-300 flex-wrap font-medium">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-blue-400" />
-              {lang === 'ar' ? 'بدون بطاقة ائتمان للتجربة' : 'No credit card required'}
+          {/* Features Strip */}
+          <div className="mt-16 flex items-center justify-center gap-6 sm:gap-12 text-sm text-slate-400 flex-wrap font-semibold bg-white/5 border border-white/10 px-8 py-4 rounded-2xl backdrop-blur-md shadow-2xl">
+            <span className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#1e7e34]" />
+              {lang === 'ar' ? 'حماية بنكية (256-bit)' : 'Bank-grade Security'}
             </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-blue-400" />
-              {lang === 'ar' ? 'تفعيل فوري خلال دقيقة' : 'Instant activation'}
+            <span className="hidden sm:block text-slate-600">|</span>
+            <span className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-[#d4af37]" />
+              {lang === 'ar' ? 'سرعة فائقة وأداء مذهل' : 'Lightning Fast Performance'}
             </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-blue-400" />
-              {lang === 'ar' ? 'دعم العمل دون اتصال (Offline-First)' : 'Offline-first enabled'}
+            <span className="hidden sm:block text-slate-600">|</span>
+            <span className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-[#38bdf8]" />
+              {lang === 'ar' ? 'مطابق لمعايير IFRS/GAAP' : 'IFRS/GAAP Compliant'}
             </span>
           </div>
         </div>
       </section>
-
       {/* Core Modules Section */}
       <section className="max-w-7xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">

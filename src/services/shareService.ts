@@ -1,5 +1,6 @@
 import { CurrencyCode, CurrencyInfo, Customer, Invoice, JournalEntry, Vendor, Voucher } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "./erpStorage";
+import { generateDocumentShareUrl, OFFICIAL_APP_DOMAIN } from "../config/appConfig";
 
 export interface ShareDocumentPayload {
   title: string;
@@ -137,6 +138,8 @@ ${docTitle} رقم: ${invoice.invoiceNumber}
       ? "🏦 تحويل بنكي / شيك"
       : "⏳ آجل (على الحساب)";
 
+  const verificationUrl = generateDocumentShareUrl("invoice", invoice.invoiceNumber);
+
   return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
 نظام الإدارة المالية MeDo ERP (SAP S/4HANA)
 ━━━━━━━━━━━━━━━━━━━━
@@ -151,6 +154,9 @@ ${itemsList || "• خدمات واستشارات تجارية معتمدة"}
 ━━━━━━━━━━━━━━━━━━━━
 💰 *إجمالي الفاتورة:* *${currFormattedTotal}*
 ${paid > 0 ? `✅ *المبلغ المسدد:* *${formatMoney(paid, invoice.currency, currencies)}*\n` : ""}${remaining > 0 ? `⚠️ *الرصيد المتبقي (ذمة):* *${formatMoney(remaining, invoice.currency, currencies)}*\n` : ""}📅 *تاريخ الاستحقاق:* ${invoice.dueDate || invoice.date}
+━━━━━━━━━━━━━━━━━━━━
+🌐 *رابط الفحص والمطابقة الرقمي:*
+${verificationUrl}
 ━━━━━━━━━━━━━━━━━━━━
 ✨ *شاكرين ثقتكم وتعاملكم الراقي معنا.*
 📞 المركز الرئيسي: صنعاء - هاتف: +967 1 456789 / 777123456`;
@@ -179,6 +185,8 @@ ${title}
 يرجى مراجعة الحساب وتأكيد المطابقة. هاتف: 777123456`;
   }
 
+  const statementUrl = generateDocumentShareUrl("statement", party.code);
+
   return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
 الإدارة المالية والمحاسبية | إدارة الذمم والائتمان
 ━━━━━━━━━━━━━━━━━━━━
@@ -191,6 +199,9 @@ ${title}
 💵 *الرصيد الإجمالي القائم:*
 👉 *${bal}* (${isCust ? "مدين مستحق السداد" : "دائن مستحق للمورد"})
 ${isCust && (party as Customer).creditLimit ? `🔒 *سقف الائتمان الممنوح:* *${formatMoney((party as Customer).creditLimit, party.currency, currencies)}*\n` : ""}${invoicesCount > 0 ? `📊 *عدد الحركات المقيدة:* ${invoicesCount} حركة\n` : ""}${lastTransactionDate ? `⏱️ *آخر حركة مسجلة:* ${lastTransactionDate}\n` : ""}━━━━━━━━━━━━━━━━━━━━
+🌐 *رابط كشف الحساب الرقمي المباشر:*
+${statementUrl}
+━━━━━━━━━━━━━━━━━━━━
 📌 *ملاحظة:* نرجو التكرم بمطابقة الرصيد وموافاتنا بأي ملاحظات خلال 3 أيام عمل.
 ✨ *مع خالص التقدير والاحترام.*
 📞 الإدارة المالية: +967 777123456`;
@@ -305,6 +316,8 @@ ${isReceipt ? "استلمنا من:" : "صرف للأخ:"} ${voucher.beneficiary
       ? "🏦 تحويل بنكي رسمي"
       : `📄 شيك رقم ${voucher.checkNumber || "-"}`;
 
+  const voucherUrl = generateDocumentShareUrl("voucher", voucher.voucherNumber);
+
   return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
 الإدارة المالية والمصرفية | MeDo ERP
 ━━━━━━━━━━━━━━━━━━━━
@@ -318,6 +331,9 @@ ${isReceipt ? "استلمنا من:" : "صرف للأخ:"} ${voucher.beneficiary
 💳 *طريقة الدفع:* ${payMethodText}
 📝 *وذلك مقابل (البيان):*
 ${voucher.notes}
+━━━━━━━━━━━━━━━━━━━━
+🌐 *رابط مطابقة السند الرقمي:*
+${voucherUrl}
 ━━━━━━━━━━━━━━━━━━━━
 🔒 *حالة السند:* مقيد ومرحل في دفتر الأستاذ العام
 ✍️ *المحاسب المختص:* أ. محمد عبد الرقيب

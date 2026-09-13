@@ -4,6 +4,7 @@ import {
   SaaSClient,
 } from "../types/erp";
 import { SapComplianceReportModal } from "./SapComplianceReportModal";
+import { OFFICIAL_APP_DOMAIN, generateClientPortalUrl } from "../config/appConfig";
 import {
   ShieldCheck,
   Users,
@@ -119,7 +120,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       email: "mbaaydz7@gmail.com",
       phone: "715779976",
       licenseKey: "MEDO-SAP-2026-ALBN-7799",
-      uniqueDomain: "https://medo-erp.com/client/albinaa-tailoring",
+      uniqueDomain: generateClientPortalUrl("albinaa-tailoring"),
       status: "ACTIVE",
       subscriptionStart: "2026-09-11",
       subscriptionEnd: "2026-10-11",
@@ -135,7 +136,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       email: "zyadbdr925@gmail.com",
       phone: "+0967773586047",
       licenseKey: "MEDO-SAP-2026-B8Z9-4K1M",
-      uniqueDomain: "https://medo-erp.com/client/binziyad",
+      uniqueDomain: generateClientPortalUrl("binziyad"),
       status: "ACTIVE",
       subscriptionStart: "2026-09-01",
       subscriptionEnd: "2026-10-01",
@@ -151,7 +152,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       email: "alofooq@medo-erp.com",
       phone: "+967771234567",
       licenseKey: "MEDO-SAP-2026-OFQ7-99XP",
-      uniqueDomain: "https://medo-erp.com/client/alofooq",
+      uniqueDomain: generateClientPortalUrl("alofooq"),
       status: "ACTIVE",
       subscriptionStart: "2026-01-15",
       subscriptionEnd: "2027-01-15",
@@ -167,7 +168,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       email: "alrowad@medo-erp.com",
       phone: "+967779876543",
       licenseKey: "MEDO-SAP-2026-RWD2-33TL",
-      uniqueDomain: "https://medo-erp.com/client/alrowad",
+      uniqueDomain: generateClientPortalUrl("alrowad"),
       status: "ACTIVE",
       subscriptionStart: "2026-03-01",
       subscriptionEnd: "2027-03-01",
@@ -188,6 +189,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
 
     const durationDays = newLicenseType === "TRIAL_30" ? 30 : newLicenseType === "ANNUAL_365" ? 365 : 3650;
 
+    const clientSlug = newCompany.replace(/\s+/g, '-').toLowerCase();
     const newClient: SaaSClient = {
       id: "cli-" + Date.now(),
       companyName: newCompany,
@@ -195,7 +197,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       email: newEmail || "client@medo-erp.com",
       phone: newPhone || "+967773586047",
       licenseKey: generatedKey,
-      uniqueDomain: `https://app.medo-erp.com/client/${newCompany.replace(/\s+/g, '-').toLowerCase()}`,
+      uniqueDomain: generateClientPortalUrl(clientSlug),
       status: "ACTIVE",
       subscriptionStart: new Date().toISOString().split("T")[0],
       subscriptionEnd: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -242,7 +244,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto font-sans text-right" dir="rtl" style={{ fontFamily: "'Cairo', 'Tajawal', sans-serif" }}>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto font-sans text-right" dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* Header Banner */}
       <div className="bg-gradient-to-l from-slate-900 via-slate-900 to-slate-950 border border-sap-primary/50 rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-96 h-96 bg-sap-primary/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -817,7 +819,28 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
                         <div className="text-[11px] text-slate-400">{cli.clientName} ({cli.phone})</div>
                       </td>
                       <td className="py-3 px-3 font-mono text-sap-secondary">{cli.licenseKey}</td>
-                      <td className="py-3 px-3 text-slate-400 truncate max-w-xs">{cli.uniqueDomain}</td>
+                      <td className="py-3 px-3 text-slate-300 max-w-xs">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={cli.uniqueDomain}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline font-mono text-[11px] truncate flex items-center gap-1 max-w-[200px]"
+                            title={cli.uniqueDomain}
+                          >
+                            <span>{cli.uniqueDomain}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyKey(cli.uniqueDomain)}
+                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex-shrink-0"
+                            title="نسخ الرابط المباشر للعميل"
+                          >
+                            {copiedKey === cli.uniqueDomain ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </td>
                       <td className="py-3 px-3 font-mono">{cli.subscriptionEnd}</td>
                       <td className="py-3 px-3">
                         <span className="px-2.5 py-1 bg-sap-primary/20 text-emerald-400 border border-sap-primary/40 rounded-full font-bold text-[10px]">
@@ -871,7 +894,7 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
                 <li><strong>اللون الثانوي / التمييزي (Secondary/Gold):</strong> <span style={{ color: secondaryColor }} className="font-bold">{secondaryColor}</span></li>
                 <li><strong>الخط العربي المفضل:</strong> <span className="text-white font-bold">{selectedFont}</span></li>
                 <li><strong>اسم المنشأة/الوكالة الرسمي:</strong> <span className="text-white font-bold">{agencyName}</span></li>
-                <li><strong>الرابط المخصص (Tenant URL):</strong> <span className="text-emerald-400 font-bold">https://medo-erp.com/client/{tenantSlug}</span></li>
+                <li><strong>الرابط المخصص (Tenant URL):</strong> <span className="text-emerald-400 font-bold">{generateClientPortalUrl(tenantSlug)}</span></li>
               </ul>
               <div className="pt-3 border-t border-slate-800 flex flex-col md:flex-row justify-between text-slate-400 text-[11px]">
                 <div>

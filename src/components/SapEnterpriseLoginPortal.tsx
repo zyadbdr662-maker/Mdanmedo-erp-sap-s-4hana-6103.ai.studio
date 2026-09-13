@@ -391,6 +391,14 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
         return;
       }
 
+      // Check if account is currently locked out due to >3 failed attempts
+      const lockStatus = SecurityAuditService.getInstance().isAccountLocked(email);
+      if (lockStatus.isLocked) {
+        setError(`⛔ الحساب مقفل حالياً لأسباب أمنية! يرجى الانتظار لمدة (${lockStatus.remainingMinutes} دقيقة) أو التواصل مع مدير النظام لإلغاء القفل.`);
+        setIsLoading(false);
+        return;
+      }
+
       // Execute Google reCAPTCHA v3 & Firebase App Check security evaluation
       setMessage("جاري فحص الأمان عبر Google reCAPTCHA v3 و Firebase App Check...");
       const recaptchaRes = await executeRecaptchaV3("login");
@@ -689,44 +697,48 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   return (
     <div
       id="sap-enterprise-login-portal"
-      className="min-h-screen w-full bg-[#0B131F] text-slate-100 flex flex-col font-sans select-none relative overflow-x-hidden"
+      className="min-h-screen w-full bg-[#050B14] text-slate-100 flex flex-col font-sans select-none relative overflow-x-hidden"
       dir="rtl"
+      style={{ fontFamily: "'Cairo', sans-serif" }}
     >
       {/* Subtle SAP-style geometric background highlights */}
-      <div className="absolute inset-0 pointer-events-none opacity-25 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-sap-primary rounded-full filter blur-3xl" />
-        <div className="absolute top-1/3 -left-40 w-96 h-96 bg-sap-secondary/20 rounded-full filter blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-96 h-96 bg-blue-600/15 rounded-full filter blur-3xl" />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden mix-blend-screen opacity-100">
+        <div className="absolute -top-40 -right-40 w-[32rem] h-[32rem] bg-gradient-to-tr from-[#d4af37]/30 to-[#f39c12]/10 mix-blend-screen rounded-full filter blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 w-[30rem] h-[30rem] bg-[#1A6B3C]/20 mix-blend-screen rounded-full filter blur-[120px]" />
+        <div className="absolute -bottom-40 right-1/3 w-[36rem] h-[36rem] bg-gradient-to-br from-[#1E3A8A]/40 to-[#0A2540]/20 mix-blend-screen rounded-full filter blur-[140px]" /><div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.05] pointer-events-none" />
       </div>
 
       {/* TOP SAP ENTERPRISE BAR */}
       <header
         id="sap-portal-header"
-        className="w-full bg-[#0F1C2E]/90 backdrop-blur-md border-b border-slate-700/60 py-3 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-4 z-20"
+        className="w-full bg-[#0d1624]/85 backdrop-blur-xl border-b border-slate-700/60 py-3.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-4 z-20 shadow-md"
       >
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sap-primary to-[#124e2b] border border-sap-secondary/40 flex items-center justify-center shadow-lg shadow-emerald-950/40">
-            <Building2 className="w-6 h-6 text-sap-secondary" />
+          <div className="relative w-11 h-11">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#d4af37] to-[#1E3A8A] rounded-2xl blur-sm opacity-50" />
+            <div className="relative w-full h-full rounded-2xl bg-[#0d1f14] border border-emerald-500/50 flex items-center justify-center shadow-lg">
+              <Building2 className="w-6 h-6 text-sap-secondary" />
+            </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-white tracking-wide">MeDo ERP</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sap-primary/40 border border-sap-secondary/50 text-sap-secondary font-semibold">
+              <span className="font-black text-xl text-white tracking-wide">MeDo ERP</span>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] font-bold">
                 SAP S/4HANA & B1 Edition
               </span>
             </div>
-            <p className="text-xs text-slate-300 font-medium">
-              بوابة الدخول المؤسسي الموحدة — مجموعة بن زياد التجارية وميدو تك
+            <p className="text-xs text-slate-300 font-normal">
+              بوابة الدخول المؤسسي الموحدة — مجموعة بن زياد التجارية وميدو تك للحلول السحابية
             </p>
           </div>
         </div>
 
         {/* Real-time system telemetry and quick navigation */}
         <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300">
-            <Server className="w-3.5 h-3.5 text-emerald-400" />
-            <span>النظام: <strong className="text-emerald-400 font-mono">PRD-01 (Online)</strong></span>
-            <span className="text-slate-500">|</span>
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-300 shadow-inner">
+            <Server className="w-3.5 h-3.5 text-[#d4af37]" />
+            <span>النظام: <strong className="text-[#d4af37] font-mono">PRD-01 (Online)</strong></span>
+            <span className="text-slate-600">|</span>
             <span>الإصدار: <strong className="text-sap-secondary font-mono">2026.09-LTS</strong></span>
           </div>
 
@@ -734,10 +746,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <button
               id="sap-portal-trust-btn"
               onClick={onOpenTrustCenter}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition cursor-pointer font-medium shadow-sm hover:scale-[1.02]"
               title="مركز الثقة والأمان السحابي"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
               <span>مركز الثقة (Trust Center)</span>
             </button>
           )}
@@ -745,7 +757,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           <button
             id="sap-portal-compliance-btn"
             onClick={() => setComplianceReportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-sap-secondary border border-sap-secondary/40 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A6B3C]/20 mix-blend-screen hover:bg-amber-500/20 text-sap-secondary border border-sap-secondary/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
             title="فحص مطابقة معايير SAP الدولية"
           >
             <Award className="w-4 h-4 text-sap-secondary" />
@@ -756,7 +768,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <button
               id="sap-portal-corporate-btn"
               onClick={onOpenCorporateSite}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sap-primary/30 hover:bg-sap-primary/50 text-emerald-200 border border-emerald-600/50 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-600/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
               title="استعراض موديولات النظام وبوابة المنشأة"
             >
               <Briefcase className="w-4 h-4 text-emerald-300" />
@@ -766,17 +778,17 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
           <button
             onClick={() => setShowSaaSOnboarding(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/50 transition font-bold shadow-lg shadow-blue-500/20"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border border-blue-400/50 transition font-bold shadow-lg shadow-blue-500/20 cursor-pointer hover:scale-[1.02]"
             title="تسجيل شركة جديدة والحصول على نسخة تجريبية"
           >
             <Globe2 className="w-4 h-4" />
             <span className="hidden sm:inline">إنشاء مساحة عمل سحابية</span>
           </button>
 
-          <div className="flex items-center border border-slate-700 rounded-lg overflow-hidden bg-slate-800/80">
+          <div className="flex items-center border border-slate-700 rounded-xl overflow-hidden bg-slate-900/80">
             <button
               onClick={() => setLanguage("AR")}
-              className={`px-2.5 py-1 text-xs font-bold transition ${
+              className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
                 language === "AR" ? "bg-sap-primary text-white" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -784,7 +796,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </button>
             <button
               onClick={() => setLanguage("EN")}
-              className={`px-2.5 py-1 text-xs font-bold transition ${
+              className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
                 language === "EN" ? "bg-sap-primary text-white" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -798,13 +810,13 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
       <main id="sap-portal-main" className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT/RIGHT SIDEBAR: SAP CLIENT, BRANCH & WAREHOUSE CONFIG */}
-          <div className="lg:col-span-4 bg-[#0F1C2E]/90 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+          <div className="lg:col-span-4 bg-gradient-to-br from-[#0a1525]/80 to-[#040810]/90 backdrop-blur-3xl border border-[#d4af37]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_40px_rgba(212,175,55,0.15)] space-y-5">
             <div className="border-b border-slate-700/60 pb-3">
               <div className="flex items-center gap-2 text-sap-secondary font-bold text-sm">
                 <Database className="w-4 h-4" />
                 <span>تهيئة بيئة الدخول (SAP System & Client)</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-300 mt-0.5 font-normal">
                 اختر شركة العميل، الفرع، والمستودع الافتراضي لجلسة العمل
               </p>
             </div>
@@ -813,7 +825,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>الشركة / العميل (Client):</span>
-                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                <span className="text-[10px] text-[#d4af37] font-mono bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-800">
                   {currentClient.code}
                 </span>
               </label>
@@ -822,17 +834,17 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-client-selector"
                   value={selectedClientId}
                   onChange={(e) => setSelectedClientId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {SAP_CLIENTS.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                    <option key={c.id} value={c.id} className="bg-[#070d18] text-white">
                       [{c.code}] {c.nameAr} ({c.type})
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-              <p className="text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
+              <p className="text-xs text-slate-300 bg-[#070d18]/70 p-3 rounded-2xl border border-slate-800 leading-relaxed font-normal">
                 {currentClient.description}
               </p>
             </div>
@@ -850,15 +862,15 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     const matchedWh = SAP_WAREHOUSES.find((w) => w.branchId === newBranch);
                     if (matchedWh) setSelectedWarehouseId(matchedWh.id);
                   }}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {availableBranches.map((b) => (
-                    <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                    <option key={b.id} value={b.id} className="bg-[#070d18] text-white">
                       {b.nameAr} ({b.code})
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
@@ -873,31 +885,31 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-warehouse-selector"
                   value={selectedWarehouseId}
                   onChange={(e) => setSelectedWarehouseId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {filteredWarehouses.length > 0 ? (
                     filteredWarehouses.map((w) => (
-                      <option key={w.id} value={w.id} className="bg-slate-900 text-white">
+                      <option key={w.id} value={w.id} className="bg-[#070d18] text-white">
                         {w.nameAr} [{w.code}]
                       </option>
                     ))
                   ) : (
-                    <option value="WH-01" className="bg-slate-900 text-white">
+                    <option value="WH-01" className="bg-[#070d18] text-white">
                       مستودع البضاعة الجاهزة والتوزيع الرئيسي (WH-01)
                     </option>
                   )}
                 </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
             {/* Security & Isolation Summary Card */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/40 to-slate-900/60 border border-emerald-800/40 space-y-2">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900/60 to-slate-950/80 border border-emerald-800/40 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-sap-secondary">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
                 <span>أمان الجلسة وعزل البيانات</span>
               </div>
-              <ul className="text-[11px] text-slate-300 space-y-1 leading-normal list-disc list-inside pr-1">
+              <ul className="text-xs text-slate-300 space-y-1.5 leading-normal list-disc list-inside pr-1 font-normal">
                 <li>عزل كامل لقواعد البيانات المحاسبية (Multi-Tenant Isolation).</li>
                 <li>تشفير البيانات أثناء النقل والتخزين بروتوكول TLS 1.3 / AES-256.</li>
                 <li>توثيق كامل للعمليات في سجل المراجعة القانوني (Audit Trail).</li>
@@ -905,32 +917,35 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </div>
 
             {/* System Info Footnote */}
-            <div className="pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+            <div className="pt-2 text-xs text-slate-400 flex items-center justify-between">
               <span>قاعدة البيانات: <strong className="text-slate-300 font-mono">{currentClient.dbName}</strong></span>
-              <span className="text-emerald-400 font-semibold">جاهز للاتصال 🟢</span>
+              <span className="text-[#d4af37] font-semibold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                جاهز للاتصال
+              </span>
             </div>
           </div>
 
           {/* RIGHT/CENTER: INTERACTIVE AUTHENTICATION MODES */}
-          <div className="lg:col-span-8 bg-[#0F1C2E]/95 border border-slate-700/80 rounded-2xl p-5 sm:p-7 shadow-2xl space-y-6">
+          <div className="lg:col-span-8 bg-gradient-to-tl from-[#0a2540]/90 via-[#0a1525]/95 to-[#040810]/95 backdrop-blur-3xl border border-[#d4af37]/40 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(212,175,55,0.2),_inset_0_1px_1px_rgba(255,255,255,0.1)] space-y-6">
             {/* TABS HEADER */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/80 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-5">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base sm:text-lg text-white">
+                <span className="font-black text-lg text-white">
                   طريقة المصادقة والدخول
                 </span>
-                <span className="text-[11px] bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-300 font-medium">
+                <span className="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-300 font-medium border border-slate-700">
                   {currentClient.badge}
                 </span>
               </div>
 
-              <div className="flex items-center p-1 bg-slate-900/80 border border-slate-700 rounded-xl">
+              <div className="flex items-center p-1 bg-[#070d18] border border-slate-700/80 rounded-2xl">
                 <button
                   id="sap-tab-credentials"
                   onClick={() => setActiveTab("CREDENTIALS")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                     activeTab === "CREDENTIALS"
-                      ? "bg-sap-primary text-white shadow"
+                      ? "bg-sap-primary text-white shadow-md shadow-emerald-950/60"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -940,9 +955,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 <button
                   id="sap-tab-trial"
                   onClick={() => setActiveTab("NEW_TRIAL")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                     activeTab === "NEW_TRIAL"
-                      ? "bg-sap-primary text-white shadow"
+                      ? "bg-sap-primary text-white shadow-md shadow-emerald-950/60"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -961,7 +976,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             )}
             {message && (
               <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-700/60 text-emerald-200 text-xs flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+                <CheckCircle2 className="w-4 h-4 text-[#d4af37] shrink-0 animate-pulse" />
                 <span>{message}</span>
               </div>
             )}
@@ -977,9 +992,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 </div>
 
                 {/* Email / Username Field */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <Mail className="w-3.5 h-3.5 text-sap-secondary" />
                     <span>البريد الإلكتروني المؤسسي أو اسم المستخدم:</span>
                   </label>
                   <input
@@ -988,24 +1003,24 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="cfo@medo-group.ye أو اسم المستخدم"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                    className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary focus:ring-1 focus:ring-sap-secondary/50 transition shadow-inner"
                     required
                   />
                 </div>
 
                 {/* Password Field */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
                     <span className="flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <Lock className="w-3.5 h-3.5 text-sap-secondary" />
                       <span>كلمة المرور:</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1 transition"
+                      className="text-slate-400 hover:text-white text-xs flex items-center gap-1 transition cursor-pointer"
                     >
-                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-slate-400" />}
                       <span>{showPassword ? "إخفاء" : "إظهار"}</span>
                     </button>
                   </div>
@@ -1015,18 +1030,18 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                    className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary focus:ring-1 focus:ring-sap-secondary/50 transition shadow-inner font-mono"
                     required
                   />
                   {password && (
-                    <div className="flex items-center gap-2 pt-1 text-[10px]">
+                    <div className="flex items-center gap-2 pt-1 text-xs">
                       <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${passStrength.color} transition-all duration-300`}
                           style={{ width: `${(passStrength.score / 5) * 100}%` }}
                         />
                       </div>
-                      <span className="text-slate-400">قوة كلمة المرور: {passStrength.text}</span>
+                      <span className="text-slate-400 text-[11px]">قوة كلمة المرور: {passStrength.text}</span>
                     </div>
                   )}
                 </div>
@@ -1057,10 +1072,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
                 {/* Google reCAPTCHA v3 & Firebase App Check Live Security Widget */}
                 <div className="p-3.5 rounded-xl bg-slate-900/95 border border-emerald-500/40 space-y-2 shadow-inner">
-                  <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#d4af37]">
                     <div className="flex items-center gap-2">
                       <div className="relative flex items-center justify-center">
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                        <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
                         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                       </div>
                       <span>حماية البوتات الآلية: Google reCAPTCHA v3 & App Check</span>
@@ -1072,7 +1087,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 hover:border-emerald-500 transition cursor-pointer"
                       title="إعادة تشغيل فحص أمان reCAPTCHA v3"
                     >
-                      <RefreshCw className={`w-3 h-3 ${isVerifyingRecaptcha ? "animate-spin text-emerald-400" : ""}`} />
+                      <RefreshCw className={`w-3 h-3 ${isVerifyingRecaptcha ? "animate-spin text-[#d4af37]" : ""}`} />
                       <span>{isVerifyingRecaptcha ? "جاري الفحص..." : "إعادة الفحص"}</span>
                     </button>
                   </div>
@@ -1080,7 +1095,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                     <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
                       <span className="text-slate-400">درجة أمان السلوك (Score):</span>
-                      <span className="font-mono font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                      <span className="font-mono font-bold text-[#d4af37] bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                         {recaptchaResult ? `${Math.round(recaptchaResult.score * 100)}% (آمن وموثوق)` : "96% (مفحوص)"}
                       </span>
                     </div>
@@ -1098,7 +1113,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       <Sparkles className="w-3 h-3 text-amber-400" />
                       <span>Firebase App Check & Google reCAPTCHA v3 Protected</span>
                     </div>
-                    <span className="text-emerald-400 font-semibold">تأكيد مرور بشري آمن</span>
+                    <span className="text-[#d4af37] font-semibold">تأكيد مرور بشري آمن</span>
                   </div>
                 </div>
 
@@ -1107,16 +1122,16 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-submit-login-btn"
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sap-primary to-[#124e2b] hover:from-[#165a32] hover:to-[#0f4023] text-white font-bold text-xs sm:text-sm border border-sap-secondary/50 shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] font-black text-sm sm:text-base border-b-4 border-[#b8860b] shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] transform hover:-translate-y-1 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-sap-secondary" />
+                      <RefreshCw className="w-5 h-5 animate-spin text-[#0a1525]" />
                       <span>جاري التحقق من الجلسة السحابية...</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="w-4 h-4 text-sap-secondary" />
+                      <ShieldCheck className="w-5 h-5 text-[#0a1525]" />
                       <span>تسجيل الدخول إلى MeDo ERP</span>
                     </>
                   )}
@@ -1301,10 +1316,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
                   {/* Google reCAPTCHA v3 & Firebase App Check Security Badge */}
                   <div className="p-3.5 rounded-xl bg-slate-900/95 border border-emerald-500/40 space-y-2 shadow-inner">
-                    <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#d4af37]">
                       <div className="flex items-center gap-2">
                         <div className="relative flex items-center justify-center">
-                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
                           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                         </div>
                         <span>حماية تسجيل الحسابات: Google reCAPTCHA v3 & App Check</span>
@@ -1316,7 +1331,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 hover:border-emerald-500 transition cursor-pointer"
                         title="إعادة فحص حماية reCAPTCHA v3"
                       >
-                        <RefreshCw className={`w-3 h-3 ${isVerifyingRecaptcha ? "animate-spin text-emerald-400" : ""}`} />
+                        <RefreshCw className={`w-3 h-3 ${isVerifyingRecaptcha ? "animate-spin text-[#d4af37]" : ""}`} />
                         <span>{isVerifyingRecaptcha ? "جاري الفحص..." : "إعادة الفحص"}</span>
                       </button>
                     </div>
@@ -1324,7 +1339,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                       <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
                         <span className="text-slate-400">تقييم مخاطر البوتات (Score):</span>
-                        <span className="font-mono font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        <span className="font-mono font-bold text-[#d4af37] bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                           {recaptchaResult ? `${Math.round(recaptchaResult.score * 100)}% (مستخدِم آمن)` : "96% (مفحوص)"}
                         </span>
                       </div>
@@ -1342,7 +1357,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         <Sparkles className="w-3 h-3 text-amber-400" />
                         <span>منظومة موثقة ضد إنشاء الحسابات الآلية والسبام</span>
                       </div>
-                      <span className="text-emerald-400 font-semibold">Firebase App Check Active</span>
+                      <span className="text-[#d4af37] font-semibold">Firebase App Check Active</span>
                     </div>
                   </div>
 
@@ -1410,11 +1425,11 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     id="sap-create-trial-btn"
                     onClick={handleCreateTrial}
                     disabled={isLoading}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sap-primary to-[#124e2b] hover:from-[#165a32] hover:to-[#0f4023] text-white font-bold text-xs sm:text-sm border border-sap-secondary/50 shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] font-black text-sm sm:text-base border-b-4 border-[#b8860b] shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] transform hover:-translate-y-1 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer"
                   >
                     {isLoading ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin text-sap-secondary" />
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#0a1525]" />
                         <span>جاري إنشاء وتوثيق الحساب...</span>
                       </>
                     ) : (
@@ -1450,7 +1465,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </div>
 
             <div className="flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-[#d4af37] shrink-0 mt-0.5" />
               <div>
                 <strong className="text-slate-200 block text-xs">الأمان والخصوصية السحابية:</strong>
                 <span className="text-[11px] text-slate-400">

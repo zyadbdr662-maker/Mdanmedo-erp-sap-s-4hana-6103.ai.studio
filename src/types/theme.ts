@@ -24,6 +24,10 @@ export type FontFamilyChoice =
   | "Readex Pro"
   | "Alexandria"
   | "Amiri"
+  | "Katibeh"
+  | "Aref Ruqaa"
+  | "Noto Naskh Arabic"
+  | "Traditional Arabic"
   | "Arial"
   | "system-ui";
 
@@ -57,7 +61,7 @@ export interface ThemeConfig {
   nameEn: string;
   descriptionAr: string;
   mode: "dark" | "light" | "colored";
-  category?: "EXECUTIVE_LIGHT" | "ELEGANT_DARK" | "LUXURY_METALLIC" | "SAP_OFFICIAL" | "ACCESSIBILITY";
+  category?: "EXECUTIVE_LIGHT" | "EXECUTIVE_DARK" | "ELEGANT_DARK" | "LUXURY_METALLIC" | "SAP_OFFICIAL" | "ACCESSIBILITY";
   badgeAr?: string;
   colors: ThemeColorConfig;
   typography: ThemeTypographyConfig;
@@ -80,24 +84,24 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
     category: "EXECUTIVE_LIGHT",
     badgeAr: "المعتمد رسمياً - Navy & White",
     colors: {
-      primaryColor: "#0B192C", // Deep Navy Blue
+      primaryColor: "#0a2540", // Deep Navy Blue
       primaryColorHover: "#1E3A8A", // Royal Navy Hover
       primaryColorText: "#ffffff",
-      secondaryColor: "#1D4ED8", // Royal Blue Accent
-      backgroundColor: "#F8FAFC", // Clean Crisp Light Slate
+      secondaryColor: "#d4af37", // Royal Blue Accent
+      backgroundColor: "#f4f7fc", // Clean Crisp Light Slate
       cardBackgroundColor: "#ffffff", // Pure Crisp White Cards
       sidebarBackgroundColor: "#081220", // Deep Midnight Navy Sidebar
-      headerBackgroundColor: "#0B192C", // Dark Navy Header
-      textColor: "#0F172A", // Deep Slate Charcoal (High Contrast)
-      secondaryTextColor: "#334155", // Clear Slate
+      headerBackgroundColor: "#0a2540", // Dark Navy Header
+      textColor: "#1a2b4c", // Deep Slate Charcoal (High Contrast)
+      secondaryTextColor: "#6a7f9f", // Clear Slate
       borderColor: "#CBD5E1", // Crisp Border
       linkColor: "#1D4ED8",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
-      successColor: "#16A34A",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
+      successColor: "#1e7e34",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 15,
       headingScale: 1.35,
       lineHeight: 1.65,
@@ -138,7 +142,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#4A5B6F", // Slate Dark
       borderColor: "#D1D5DB", // Clean subtle border
       linkColor: "#1A6B3C",
-      warningColor: "#D97706",
+      warningColor: "#d68910",
       errorColor: "#E74C3C",
       successColor: "#2E7D32",
     },
@@ -184,9 +188,9 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#1E293B", // Dark Slate Charcoal Black (100% Readable)
       borderColor: "#94A3B8", // Sharp Slate Border
       linkColor: "#0284C7",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
-      successColor: "#16A34A",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
+      successColor: "#1e7e34",
     },
     typography: {
       fontFamily: "Cairo",
@@ -230,8 +234,8 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#4B5563", // Crisp gray text
       borderColor: "#D1D5DB", // Neutral clean border
       linkColor: "#0854A0",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
@@ -276,12 +280,12 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#475569",
       borderColor: "#CCD6E2",
       linkColor: "#0F2B48",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -322,12 +326,12 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#425C54",
       borderColor: "#DCE5E0",
       linkColor: "#0B5345",
-      warningColor: "#D97706",
+      warningColor: "#d68910",
       errorColor: "#C0392B",
       successColor: "#1E8449",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -368,8 +372,8 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#475569",
       borderColor: "#CFD8E3",
       linkColor: "#1B2A4A",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
@@ -419,7 +423,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -465,7 +469,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -502,16 +506,16 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       cardBackgroundColor: "#ffffff", // Pure crisp white
       sidebarBackgroundColor: "#0E1726", // Executive Navy Obsidian
       headerBackgroundColor: "#ffffff",
-      textColor: "#0F172A", // Slate 900
+      textColor: "#1a2b4c", // Slate 900
       secondaryTextColor: "#475569", // Slate 600
       borderColor: "#CBD5E1", // Slate 300
       linkColor: "#1D4ED8",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -544,20 +548,20 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       primaryColorHover: "#1E293B",
       primaryColorText: "#ffffff",
       secondaryColor: "#2563EB", // Cobalt Accent
-      backgroundColor: "#F8FAFC", // Ice White
+      backgroundColor: "#f4f7fc", // Ice White
       cardBackgroundColor: "#ffffff",
       sidebarBackgroundColor: "#ffffff", // Pure White Minimalist Sidebar
       headerBackgroundColor: "#ffffff",
       textColor: "#020617", // Pure Deep Slate
-      secondaryTextColor: "#334155", // Clear Dark Slate
+      secondaryTextColor: "#6a7f9f", // Clear Dark Slate
       borderColor: "#CBD5E1", // Defined Border
       linkColor: "#2563EB",
-      warningColor: "#D97706",
+      warningColor: "#d68910",
       errorColor: "#E11D48",
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "IBM Plex Sans Arabic",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.2,
       lineHeight: 1.55,
@@ -598,7 +602,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#4A5568", // Gray 700
       borderColor: "#E2E8F0",
       linkColor: "#003B7A",
-      warningColor: "#D97706",
+      warningColor: "#d68910",
       errorColor: "#C53030",
       successColor: "#2F855A",
     },
@@ -644,12 +648,12 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#405852",
       borderColor: "#D0DFDC",
       linkColor: "#0D7A68",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.55,
@@ -690,12 +694,12 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#4B5563",
       borderColor: "#E0E4F0",
       linkColor: "#4338CA",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "Readex Pro",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -736,8 +740,8 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       secondaryTextColor: "#4A5D73",
       borderColor: "#D1D9E2",
       linkColor: "#1E3A5F",
-      warningColor: "#D97706",
-      errorColor: "#DC2626",
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
       successColor: "#059669",
     },
     typography: {
@@ -787,7 +791,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -833,7 +837,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "IBM Plex Sans Arabic",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -879,7 +883,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -925,7 +929,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10B981",
     },
     typography: {
-      fontFamily: "Almarai",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.55,
@@ -1155,7 +1159,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10b981",
     },
     typography: {
-      fontFamily: "Almarai",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.5,
@@ -1201,7 +1205,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#10b981",
     },
     typography: {
-      fontFamily: "Readex Pro",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.5,
@@ -1247,7 +1251,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#34d399",
     },
     typography: {
-      fontFamily: "Alexandria",
+      fontFamily: "Cairo",
       baseFontSize: 14,
       headingScale: 1.25,
       lineHeight: 1.5,
@@ -1293,7 +1297,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#059669",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 15,
       headingScale: 1.25,
       lineHeight: 1.6,
@@ -1339,7 +1343,7 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       successColor: "#4ade80",
     },
     typography: {
-      fontFamily: "Tajawal",
+      fontFamily: "Cairo",
       baseFontSize: 15,
       headingScale: 1.3,
       lineHeight: 1.55,
@@ -1443,6 +1447,52 @@ export const PREDEFINED_THEMES: ThemeConfig[] = [
       cardCorners: "rounded-sm",
       borderWidth: 2,
       shadowIntensity: "none",
+    },
+    spacing: {
+      buttonSize: "default",
+      inputSize: "default",
+      spacingDensity: "standard",
+    },
+    zoomLevel: 100,
+  },
+  {
+    id: "medo_official_dark",
+    nameAr: "الهوية الرسمية - الوضع الليلي (Deep Navy Dark)",
+    nameEn: "MeDo Official Deep Navy Dark Edition",
+    descriptionAr: "الوضع الليلي الرسمي: خلفيات كحلية داكنة جداً للراحة البصرية، ونصوص بيضاء وزرقاء رمادية، مع تمييز ذهبي فاخر.",
+    mode: "dark",
+    category: "EXECUTIVE_DARK",
+    badgeAr: "الوضع الليلي الرسمي",
+    colors: {
+      primaryColor: "#d4af37", // Gold for highlights in dark mode
+      primaryColorHover: "#c49b2a",
+      primaryColorText: "#0a1525", // Dark text on gold button
+      secondaryColor: "#1A6B3C", // Emerald
+      backgroundColor: "#0d1a2d", // Page bg
+      cardBackgroundColor: "#0a1525", // Cards
+      sidebarBackgroundColor: "#08111e", // Sidebar
+      headerBackgroundColor: "#08111e", // Header
+      textColor: "#e8ecf1", // Main text
+      secondaryTextColor: "#8a9bb0", // Secondary text
+      borderColor: "#1e2f4a", // Borders
+      linkColor: "#d4af37", // Gold links
+      warningColor: "#d68910",
+      errorColor: "#c0392b",
+      successColor: "#1e7e34",
+    },
+    typography: {
+      fontFamily: "Cairo",
+      baseFontSize: 15,
+      headingScale: 1.25,
+      lineHeight: 1.6,
+      fontWeight: "semibold",
+    },
+    shapes: {
+      tableCorners: "rounded-md",
+      buttonCorners: "pill",
+      cardCorners: "rounded-xl",
+      borderWidth: 1,
+      shadowIntensity: "subtle",
     },
     spacing: {
       buttonSize: "default",

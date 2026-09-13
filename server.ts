@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { db } from './src/db/db';
@@ -614,37 +615,241 @@ app.post("/api/gemini/audit-risk-analysis", async (req, res) => {
   }
 });
 
+// Helper function to create an email transporter
+function getEmailTransporter() {
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = parseInt(process.env.SMTP_PORT || "465", 10);
+  const secure = process.env.SMTP_SECURE !== "false"; // true for 465, false for 587
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER || "zyadbdr925@gmail.com";
+  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASSWORD;
+
+  if (!pass) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass,
+    },
+  });
+}
+
+// Endpoint to check live email configuration status
+app.get("/api/security/email-status", (req, res) => {
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER || "zyadbdr925@gmail.com";
+  const hasPass = Boolean(process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASSWORD);
+  const hasResend = Boolean(process.env.RESEND_API_KEY);
+
+  res.json({
+    configured: hasPass || hasResend,
+    hasSmtpPassword: hasPass,
+    hasResendApiKey: hasResend,
+    host,
+    user,
+    defaultRecipient: "zyadbdr925@gmail.com",
+    transportType: hasPass ? "SMTP_GMAIL" : hasResend ? "RESEND_API" : "PENDING_CREDENTIALS",
+  });
+});
+
 // Admin Portal Security Email & Alert Dispatcher Endpoint
 app.post("/api/security/admin-alert", async (req, res) => {
   try {
-    const { toEmail, alertType, title, message, severity, deviceFingerprint, ipAddress, userAgent, remainingAttempts, timestamp } = req.body;
-    
+    const {
+      toEmail,
+      alertType,
+      title,
+      message,
+      severity = "HIGH",
+      deviceFingerprint = "UNKNOWN_FP",
+      ipAddress = "127.0.0.1",
+      userAgent = "Unknown Device",
+      remainingAttempts,
+      timestamp,
+    } = req.body;
+
     const recipient = toEmail || "zyadbdr925@gmail.com";
     const alertTime = timestamp || new Date().toISOString();
+    const alertId = `SEC-DISP-${Date.now().toString(36).toUpperCase()}`;
 
-    console.log(`[SECURITY DISPATCH] 🚨 Sending urgent security notification to ${recipient}:`, {
+    console.log(`[SECURITY DISPATCH] 🚨 Processing urgent security notification to ${recipient}:`, {
       type: alertType,
       title,
       severity,
       ip: ipAddress,
       fingerprint: deviceFingerprint,
-      time: alertTime
+      time: alertTime,
     });
 
-    // In production, integration with Resend / SendGrid / SMTP / Firebase Cloud Messaging occurs here
-    // We return a full confirmation payload
+    const severityColor = severity === "CRITICAL" ? "#ef4444" : severity === "HIGH" ? "#f59e0b" : "#3b82f6";
+    const severityLabelAr = severity === "CRITICAL" ? "إنذار أمني حرج (CRITICAL)" : severity === "HIGH" ? "تنبيه أمني عالي الخطورة (HIGH)" : "إشعار أمني (WARNING)";
+
+    const htmlBody = `
+      <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 24px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid ${severityColor}; padding-bottom: 16px;">
+          <h1 style="color: #60a5fa; font-size: 22px; margin: 0;">🛡️ منظومة MeDo ERP - الحماية السيادية</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">إشعار أمني فوري من بوابة الإدارة العليا</p>
+        </div>
+
+        <div style="background-color: ${severityColor}15; border: 1px solid ${severityColor}40; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h2 style="color: ${severityColor}; font-size: 16px; margin: 0 0 8px 0;">🚨 ${title}</h2>
+          <p style="color: #e2e8f0; font-size: 14px; line-height: 1.6; margin: 0;">${message}</p>
+          ${remainingAttempts !== undefined ? `<p style="margin: 8px 0 0 0; font-weight: bold; color: #fca5a5;">المحاولات المتبقية قبل قفل البوابة: ${remainingAttempts} / 3</p>` : ''}
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 8px; color: #94a3b8;">المستلم المعتمد:</td>
+            <td style="padding: 8px; color: #38bdf8; font-family: monospace; font-weight: bold;">${recipient}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 8px; color: #94a3b8;">درجة الخطورة:</td>
+            <td style="padding: 8px; color: ${severityColor}; font-weight: bold;">${severityLabelAr}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 8px; color: #94a3b8;">بصمة الجهاز (Fingerprint):</td>
+            <td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${deviceFingerprint}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 8px; color: #94a3b8;">عنوان IP:</td>
+            <td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${ipAddress}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 8px; color: #94a3b8;">بيئة المتصفح:</td>
+            <td style="padding: 8px; color: #cbd5e1; font-size: 11px;">${userAgent}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; color: #94a3b8;">توقيت الحادثة:</td>
+            <td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${alertTime}</td>
+          </tr>
+        </table>
+
+        <div style="background-color: #1e293b; padding: 12px; border-radius: 8px; text-align: center; font-size: 12px; color: #94a3b8;">
+          رقم الإشعار الأمني المعتمد: <strong style="color: #60a5fa; font-family: monospace;">${alertId}</strong><br/>
+          تم التوثيق الآلي بواسطة محرك الرقابة السيادية ونظام WAF المشفر.
+        </div>
+      </div>
+    `;
+
+    let emailSent = false;
+    let transportMethod = "AUDIT_LOG_DISPATCH";
+    let dispatchError: string | null = null;
+
+    const transporter = getEmailTransporter();
+
+    if (transporter) {
+      try {
+        const fromAddress = process.env.SMTP_FROM || `MeDo ERP Security <${process.env.SMTP_USER || "zyadbdr925@gmail.com"}>`;
+        const mailResult = await transporter.sendMail({
+          from: fromAddress,
+          to: recipient,
+          subject: `🚨 [MeDo ERP - إنذار أمني] ${title}`,
+          html: htmlBody,
+          text: `[MeDo ERP Security Alert]\n${title}\n${message}\nRecipient: ${recipient}\nTime: ${alertTime}\nDevice: ${deviceFingerprint}\nIP: ${ipAddress}`,
+        });
+        emailSent = true;
+        transportMethod = "SMTP_DIRECT";
+        console.log(`[SECURITY DISPATCH] ✓ Email successfully sent via SMTP to ${recipient}. MessageId:`, mailResult.messageId);
+      } catch (err: any) {
+        console.error("[SECURITY DISPATCH] ❌ SMTP sendMail failed:", err);
+        dispatchError = err.message;
+      }
+    } else if (process.env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "MeDo ERP Security <onboarding@resend.dev>",
+            to: [recipient],
+            subject: `🚨 [MeDo ERP - إنذار أمني] ${title}`,
+            html: htmlBody,
+          }),
+        });
+        if (resendRes.ok) {
+          emailSent = true;
+          transportMethod = "RESEND_API";
+          console.log(`[SECURITY DISPATCH] ✓ Email successfully sent via Resend API to ${recipient}`);
+        } else {
+          const errText = await resendRes.text();
+          console.error("[SECURITY DISPATCH] ❌ Resend API failed:", errText);
+          dispatchError = errText;
+        }
+      } catch (err: any) {
+        console.error("[SECURITY DISPATCH] ❌ Resend API error:", err);
+        dispatchError = err.message;
+      }
+    }
+
     res.json({
       success: true,
+      emailSent,
+      transportMethod,
       deliveredTo: recipient,
-      channel: "EMAIL_AND_SYSTEM_DISPATCH",
+      alertId,
       deliveredAt: alertTime,
-      alertId: `SEC-DISP-${Date.now().toString(36).toUpperCase()}`,
-      status: "SENT",
-      note: `تم إرسال الإشعار الأمني بنجاح إلى البريد الإلكتروني المعتمد (${recipient}) وتسجيل الحادثة في سجل الرقابة المشفر.`
+      requiresSmtpConfig: !transporter && !process.env.RESEND_API_KEY,
+      dispatchError,
+      status: emailSent ? "SENT_TO_INBOX" : "LOGGED_AWAITING_SMTP_CREDENTIALS",
+      note: emailSent
+        ? `تم إرسال الإشعار الأمني بنجاح إلى البريد الإلكتروني (${recipient}).`
+        : `تم توثيق الحادثة الأمنية برقم (${alertId}). لإرسال بريد حقيقي لصندوق الوارد، يرجى إضافة كلمة مرور تطبيقات Gmail (SMTP_PASS) في ملف البيئة.`,
     });
   } catch (error: any) {
     console.error("Security alert dispatch error:", error);
-    res.status(500).json({ error: "فشل في إرسال التنبيه الأمني", details: error.message });
+    res.status(500).json({ error: "فشل في معالجة التنبيه الأمني", details: error.message });
+  }
+});
+
+// Test Email Endpoint
+app.post("/api/security/test-email", async (req, res) => {
+  try {
+    const { toEmail } = req.body;
+    const recipient = toEmail || "zyadbdr925@gmail.com";
+    const transporter = getEmailTransporter();
+
+    if (!transporter && !process.env.RESEND_API_KEY) {
+      return res.status(400).json({
+        success: false,
+        error: "لم يتم العثور على إعدادات SMTP_PASS أو RESEND_API_KEY في متغيرات البيئة.",
+        guidance: "يرجى تعيين متغير البيئة SMTP_PASS بكلمة مرور تطبيقات Google المكونة من 16 حرفاً لحساب Gmail الخاص بك.",
+      });
+    }
+
+    if (transporter) {
+      const fromAddress = process.env.SMTP_FROM || `MeDo ERP Security <${process.env.SMTP_USER || "zyadbdr925@gmail.com"}>`;
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to: recipient,
+        subject: "✓ [MeDo ERP] اختبار إشعار البريد الإلكتروني - جاهزية النظام",
+        html: `
+          <div dir="rtl" style="font-family: Arial, sans-serif; background: #0f172a; color: white; padding: 20px; border-radius: 12px;">
+            <h2 style="color: #10b981;">✓ تم الاتصال والتحقق بنجاح!</h2>
+            <p>هذا بريد اختباري لتأكيد ربط خادم إشعارات الأمان السيادي لنظام <strong>MeDo ERP</strong> مع البريد:</p>
+            <p style="color: #38bdf8; font-weight: bold; font-family: monospace;">${recipient}</p>
+            <p style="color: #94a3b8; font-size: 12px;">التوقيت: ${new Date().toISOString()}</p>
+          </div>
+        `,
+      });
+      return res.json({
+        success: true,
+        messageId: info.messageId,
+        recipient,
+        note: `تم إرسال البريد الاختباري بنجاح إلى ${recipient}`,
+      });
+    }
+
+    res.json({ success: true, note: "تم إرسال الطلب." });
+  } catch (error: any) {
+    console.error("Test email error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

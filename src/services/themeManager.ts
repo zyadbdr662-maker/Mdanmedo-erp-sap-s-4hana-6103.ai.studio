@@ -264,7 +264,7 @@ export class ThemeManager {
       }
 
       body {
-        font-family: '${typography.fontFamily}', 'IBM Plex Sans Arabic', 'Cairo', system-ui, sans-serif !important;
+        font-family: '${typography.fontFamily}', 'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif !important;
         background-color: ${colors.backgroundColor} !important;
         color: ${colors.textColor} !important;
         font-size: ${typography.baseFontSize}px;
