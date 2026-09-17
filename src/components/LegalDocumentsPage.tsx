@@ -22,21 +22,23 @@ import {
   MapPin,
   Clock,
   Sparkles,
-  Info
+  Info,
+  AlertTriangle
 } from "lucide-react";
 import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
+import { DisclaimerDocument } from "./DisclaimerDocument";
 
 interface LegalDocumentsPageProps {
   onBack?: () => void;
-  initialDoc?: "TERMS" | "PRIVACY";
+  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER";
 }
 
 export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
   onBack,
   initialDoc = "TERMS",
 }) => {
-  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY">(initialDoc);
+  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER">(initialDoc);
   const [activeArticleId, setActiveArticleId] = useState<string>("art-1");
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -167,7 +169,50 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
     },
   ];
 
-  const currentCategories = activeDoc === "TERMS" ? termsCategories : privacyCategories;
+  // Article groupings for Disclaimer (14 Articles)
+  const disclaimerCategories = [
+    {
+      category: "الأحكام العامة وتقديم الخدمة",
+      items: [
+        { id: "disc-art-1", num: 1, title: "التعريفات والمصطلحات" },
+        { id: "disc-art-2", num: 2, title: "تقديم الخدمة كما هي (As Is)" },
+      ],
+    },
+    {
+      category: "المحاسبة وسعر الصرف والذكاء الاصطناعي",
+      items: [
+        { id: "disc-art-3", num: 3, title: "دقة البيانات والمدخلات المحاسبية" },
+        { id: "disc-art-4", num: 4, title: "سعر الصرف وفروق العملات" },
+        { id: "disc-art-5", num: 5, title: "قائمة التدفقات النقدية" },
+        { id: "disc-art-6", num: 6, title: "الذكاء الاصطناعي (Gemini AI)" },
+      ],
+    },
+    {
+      category: "الامتثال والأعطال والخسائر",
+      items: [
+        { id: "disc-art-7", num: 7, title: "الامتثال الضريبي والزكوي" },
+        { id: "disc-art-8", num: 8, title: "الأخطاء والانقطاعات التقنية" },
+        { id: "disc-art-9", num: 9, title: "الخسائر غير المباشرة والتبعية" },
+      ],
+    },
+    {
+      category: "المسؤوليات والتعويض والقضاء",
+      items: [
+        { id: "disc-art-10", num: 10, title: "مسؤوليات المستخدم والحماية" },
+        { id: "disc-art-11", num: 11, title: "حدود التعويض القصوى" },
+        { id: "disc-art-12", num: 12, title: "الاستثناءات والحقوق النظامية" },
+        { id: "disc-art-13", num: 13, title: "القانون المعمول به والنزاعات" },
+        { id: "disc-art-14", num: 14, title: "قنوات التواصل الرسمية" },
+      ],
+    },
+  ];
+
+  const currentCategories =
+    activeDoc === "TERMS"
+      ? termsCategories
+      : activeDoc === "PRIVACY"
+      ? privacyCategories
+      : disclaimerCategories;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20 select-text" dir="rtl">
@@ -188,7 +233,13 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
 
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                {activeDoc === "TERMS" ? <Scale className="w-4 h-4" /> : <Lock className="w-4 h-4 text-emerald-400" />}
+                {activeDoc === "TERMS" ? (
+                  <Scale className="w-4 h-4 text-amber-400" />
+                ) : activeDoc === "PRIVACY" ? (
+                  <Lock className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                )}
               </div>
               <div>
                 <h1 className="text-sm sm:text-base font-black text-white leading-tight flex items-center gap-2">
@@ -239,6 +290,23 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <span>سياسة الخصوصية</span>
               <span className="text-[10px] opacity-80">(15 مادة)</span>
             </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("DISCLAIMER");
+                setActiveArticleId("disc-art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeDoc === "DISCLAIMER"
+                  ? "bg-amber-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>إخلاء المسؤولية</span>
+              <span className="text-[10px] opacity-80">(14 مادة)</span>
+            </button>
           </div>
 
           {/* Quick Actions */}
@@ -288,7 +356,7 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                 <div className="flex items-center gap-2 text-xs font-black text-white">
                   <Layers className="w-4 h-4 text-amber-400" />
                   <span>
-                    فهرس مواد {activeDoc === "TERMS" ? "الشروط (20)" : "الخصوصية (15)"}
+                    فهرس مواد {activeDoc === "TERMS" ? "الشروط (20)" : activeDoc === "PRIVACY" ? "الخصوصية (15)" : "إخلاء المسؤولية (14)"}
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
@@ -296,7 +364,7 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                     ? "bg-emerald-950/80 text-emerald-300 border-emerald-800/60" 
                     : "bg-amber-950/80 text-amber-300 border-amber-800/60"
                 }`}>
-                  {activeDoc === "PRIVACY" ? "GDPR & Cloud" : "IFRS & Law"}
+                  {activeDoc === "PRIVACY" ? "GDPR & Cloud" : activeDoc === "TERMS" ? "IFRS & Law" : "SLA & Audit"}
                 </span>
               </div>
 
@@ -349,7 +417,9 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                   <p className="leading-relaxed text-[10px]">
                     {activeDoc === "PRIVACY"
                       ? "نلتزم بعدم بيع أو مشاركة بياناتك، مع تشفير AES-256 وحفظ السجلات المالية لمدة 7 سنوات وفق القانون اليمني."
-                      : "تخضع هذه الاتفاقية للقوانين السارية بالجمهورية اليمنية، ومحاكم أمانة العاصمة صنعاء هي المختصة بنظر أي نزاع."}
+                      : activeDoc === "TERMS"
+                      ? "تخضع هذه الاتفاقية للقوانين السارية بالجمهورية اليمنية، ومحاكم أمانة العاصمة صنعاء هي المختصة بنظر أي نزاع."
+                      : "تعتمد دقة التقارير وفروق الصرف على مدخلات المنشأة، والذكاء الاصطناعي أداة مساعدة تتطلب مراجعة بشرية مستقلة."}
                   </p>
                   <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-emerald-400">
                     <Phone className="w-3 h-3" />
@@ -364,8 +434,10 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
           <div className="lg:col-span-8 xl:col-span-9 space-y-6">
             {activeDoc === "TERMS" ? (
               <TermsOfServiceDocument />
-            ) : (
+            ) : activeDoc === "PRIVACY" ? (
               <PrivacyPolicyDocument />
+            ) : (
+              <DisclaimerDocument />
             )}
           </div>
 

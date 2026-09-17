@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
+import { DisclaimerDocument } from "./DisclaimerDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -686,26 +687,8 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
 
           {/* 7. Disclaimer (إخلاء المسؤولية) */}
           {activePolicy === "DISCLAIMER" && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6">
-                <h1 className="text-xl sm:text-2xl font-black text-sap-secondary mb-3 flex items-center gap-2.5">
-                  <Scale className="w-6 h-6 text-sap-secondary" />
-                  إخلاء المسؤولية القانونية والمحاسبية (Disclaimer)
-                </h1>
-                <p className="text-slate-300 leading-relaxed text-sm sm:text-base">
-                  يوفر نظام MeDo ERP محركاً محاسبياً متطوراً وفق المعايير الدولية (IFRS). لتوضيح حدود المسؤولية المهنية، يُرجى مراجعة البنود التالية:
-                </p>
-              </div>
-
-              <div className="border-2 border-amber-500/40 bg-amber-950/15 rounded-2xl p-5 space-y-2">
-                <h3 className="text-base font-black text-amber-400 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                  مسؤولية قوائم التدفقات النقدية وأسعار الصرف (Cash Flow & FX)
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  تعتمد نتائج التدفقات النقدية وتعديلات فروق الصرف (نظام صنعاء أو نظام عدن) على دقة البيانات وأسعار الصرف المدخلة من قبل مستخدمي المنشأة. نوصي بمراجعة وتدقيق الحسابات بواسطة مراجع حسابات قانوني معتمد قبل اتخاذ القرارات الاستثمارية الكبرى.
-                </p>
-              </div>
+            <div className="animate-fadeIn">
+              <DisclaimerDocument />
             </div>
           )}
 
