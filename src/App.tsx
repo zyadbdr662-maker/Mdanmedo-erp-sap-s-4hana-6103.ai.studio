@@ -1,40 +1,44 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
-import { Lock } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { Sidebar, NavTab } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { IS_ADMIN_ENV } from "./config/env";
 
-const Dashboard = lazy(() => import("./components/Dashboard").then(m => ({ default: m.Dashboard })));
-const ChartOfAccountsView = lazy(() => import("./components/ChartOfAccountsView").then(m => ({ default: m.ChartOfAccountsView })));
-const JournalEntriesView = lazy(() => import("./components/JournalEntriesView").then(m => ({ default: m.JournalEntriesView })));
-const VouchersView = lazy(() => import("./components/VouchersView").then(m => ({ default: m.VouchersView })));
-const CashAndBankView = lazy(() => import("./components/CashAndBankView").then(m => ({ default: m.CashAndBankView })));
-const CustomersAndARView = lazy(() => import("./components/CustomersAndARView").then(m => ({ default: m.CustomersAndARView })));
-const VendorsAndAPView = lazy(() => import("./components/VendorsAndAPView").then(m => ({ default: m.VendorsAndAPView })));
-const SalesAndReturnsView = lazy(() => import("./components/SalesAndReturnsView").then(m => ({ default: m.SalesAndReturnsView })));
-const PurchasesAndReturnsView = lazy(() => import("./components/PurchasesAndReturnsView").then(m => ({ default: m.PurchasesAndReturnsView })));
-const FinancialReportsView = lazy(() => import("./components/FinancialReportsView").then(m => ({ default: m.FinancialReportsView })));
-const CostCentersAndAssetsView = lazy(() => import("./components/CostCentersAndAssetsView").then(m => ({ default: m.CostCentersAndAssetsView })));
-const FixedAssetsModule = lazy(() => import("./components/FixedAssetsModule").then(m => ({ default: m.FixedAssetsModule })));
-const CurrencySettingsView = lazy(() => import("./components/CurrencySettingsView").then(m => ({ default: m.CurrencySettingsView })));
-const GeneralLedgerView = lazy(() => import("./components/GeneralLedgerView").then(m => ({ default: m.GeneralLedgerView })));
-const SystemSettingsView = lazy(() => import("./components/SystemSettingsView").then(m => ({ default: m.SystemSettingsView })));
-const ScheduledBackupView = lazy(() => import("./components/ScheduledBackupView").then(m => ({ default: m.ScheduledBackupView })));
-const InventoryView = lazy(() => import("./components/InventoryView").then(m => ({ default: m.InventoryView })));
-const HumanResourcesView = lazy(() => import("./components/HumanResourcesView").then(m => ({ default: m.HumanResourcesView })));
-const ExpensesAndRevenuesView = lazy(() => import("./components/ExpensesAndRevenuesView").then(m => ({ default: m.ExpensesAndRevenuesView })));
-const BranchManagementView = lazy(() => import("./components/BranchManagementView").then(m => ({ default: m.BranchManagementView })));
-const CloudSyncDashboard = lazy(() => import("./components/CloudSyncDashboard").then(m => ({ default: m.CloudSyncDashboard })));
-const OfflineSyncCenter = lazy(() => import("./components/OfflineSyncCenter").then(m => ({ default: m.OfflineSyncCenter })));
-const ThemeStudioView = lazy(() => import("./components/ThemeStudioView").then(m => ({ default: m.ThemeStudioView })));
-const EnterpriseCollaborationView = lazy(() => import("./components/EnterpriseCollaborationView").then(m => ({ default: m.EnterpriseCollaborationView })));
-const IntegratedErpSuiteView = lazy(() => import("./components/IntegratedErpSuiteView").then(m => ({ default: m.IntegratedErpSuiteView })));
-const SaaSPlatformView = lazy(() => import("./components/SaaSPlatformView").then(m => ({ default: m.SaaSPlatformView })));
-const ClientExchangeView = lazy(() => import("./components/ClientExchangeView").then(m => ({ default: m.ClientExchangeView })));
-const TrustCenterView = lazy(() => import("./components/TrustCenterView").then(m => ({ default: m.TrustCenterView })));
-const MedoErpBrochureView = lazy(() => import("./components/MedoErpBrochureView").then(m => ({ default: m.MedoErpBrochureView })));
-const ExecutiveMasterSystemSuite = lazy(() => import("./components/ExecutiveMasterSystemSuite").then(m => ({ default: m.ExecutiveMasterSystemSuite })));
+import { Dashboard } from "./components/Dashboard";
+import { ChartOfAccountsView } from "./components/ChartOfAccountsView";
+import { JournalEntriesView } from "./components/JournalEntriesView";
+import { VouchersView } from "./components/VouchersView";
+import { CashAndBankView } from "./components/CashAndBankView";
+import { CustomersAndARView } from "./components/CustomersAndARView";
+import { VendorsAndAPView } from "./components/VendorsAndAPView";
+import { SalesAndReturnsView } from "./components/SalesAndReturnsView";
+import { PurchasesAndReturnsView } from "./components/PurchasesAndReturnsView";
+import { FinancialReportsView } from "./components/FinancialReportsView";
+import { CostCentersAndAssetsView } from "./components/CostCentersAndAssetsView";
+import { FixedAssetsModule } from "./components/FixedAssetsModule";
+import { CurrencySettingsView } from "./components/CurrencySettingsView";
+import { GeneralLedgerView } from "./components/GeneralLedgerView";
+import { SystemSettingsView } from "./components/SystemSettingsView";
+import { ScheduledBackupView } from "./components/ScheduledBackupView";
+import { InventoryView } from "./components/InventoryView";
+import { HumanResourcesView } from "./components/HumanResourcesView";
+import { ExpensesAndRevenuesView } from "./components/ExpensesAndRevenuesView";
+import { BranchManagementView } from "./components/BranchManagementView";
+import { CloudSyncDashboard } from "./components/CloudSyncDashboard";
+import { OfflineSyncCenter } from "./components/OfflineSyncCenter";
+import { ThemeStudioView } from "./components/ThemeStudioView";
+import { EnterpriseCollaborationView } from "./components/EnterpriseCollaborationView";
+import { IntegratedErpSuiteView } from "./components/IntegratedErpSuiteView";
+import { SaaSPlatformView } from "./components/SaaSPlatformView";
+import { ClientExchangeView } from "./components/ClientExchangeView";
+import { TrustCenterView } from "./components/TrustCenterView";
+import { MedoErpBrochureView } from "./components/MedoErpBrochureView";
+import { UserManualView } from "./components/UserManualView";
+import { ExecutiveMasterSystemSuite } from "./components/ExecutiveMasterSystemSuite";
+import { CentralArchiveSection } from "./components/CentralArchiveSection";
+import { SystemFooter } from "./components/SystemFooter";
 import { TrialLockModal } from "./components/TrialLockModal";
+import { TrialManagerDashboardModal } from "./components/TrialManagerDashboardModal";
 import { ThemeManager } from "./services/themeManager";
 import { ScheduledBackupEngine } from "./services/scheduledBackupEngine";
 import { LocalSyncEngine } from "./services/localSyncEngine";
@@ -57,6 +61,7 @@ import { SystemUpdateModal } from "./components/SystemUpdateModal";
 import { LegalPoliciesModal, LegalPolicyType } from "./components/LegalPoliciesModal";
 import { soundService } from "./services/notificationSoundService";
 import { trialService, TrialState } from "./services/trialService";
+import { trialOperationsService } from "./services/trialOperationsService";
 import { SecretAdminGatewayModal } from "./components/SecretAdminGatewayModal";
 import { AdminPortalSecurityService } from "./services/adminPortalSecurityService";
 import {
@@ -113,6 +118,7 @@ import {
   saveERPState,
 } from "./services/erpStorage";
 import { NotificationSoundService } from "./services/notificationSoundService";
+import { TenantIsolationService } from "./services/tenantIsolationService";
 
 const repository: ERPRepository = new PostgresRepository();
 
@@ -148,19 +154,96 @@ export default function App() {
   const [isSystemUpdateOpen, setIsSystemUpdateOpen] = useState(false);
   const [isRefreshingData, setIsRefreshingData] = useState(false);
   const [refreshSuccessMessage, setRefreshSuccessMessage] = useState<string | null>(null);
+  const [activatedLicenseBanner, setActivatedLicenseBanner] = useState<{ companyName: string; user: string } | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("V1.2.4");
 
-  // Sovereign 3-Layer Admin Security Engine States
+  // Sovereign 3-Layer Admin Security Engine States & Dedicated License Activation
   const [isAdminSessionUnlocked, setIsAdminSessionUnlocked] = useState<boolean>(() => {
     return AdminPortalSecurityService.isAdminSessionActive();
   });
   const [isSecretGatewayOpen, setIsSecretGatewayOpen] = useState(false);
+  const [isTrialManagerOpen, setIsTrialManagerOpen] = useState(false);
 
-  // Secret Admin URL & Auto-Sanitization Listener
+  // Secret Admin URL & Auto-Sanitization & License Token Activation Listener
   useEffect(() => {
-    // 1. Sanitize generic /admin or /saas URLs -> Redirect immediately
+    // 0. Register Trial Client Access if on trial link
+    const activeTenant = TenantIsolationService.resolveActiveTenant();
+    if (TenantIsolationService.isTrialClientTenant(activeTenant)) {
+      trialOperationsService.registerClientAccess(activeTenant);
+      if (trialOperationsService.isTrialLocked(activeTenant, erpState?.currentUser?.role)) {
+        setIsTrialLockModalOpen(true);
+      }
+    }
+
+    // 0.5 Detect Employee Direct Sublink Login from Vercel URL
+    const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
+    if (empFromUrl) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("medo_erp_auth", "true");
+
+      let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "ACCOUNTANT";
+      let startTab: NavTab = "GENERAL_LEDGER";
+
+      if (empFromUrl.role === "MANAGER") {
+        mappedRole = "SYSTEM_ADMIN";
+        startTab = "DASHBOARD";
+      } else if (empFromUrl.role === "SALES") {
+        mappedRole = "CASHIER";
+        startTab = "CUSTOMERS_AR";
+      } else if (empFromUrl.role === "PURCHASER") {
+        mappedRole = "DATA_ENTRY";
+        startTab = "VENDORS_AP";
+      } else if (empFromUrl.role === "AUDITOR") {
+        mappedRole = "AUDITOR";
+        startTab = "FINANCIAL_REPORTS";
+      } else if (empFromUrl.role === "ACCOUNTANT") {
+        mappedRole = "ACCOUNTANT";
+        startTab = "GENERAL_LEDGER";
+      }
+
+      setActiveTab(startTab);
+
+      const employeeUser: ERPUser = {
+        id: `EMP-${empFromUrl.role}-${Date.now().toString().slice(-4)}`,
+        name: empFromUrl.employeeName,
+        role: mappedRole,
+        branch: "الفرع الرئيسي - صنعاء",
+        status: "ACTIVE",
+        avatar: empFromUrl.role.slice(0, 2),
+      };
+
+      setErpState((prev) => ({
+        ...prev,
+        currentUser: employeeUser,
+      }));
+
+      // Role authorization isolation
+      if (mappedRole === "SYSTEM_ADMIN") {
+        setIsAdminSessionUnlocked(true);
+        localStorage.setItem("medo_erp_admin_mode", "true");
+      } else {
+        setIsAdminSessionUnlocked(false);
+        localStorage.removeItem("medo_erp_admin_mode");
+      }
+
+      setRefreshSuccessMessage(`🔑 تم تسجيل الدخول المباشر بالصلاحية (${empFromUrl.employeeName}) - تم فتح وحدة: ${startTab}`);
+      setTimeout(() => setRefreshSuccessMessage(null), 5000);
+    }
+
+    // 1. Check if user opened a dedicated license activation link
+    const activationResult = trialService.checkAndActivateFromUrl();
+    if (activationResult.activated && activationResult.companyName) {
+      setActivatedLicenseBanner({
+        companyName: activationResult.companyName,
+        user: activationResult.user || "المفوض المعتمد",
+      });
+      soundService.playSound("SUCCESS_CHIME");
+    }
+
+    // 2. Sanitize generic /admin or /saas URLs -> Redirect immediately
     AdminPortalSecurityService.sanitizeUrlIfGenericAdminAttempt();
 
-    // 2. Detect Secret Admin URL Access
+    // 3. Detect Secret Admin URL Access
     if (AdminPortalSecurityService.isSecretUrlAccessed()) {
       setIsSecretGatewayOpen(true);
       AdminPortalSecurityService.cleanSecretUrlFromAddressBar();
@@ -184,23 +267,58 @@ export default function App() {
 
   const isMasterAdminActive = Boolean(IS_ADMIN_ENV || isAdminSessionUnlocked);
 
+  const applyUrlEmployeeToState = (loaded: any): any => {
+    if (!loaded) return loaded;
+    const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
+    if (!empFromUrl) return loaded;
+
+    let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "ACCOUNTANT";
+
+    if (empFromUrl.role === "MANAGER" || empFromUrl.role === "SYSTEM_ADMIN") {
+      mappedRole = "SYSTEM_ADMIN";
+    } else if (empFromUrl.role === "SALES" || empFromUrl.role === "CASHIER") {
+      mappedRole = "CASHIER";
+    } else if (empFromUrl.role === "PURCHASER" || empFromUrl.role === "DATA_ENTRY") {
+      mappedRole = "DATA_ENTRY";
+    } else if (empFromUrl.role === "AUDITOR") {
+      mappedRole = "AUDITOR";
+    } else if (empFromUrl.role === "ACCOUNTANT") {
+      mappedRole = "ACCOUNTANT";
+    }
+
+    const employeeUser: ERPUser = {
+      id: `EMP-${empFromUrl.role}-${Date.now().toString().slice(-4)}`,
+      name: empFromUrl.employeeName,
+      role: mappedRole,
+      branch: "الفرع الرئيسي - صنعاء",
+      status: "ACTIVE",
+      avatar: empFromUrl.role.slice(0, 2),
+    };
+
+    return {
+      ...loaded,
+      currentUser: employeeUser,
+    };
+  };
+
   const handleGlobalRefresh = () => {
     setIsRefreshingData(true);
     soundService.playSound("SUCCESS_CHIME");
 
     setTimeout(() => {
       repository.loadState().then((loaded) => {
-        if (loaded) {
-          updateStateWithRecalculatedGL(loaded);
+        const resolvedState = applyUrlEmployeeToState(loaded);
+        if (resolvedState) {
+          updateStateWithRecalculatedGL(resolvedState);
         } else {
-          const fresh = loadERPState();
+          const fresh = applyUrlEmployeeToState(loadERPState());
           updateStateWithRecalculatedGL(fresh);
         }
         setIsRefreshingData(false);
         setRefreshSuccessMessage("✨ تم تحديث ومزامنة كافة الوحدات المحاسبية والمستودعات وإلغاء القيود المعلقة وحل التعليقات بنجاح!");
         setTimeout(() => setRefreshSuccessMessage(null), 4500);
       }).catch(() => {
-        const fresh = loadERPState();
+        const fresh = applyUrlEmployeeToState(loadERPState());
         updateStateWithRecalculatedGL(fresh);
         setIsRefreshingData(false);
         setRefreshSuccessMessage("✨ تم تحديث ومزامنة كافة الوحدات المحاسبية بنجاح!");
@@ -218,10 +336,11 @@ export default function App() {
     setIsDarkMode(active.mode !== "light");
     setHighContrast(ThemeManager.isHighContrast());
     repository.loadState().then((loaded) => {
+      const resolvedState = applyUrlEmployeeToState(loaded);
       // Ensure scheduled backup is fully active by default
-      if (loaded && (!loaded.systemSettings?.scheduledBackup || loaded.systemSettings.scheduledBackup.enabled === false)) {
+      if (resolvedState && (!resolvedState.systemSettings?.scheduledBackup || resolvedState.systemSettings.scheduledBackup.enabled === false)) {
         const activeBackupSettings = {
-          ...(loaded.systemSettings?.scheduledBackup || {
+          ...(resolvedState.systemSettings?.scheduledBackup || {
             frequency: "EVERY_12_HOURS",
             scheduledTime: "02:00",
             autoEncrypt: true,
@@ -236,16 +355,16 @@ export default function App() {
           nextScheduledAt: new Date(Date.now() + 3600000 * 6).toISOString(),
         };
         const updatedState = {
-          ...loaded,
+          ...resolvedState,
           systemSettings: {
-            ...loaded.systemSettings!,
+            ...resolvedState.systemSettings!,
             scheduledBackup: activeBackupSettings,
           },
         };
         setErpState(updatedState);
         repository.saveState(updatedState);
       } else {
-        setErpState(loaded);
+        setErpState(resolvedState);
       }
     });
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -346,8 +465,33 @@ export default function App() {
 
   // --- Handlers ---
 
+  // Verify and enforce 50-operation trial limits for trial tenants
+  const checkAndRegisterTrialOperation = (actionName: string): boolean => {
+    const activeTenant = TenantIsolationService.resolveActiveTenant();
+    if (!TenantIsolationService.isTrialClientTenant(activeTenant)) {
+      return true;
+    }
+    const role = erpState?.currentUser?.role;
+    if (role === "SUPER_ADMIN" || role === "SYSTEM_ADMIN") {
+      return true;
+    }
+    if (trialOperationsService.isTrialLocked(activeTenant, role)) {
+      setIsTrialLockModalOpen(true);
+      soundService.playSound("ENCRYPTION_VIOLATION_ALARM");
+      return false;
+    }
+    const result = trialOperationsService.incrementOperation(actionName, activeTenant, role);
+    if (result.isLocked) {
+      setIsTrialLockModalOpen(true);
+      soundService.playSound("ENCRYPTION_VIOLATION_ALARM");
+      return false;
+    }
+    return true;
+  };
+
   // Add Account to COA
   const handleAddAccount = (newAcc: Account) => {
+    if (!checkAndRegisterTrialOperation("إضافة حساب بدليل الحسابات")) return;
     const updated = [...erpState.accounts, newAcc];
     updateStateWithRecalculatedGL({ accounts: updated });
     LocalSyncEngine.getInstance().addToOutbox("ACCOUNT", newAcc.id, "CREATE", newAcc);
@@ -355,6 +499,7 @@ export default function App() {
 
   // Save Journal Entry
   const handleSaveJournalEntry = (entry: JournalEntry) => {
+    if (!checkAndRegisterTrialOperation("ترحيل قيد يومية محاسبي")) return;
     const updatedEntries = [entry, ...erpState.journalEntries.filter((e) => e.id !== entry.id)];
     updateStateWithRecalculatedGL({ journalEntries: updatedEntries });
     LocalSyncEngine.getInstance().addToOutbox("JOURNAL_ENTRY", entry.id, "CREATE", entry);
@@ -408,6 +553,7 @@ export default function App() {
   // Save Voucher (Receipt / Payment) and auto-generate corresponding Journal Entry
   const handleSaveVoucher = (voucher: Voucher) => {
     const isReceipt = voucher.type === "RECEIPT";
+    if (!checkAndRegisterTrialOperation(isReceipt ? "إنشاء سند قبض مالي" : "إنشاء سند صرف مالي")) return;
     const jvNumber = `JV-${voucher.voucherNumber}`;
 
     // Trigger Audio & WhatsApp alert if amount is large
@@ -525,6 +671,7 @@ export default function App() {
 
   // Add Customer
   const handleAddCustomer = (customer: Customer) => {
+    if (!checkAndRegisterTrialOperation("إضافة عميل جديد")) return;
     updateStateWithRecalculatedGL({
       customers: [...erpState.customers, customer],
     });
@@ -533,6 +680,7 @@ export default function App() {
 
   // Add Vendor
   const handleAddVendor = (vendor: Vendor) => {
+    if (!checkAndRegisterTrialOperation("إضافة مورد جديد")) return;
     updateStateWithRecalculatedGL({
       vendors: [...erpState.vendors, vendor],
     });
@@ -557,6 +705,8 @@ export default function App() {
     const isSalesReturn = invoice.type === "SALES_RETURN";
     const isPurchase = invoice.type === "PURCHASE";
     const isPurchaseReturn = invoice.type === "PURCHASE_RETURN";
+
+    if (!checkAndRegisterTrialOperation(`إصدار فاتورة ${isSales ? "مبيعات" : isPurchase ? "مشتريات" : "مرتجع"}`)) return;
 
     const jvNumber = `JV-${invoice.invoiceNumber}`;
     const paid = invoice.paidAmount || 0;
@@ -977,6 +1127,7 @@ export default function App() {
   };
 
   const handleAddFixedAsset = (asset: FixedAsset) => {
+    if (!checkAndRegisterTrialOperation("تسجيل أصل ثابت جديد")) return;
     updateStateWithRecalculatedGL({ fixedAssets: [...erpState.fixedAssets, asset] });
   };
 
@@ -1386,6 +1537,7 @@ export default function App() {
   };
 
   const handleAddInventoryItem = (newItem: InventoryItem) => {
+    if (!checkAndRegisterTrialOperation("إضافة صنف مخزني جديد")) return;
     const updated = [newItem, ...(erpState.inventoryItems || [])];
     updateStateWithRecalculatedGL({ inventoryItems: updated });
     LocalSyncEngine.getInstance().addToOutbox("INVENTORY_ITEM", newItem.id, "CREATE", newItem);
@@ -1605,7 +1757,7 @@ export default function App() {
             if (user) {
               setErpState((prev) => (prev ? { ...prev, currentUser: user, activeBranchId: branchId || prev.activeBranchId } : prev));
               if (user.plan === "TRIAL") {
-                setActiveTab("CHART_OF_ACCOUNTS"); // Default tab for trial users
+                setActiveTab("DASHBOARD");
               }
             }
             sessionStorage.setItem("medo_erp_auth", "true");
@@ -1663,11 +1815,41 @@ export default function App() {
               sessionStorage.removeItem("medo_erp_auth");
               setIsAuthenticated(false);
             }}
+            appVersion={appVersion}
+            onVersionClick={() => setIsSystemUpdateOpen(true)}
             isMobileOpen={isMobileMenuOpen}
             onCloseMobile={() => setIsMobileMenuOpen(false)}
           />
 
           <div className="flex-1 flex flex-col min-w-0">
+            {/* Original License Activation Banner */}
+            {activatedLicenseBanner && (
+              <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-emerald-950 border-b-2 border-blue-500 px-4 py-3 text-xs text-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xl animate-fadeIn z-40">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center font-bold shrink-0">
+                    🎉
+                  </div>
+                  <div>
+                    <div className="font-black text-white flex items-center gap-2">
+                      <span>تم تفعيل النسخة الأصلية بنجاح عبر الرابط المخصص المعتمد!</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        ترخيص كامل مفتوح
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-300 mt-0.5">
+                      المنشأة: <strong className="text-white">{activatedLicenseBanner.companyName}</strong> | المفوض المعتمد: <strong className="text-amber-300">{activatedLicenseBanner.user}</strong>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActivatedLicenseBanner(null)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow transition cursor-pointer shrink-0"
+                >
+                  حسناً، بدء العمل &larr;
+                </button>
+              </div>
+            )}
+
             {/* Refresh Success Toast Banner */}
             {refreshSuccessMessage && (
               <div className="bg-emerald-950/90 border-b border-emerald-500 px-4 py-2.5 text-xs text-emerald-200 flex items-center justify-between shadow-lg animate-fadeIn z-40">
@@ -1755,43 +1937,109 @@ export default function App() {
                 setIsAdminSessionUnlocked(false);
                 setActiveTab("DASHBOARD");
               }}
+              onOpenTrialManager={() => setIsTrialManagerOpen(true)}
               onLogout={() => {
                 sessionStorage.removeItem("medo_erp_auth");
                 setIsAuthenticated(false);
               }}
             />
 
-            {/* 48-Hour Trial Live Countdown Bar */}
-            {erpState.currentUser?.plan === "TRIAL" && (() => {
+            {/* 48-Hour Trial Live Countdown & Operations Bar */}
+            {(() => {
+              const activeTenant = TenantIsolationService.resolveActiveTenant();
+              const isTrialClient = TenantIsolationService.isTrialClientTenant(activeTenant);
+              const isTrialPlan = erpState.currentUser?.plan === "TRIAL";
+
+              if (!isTrialPlan && !isTrialClient) return null;
+
               const trial = trialService.getTrialState();
               const remainingHrs = trial ? trial.remainingHours : 47;
               const remainingMins = trial ? trial.remainingMinutes : 59;
-              const fpHash = trial?.fingerprint?.fingerprintHash?.slice(0, 14) || "BF-DEVICE-SEC";
+              const isExpired = trial ? trial.isExpired : false;
+              const clientTracking = isTrialClient ? trialOperationsService.getClientTracking(activeTenant) : null;
+              const opsCount = clientTracking ? clientTracking.operationsCount : 0;
+              const isOpsLocked = clientTracking ? opsCount >= 50 : false;
+              const tenantMeta = isTrialClient ? TenantIsolationService.getTrialTenantDetails(activeTenant) : null;
+              const companyName = tenantMeta?.nameAr || erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية";
 
               return (
-                <div className="bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 border-b border-amber-600/40 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-3 text-amber-200">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                    <span className="font-black">⏳ النسخة التجريبية المحدودة (48 ساعة بدقة):</span>
-                    <span className="font-mono bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/40 text-amber-300 font-bold">
-                      متبقي: {remainingHrs} ساعة و {remainingMins} دقيقة
+                <div className={`bg-gradient-to-r ${isOpsLocked || isExpired ? "from-rose-950 via-slate-900 to-rose-950 border-rose-600/50" : "from-[#170e03] via-slate-900 to-[#170e03] border-amber-600/50"} border-b px-3 sm:px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 text-amber-200 shadow-md`}>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${isOpsLocked || isExpired ? "bg-rose-500 animate-ping" : "bg-amber-400 animate-ping"}`}></span>
+                    <span className="font-black text-white">
+                      {isOpsLocked
+                        ? "🚨 تم استنفاد سقف العمليات (50/50):"
+                        : isExpired
+                        ? "🚨 انتهت الفترة التجريبية (48 ساعة):"
+                        : `⏳ النسخة التجريبية (${companyName}):`}
                     </span>
-                    <span className="hidden sm:inline text-slate-400 font-mono text-[11px]">
-                      (معرف الجهاز: {fpHash})
+                    <span className={`font-mono px-2 py-0.5 rounded border text-[11px] font-bold ${
+                      isOpsLocked || isExpired
+                        ? "bg-rose-950/80 border-rose-600/60 text-rose-300"
+                        : "bg-amber-950/80 border-amber-500/40 text-amber-300"
+                    }`}>
+                      {isOpsLocked
+                        ? "مقفل • يرجى التواصل لتفعيل النسخة الكاملة"
+                        : isExpired
+                        ? "انقضت المدة • يتطلب المصادقة الثنائية 2FA"
+                        : `متبقي: ${remainingHrs} ساعة و ${remainingMins} دقيقة`}
+                    </span>
+
+                    {isTrialClient && (
+                      <span className={`font-mono px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                        opsCount >= 45
+                          ? "bg-rose-950 text-rose-300 border-rose-600 animate-pulse"
+                          : opsCount >= 25
+                          ? "bg-amber-950 text-amber-300 border-amber-600"
+                          : "bg-blue-950 text-blue-300 border-blue-600"
+                      }`}>
+                        العمليات المنجزة: {opsCount} / 50 عملية
+                      </span>
+                    )}
+
+                    <span className="hidden sm:inline text-slate-400 font-medium text-[11px]">
+                      (المفوض: {erpState.currentUser?.name || tenantMeta?.adminName || "المفوض المعتمد"})
                     </span>
                   </div>
-                  <button
-                    onClick={() => setIsTrialLockModalOpen(true)}
-                    className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] shadow transition cursor-pointer"
-                  >
-                    تفعيل النسخة الأصلية 🔑
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsTrialManagerOpen(true)}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 border border-indigo-600/40 font-bold text-[11px] transition shadow cursor-pointer flex items-center gap-1"
+                      title="لوحة رقابة ومتابعة النسخ التجريبية للعملاء الثلاثة"
+                    >
+                      <span>🎯 رقابة النسخ التجريبية</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trialService.simulateTrialExpiration(
+                          companyName,
+                          erpState.currentUser?.email || "trial@medo-trial.com"
+                        );
+                        setIsTrialLockModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-600/40 font-bold text-[11px] transition shadow cursor-pointer flex items-center gap-1"
+                      title="محاكاة انقضاء الـ 48 ساعة أو استنفاد العمليات لتجربة شاشة القفل"
+                    >
+                      <span>⚡ تجربة القفل</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsTrialLockModalOpen(true)}
+                      className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] shadow transition cursor-pointer flex items-center gap-1"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
+                      <span>المصادقة الثنائية وترقية النسخة 🔑</span>
+                    </button>
+                  </div>
                 </div>
               );
             })()}
 
             <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-              {erpState.currentUser?.plan === "TRIAL" && ["DASHBOARD", "INTEGRATED_ERP", "SAAS_PLATFORM", "SCHEDULED_BACKUP", "CLOUD_SYNC", "TRUST_CENTER", "SETTINGS", "THEME_STUDIO"].includes(activeTab) ? (
+              {erpState.currentUser?.plan === "TRIAL" && (trialService.getTrialState()?.isExpired ?? false) && ["DASHBOARD", "INTEGRATED_ERP", "SAAS_PLATFORM", "SCHEDULED_BACKUP", "CLOUD_SYNC", "TRUST_CENTER", "SETTINGS", "THEME_STUDIO"].includes(activeTab) ? (
                 <div className="flex flex-col items-center justify-center h-[60vh] space-y-6 text-center animate-fade-in">
                   <div className="w-24 h-24 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
                     <Lock className="w-12 h-12 text-rose-500" />
@@ -1810,12 +2058,7 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <Suspense fallback={
-                  <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                    <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-xs font-bold text-slate-400">جاري تحميل الوحدة المحاسبية...</p>
-                  </div>
-                }>
+                <Suspense fallback={null}>
                   <>
                     {activeTab === "HOME_HUB" && (
                 <MobileHomeHub
@@ -1847,6 +2090,18 @@ export default function App() {
                   onOpenQuickAction={handleQuickAction}
                   onOpenAi={() => setIsAiModalOpen(true)}
                   onOpenTrialLockModal={() => setIsTrialLockModalOpen(true)}
+                />
+              )}
+              {activeTab === "USER_MANUAL" && (
+                <UserManualView
+                  onNavigateToModule={(tab) => {
+                    React.startTransition(() => {
+                      setActiveTab(tab);
+                    });
+                  }}
+                  currentUser={erpState.currentUser}
+                  companyName={erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية"}
+                  isDarkMode={isDarkMode}
                 />
               )}
               {activeTab === "COLLABORATION" && (
@@ -1887,7 +2142,7 @@ export default function App() {
                   onOpenAi={() => setIsAiModalOpen(true)}
                 />
               )}
-              {isMasterAdminActive && activeTab === "MEDO_BROCHURE" && (
+              {activeTab === "MEDO_BROCHURE" && (
                 <MedoErpBrochureView
                   onNavigateToModule={(tab) => setActiveTab(tab)}
                   isDarkMode={isDarkMode}
@@ -2286,7 +2541,7 @@ export default function App() {
                   )}
                 </div>
               )}
-              {isMasterAdminActive && activeTab === "SAAS_PLATFORM" && (() => {
+              {activeTab === "SAAS_PLATFORM" && (() => {
                 const userRole = erpState?.currentUser?.role;
                 const isAdminOrSuperAdmin =
                   userRole === "ADMIN" ||
@@ -2369,13 +2624,25 @@ export default function App() {
                 }
 
                 return (
-                  <SaaSPlatformView
-                    erpState={erpState}
-                    onUpdateState={(newState) => setErpState((prev) => (prev ? { ...prev, ...newState } : null))}
-                    onOpenTrialLockModal={() => setIsTrialLockModalOpen(true)}
+                  <ExecutiveMasterSystemSuite
+                    fullState={erpState}
+                    onUpdateSystemSettings={handleUpdateSystemSettings}
+                    onResetAllData={handleResetData}
+                    onLogout={() => {
+                      sessionStorage.removeItem("medo_erp_auth");
+                      setIsAuthenticated(false);
+                    }}
+                    isSuperAdmin={true}
                   />
                 );
               })()}
+              {isMasterAdminActive && activeTab === "CENTRAL_ARCHIVE" && (
+                <CentralArchiveSection
+                  companyName={erpState.systemSettings.companyNameAr}
+                  currencies={erpState.currencies}
+                  displayCurrency={selectedCurrency}
+                />
+              )}
               {isMasterAdminActive && activeTab === "TRUST_CENTER" && <TrustCenterView />}
               {activeTab === "AI_ASSISTANT" && (
                 <AiFinancialAdvisorModal
@@ -2398,6 +2665,9 @@ export default function App() {
                 </Suspense>
               )}
             </main>
+
+            {/* Persistent Enterprise Brand Footer */}
+            <SystemFooter />
           </div>
 
           <SapOnboardingModal
@@ -2529,12 +2799,32 @@ export default function App() {
           <TrialLockModal
             isOpen={isTrialLockModalOpen}
             onClose={() => setIsTrialLockModalOpen(false)}
+            currentUser={erpState.currentUser}
+            currentCompany={erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية"}
             onActivateWithLicenseKey={(key) => {
-              alert(`تم التحقق من الرقم التسلسلي بنجاح: ${key}\nتم تفعيل النظام بنجاح بواسطة مجموعة بن زياد المتحدة وميدو تك.`);
+              setErpState((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      currentUser: prev.currentUser
+                        ? { ...prev.currentUser, plan: "ENTERPRISE" }
+                        : null,
+                    }
+                  : prev
+              );
             }}
             onOpenLegalPolicy={(policy) => {
               setGlobalLegalPolicy(policy);
               setGlobalLegalModalOpen(true);
+            }}
+          />
+
+          <TrialManagerDashboardModal
+            isOpen={isTrialManagerOpen}
+            onClose={() => setIsTrialManagerOpen(false)}
+            onSwitchToClient={(clientId) => {
+              TenantIsolationService.setActiveTenant(clientId);
+              window.location.search = `?client=${clientId}`;
             }}
           />
 

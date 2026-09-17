@@ -22,6 +22,7 @@ import {
   Vendor,
 } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "../services/erpStorage";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface VendorsAndAPViewProps {
   vendors: Vendor[];
@@ -47,6 +48,29 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
   onShareDocument,
 }) => {
   const [activeTab, setActiveTab] = useState<"VENDORS" | "PURCHASES">("VENDORS");
+
+  const VENDOR_COLUMNS: ColumnDef[] = [
+    { id: "code", label: "رمز المورد", locked: true },
+    { id: "nameAr", label: "اسم الشركة / المورد" },
+    { id: "category", label: "التصنيف" },
+    { id: "city", label: "المدينة / الدولة" },
+    { id: "phone", label: "الهاتف" },
+    { id: "currentBalance", label: "الرصيد الدائن المستحق" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns: venVis, updateVisibility: updateVenVis, isVisible: isVenVis } = useColumnVisibility("vendors_list", VENDOR_COLUMNS);
+
+  const PURCHASE_BILL_COLUMNS: ColumnDef[] = [
+    { id: "invoiceNumber", label: "رقم الفاتورة", locked: true },
+    { id: "vendorName", label: "المورد" },
+    { id: "date", label: "التاريخ" },
+    { id: "dueDate", label: "تاريخ الاستحقاق" },
+    { id: "totalAmount", label: "إجمالي الفاتورة" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns: purVis, updateVisibility: updatePurVis, isVisible: isPurVis } = useColumnVisibility("purchase_bills_list", PURCHASE_BILL_COLUMNS);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
   const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
@@ -234,7 +258,7 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
       {/* Vendors Table */}
       {activeTab === "VENDORS" && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
             <div className="relative w-72">
               <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -245,75 +269,99 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
               />
             </div>
-            <span className="text-xs text-slate-400 font-mono">إجمالي الموردين: {vendors.length}</span>
+            <div className="flex items-center gap-3">
+              <ColumnCustomizer
+                tableKey="vendors_list"
+                columns={VENDOR_COLUMNS}
+                visibleColumns={venVis}
+                onChange={updateVenVis}
+              />
+              <span className="text-xs text-slate-400 font-mono">إجمالي الموردين: {vendors.length}</span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-800 bg-slate-950/70">
-                  <th className="py-3 px-4 font-semibold">رمز المورد</th>
-                  <th className="py-3 px-4 font-semibold">اسم الشركة / المورد</th>
-                  <th className="py-3 px-4 font-semibold">التصنيف</th>
-                  <th className="py-3 px-4 font-semibold">المدينة / الدولة</th>
-                  <th className="py-3 px-4 font-semibold">الهاتف</th>
-                  <th className="py-3 px-4 font-semibold text-left">الرصيد الدائن المستحق</th>
-                  <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>
+                  {isVenVis("code") && <th className="py-3 px-4 font-semibold">رمز المورد</th>}
+                  {isVenVis("nameAr") && <th className="py-3 px-4 font-semibold">اسم الشركة / المورد</th>}
+                  {isVenVis("category") && <th className="py-3 px-4 font-semibold">التصنيف</th>}
+                  {isVenVis("city") && <th className="py-3 px-4 font-semibold">المدينة / الدولة</th>}
+                  {isVenVis("phone") && <th className="py-3 px-4 font-semibold">الهاتف</th>}
+                  {isVenVis("currentBalance") && <th className="py-3 px-4 font-semibold text-left">الرصيد الدائن المستحق</th>}
+                  {isVenVis("actions") && <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {filteredVendors.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-amber-400">{v.code}</td>
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-100">{v.nameAr}</div>
-                      {v.nameEn && <div className="text-[10px] text-slate-400 font-mono">{v.nameEn}</div>}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                        {v.category || "عام"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-300">{v.city}</td>
-                    <td className="py-3 px-4 font-mono text-slate-400">{v.phone}</td>
-                    <td className="py-3 px-4 text-left font-mono font-bold text-amber-400 text-sm">
-                      {formatMoney(v.currentBalance, v.currency, currencies)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {onShareDocument && (
-                          <button
-                            onClick={() =>
-                              onShareDocument({
-                                type: "STATEMENT",
-                                data: v,
-                                recipientName: v.nameAr,
-                                recipientPhone: v.phone,
-                              })
-                            }
-                            className="p-1.5 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-800/60 hover:bg-amber-800 hover:text-white transition-colors"
-                            title="مشاركة كشف الحساب عبر واتساب / SMS"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() =>
-                            onShareDocument?.({
-                              type: "STATEMENT",
-                              data: v,
-                              recipientName: v.nameAr,
-                              recipientPhone: v.phone,
-                            })
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
-                        >
-                          كشف حساب
-                        </button>
-                      </div>
+                {filteredVendors.length === 0 ? (
+                  <tr>
+                    <td colSpan={VENDOR_COLUMNS.filter((c) => isVenVis(c.id)).length} className="text-center py-8 text-slate-500">
+                      لا يوجد موردون مطبقون على تصفية البحث
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredVendors.map((v) => (
+                    <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
+                      {isVenVis("code") && <td className="py-3 px-4 font-mono font-bold text-amber-400">{v.code}</td>}
+                      {isVenVis("nameAr") && (
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-100">{v.nameAr}</div>
+                          {v.nameEn && <div className="text-[10px] text-slate-400 font-mono">{v.nameEn}</div>}
+                        </td>
+                      )}
+                      {isVenVis("category") && (
+                        <td className="py-3 px-4">
+                          <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                            {v.category || "عام"}
+                          </span>
+                        </td>
+                      )}
+                      {isVenVis("city") && <td className="py-3 px-4 text-slate-300">{v.city}</td>}
+                      {isVenVis("phone") && <td className="py-3 px-4 font-mono text-slate-400">{v.phone}</td>}
+                      {isVenVis("currentBalance") && (
+                        <td className="py-3 px-4 text-left font-mono font-bold text-amber-400 text-sm">
+                          {formatMoney(v.currentBalance, v.currency, currencies)}
+                        </td>
+                      )}
+                      {isVenVis("actions") && (
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: "STATEMENT",
+                                    data: v,
+                                    recipientName: v.nameAr,
+                                    recipientPhone: v.phone,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-amber-950/80 text-amber-400 border border-amber-800/60 hover:bg-amber-800 hover:text-white transition-colors"
+                                title="مشاركة كشف الحساب عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() =>
+                                onShareDocument?.({
+                                  type: "STATEMENT",
+                                  data: v,
+                                  recipientName: v.nameAr,
+                                  recipientPhone: v.phone,
+                                })
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
+                            >
+                              كشف حساب
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -323,67 +371,82 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
       {/* Purchases Table */}
       {activeTab === "PURCHASES" && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
+            <div className="text-xs text-slate-400 font-mono">إجمالي الفواتير: {purchaseBills.length}</div>
+            <ColumnCustomizer
+              tableKey="purchase_bills_list"
+              columns={PURCHASE_BILL_COLUMNS}
+              visibleColumns={purVis}
+              onChange={updatePurVis}
+            />
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-800 bg-slate-950/70">
-                  <th className="py-3 px-4 font-semibold">رقم الفاتورة</th>
-                  <th className="py-3 px-4 font-semibold">المورد</th>
-                  <th className="py-3 px-4 font-semibold">التاريخ</th>
-                  <th className="py-3 px-4 font-semibold">تاريخ الاستحقاق</th>
-                  <th className="py-3 px-4 font-semibold text-left">إجمالي الفاتورة</th>
-                  <th className="py-3 px-4 font-semibold text-center">الحالة</th>
-                  <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>
+                  {isPurVis("invoiceNumber") && <th className="py-3 px-4 font-semibold">رقم الفاتورة</th>}
+                  {isPurVis("vendorName") && <th className="py-3 px-4 font-semibold">المورد</th>}
+                  {isPurVis("date") && <th className="py-3 px-4 font-semibold">التاريخ</th>}
+                  {isPurVis("dueDate") && <th className="py-3 px-4 font-semibold">تاريخ الاستحقاق</th>}
+                  {isPurVis("totalAmount") && <th className="py-3 px-4 font-semibold text-left">إجمالي الفاتورة</th>}
+                  {isPurVis("status") && <th className="py-3 px-4 font-semibold text-center">الحالة</th>}
+                  {isPurVis("actions") && <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {purchaseBills.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <td colSpan={PURCHASE_BILL_COLUMNS.filter((c) => isPurVis(c.id)).length} className="py-12 text-center text-slate-400">
                       لا توجد فواتير مشتريات مسجلة
                     </td>
                   </tr>
                 ) : (
                   purchaseBills.map((b) => (
                     <tr key={b.id} className="hover:bg-slate-800/40">
-                      <td className="py-3 px-4 font-mono font-bold text-amber-400">{b.invoiceNumber}</td>
-                      <td className="py-3 px-4 font-bold text-slate-100">{b.vendorName}</td>
-                      <td className="py-3 px-4 text-slate-300">{b.date}</td>
-                      <td className="py-3 px-4 text-slate-400 font-mono">{b.dueDate}</td>
-                      <td className="py-3 px-4 text-left font-mono font-bold text-amber-400">
-                        {formatMoney(b.totalAmount, b.currency, currencies)}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800 font-bold">
-                          مستحق الدفع
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {onShareDocument && (
+                      {isPurVis("invoiceNumber") && <td className="py-3 px-4 font-mono font-bold text-amber-400">{b.invoiceNumber}</td>}
+                      {isPurVis("vendorName") && <td className="py-3 px-4 font-bold text-slate-100">{b.vendorName}</td>}
+                      {isPurVis("date") && <td className="py-3 px-4 text-slate-300">{b.date}</td>}
+                      {isPurVis("dueDate") && <td className="py-3 px-4 text-slate-400 font-mono">{b.dueDate}</td>}
+                      {isPurVis("totalAmount") && (
+                        <td className="py-3 px-4 text-left font-mono font-bold text-amber-400">
+                          {formatMoney(b.totalAmount, b.currency, currencies)}
+                        </td>
+                      )}
+                      {isPurVis("status") && (
+                        <td className="py-3 px-4 text-center">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800 font-bold">
+                            مستحق الدفع
+                          </span>
+                        </td>
+                      )}
+                      {isPurVis("actions") && (
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: "INVOICE",
+                                    data: b,
+                                    recipientName: b.vendorName,
+                                    recipientPhone: (b as any).vendorPhone || (b as any).partyPhone || vendors.find((v) => v.id === b.partyId)?.phone,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
+                                title="مشاركة عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             <button
-                              onClick={() =>
-                                onShareDocument({
-                                  type: "INVOICE",
-                                  data: b,
-                                  recipientName: b.vendorName,
-                                  recipientPhone: (b as any).vendorPhone || (b as any).partyPhone || vendors.find((v) => v.id === b.partyId)?.phone,
-                                })
-                              }
-                              className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
-                              title="مشاركة عبر واتساب / SMS"
+                              onClick={() => onPrintDocument("INVOICE", b)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px]"
                             >
-                              <Share2 className="w-3.5 h-3.5" />
+                              طباعة
                             </button>
-                          )}
-                          <button
-                            onClick={() => onPrintDocument("INVOICE", b)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px]"
-                          >
-                            طباعة
-                          </button>
-                        </div>
-                      </td>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

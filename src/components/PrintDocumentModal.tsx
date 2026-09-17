@@ -48,8 +48,6 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
   isDarkMode = true,
   systemSettings,
 }) => {
-  if (!isOpen || !documentType || !documentData) return null;
-
   // Visual preview mode toggle: LIGHT (الوضع المشرق) vs DARK (الوضع الليلي)
   const [previewMode, setPreviewMode] = useState<"LIGHT" | "DARK">(isDarkMode ? "DARK" : "LIGHT");
   const [copied, setCopied] = useState(false);
@@ -66,6 +64,94 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
     () => systemSettings?.signatureImage || localStorage.getItem("mdo_print_sig_image") || ""
   );
   const [showSigSettings, setShowSigSettings] = useState(false);
+
+  // Dynamic Branch Print & Header/Footer Customizer state
+  const [showPrintCustomizer, setShowPrintCustomizer] = useState(false);
+  const [paperFormat, setPaperFormat] = useState<"A4" | "THERMAL_80MM">("A4");
+
+  const [headerCompanyAr, setHeaderCompanyAr] = useState(() => {
+    return localStorage.getItem("mdo_print_header_ar") || systemSettings?.companyNameAr || "مجموعة بن زياد التجارية المتحدة";
+  });
+  const [headerSubtitleAr, setHeaderSubtitleAr] = useState(() => {
+    return localStorage.getItem("mdo_print_sub_ar") || "الفرع الرئيسي - قسم التوريدات والخدمات التجارية";
+  });
+  const [headerCompanyEn, setHeaderCompanyEn] = useState(() => {
+    return localStorage.getItem("mdo_print_header_en") || systemSettings?.companyNameEn || "Bin Ziad United Commercial Group";
+  });
+  const [headerSubtitleEn, setHeaderSubtitleEn] = useState(() => {
+    return localStorage.getItem("mdo_print_sub_en") || "Building Materials & Commercial Supplies";
+  });
+  const [headerPhone, setHeaderPhone] = useState(() => {
+    return localStorage.getItem("mdo_print_phone") || systemSettings?.phone || "0967773586047 + 715779976";
+  });
+  const [headerTaxReg, setHeaderTaxReg] = useState(() => {
+    return localStorage.getItem("mdo_print_tax_reg") || `س.ت: ${systemSettings?.commercialRegister || '7102030'} | ضريبي: ${systemSettings?.taxNumber || '300010020'}`;
+  });
+
+  const [logoType, setLogoType] = useState<"DEFAULT_CREST" | "CUSTOM_IMAGE" | "TEXT_BADGE">(
+    () => (localStorage.getItem("mdo_print_logo_type") as any) || "DEFAULT_CREST"
+  );
+  const [logoImage, setLogoImage] = useState<string>(
+    () => localStorage.getItem("mdo_print_logo_img") || ""
+  );
+  const [footerTermsAr, setFooterTermsAr] = useState<string>(
+    () => localStorage.getItem("mdo_print_footer_terms") || "البضاعة المباعة لا ترد ولا تستبدل إلا وفق الشروط المعتمدة | شكراً لتعاملكم معنا"
+  );
+  const [showWatermark, setShowWatermark] = useState<boolean>(
+    () => localStorage.getItem("mdo_print_watermark_show") !== "false"
+  );
+  const [watermarkText, setWatermarkText] = useState<string>(
+    () => localStorage.getItem("mdo_print_watermark_text") || "مستند معتمد رسمياً"
+  );
+
+  // Synchronize dynamic print fields when systemSettings or documentData changes
+  useEffect(() => {
+    if (systemSettings) {
+      if (!localStorage.getItem("mdo_print_header_ar") && systemSettings.companyNameAr) {
+        setHeaderCompanyAr(systemSettings.companyNameAr);
+      }
+      if (!localStorage.getItem("mdo_print_header_en") && systemSettings.companyNameEn) {
+        setHeaderCompanyEn(systemSettings.companyNameEn);
+      }
+      if (!localStorage.getItem("mdo_print_phone") && systemSettings.phone) {
+        setHeaderPhone(systemSettings.phone);
+      }
+    }
+    if (documentData?.branchName || documentData?.branch) {
+      const bName = documentData.branchName || documentData.branch;
+      if (bName && typeof bName === "string" && !localStorage.getItem("mdo_print_sub_ar_user")) {
+        setHeaderSubtitleAr(`فرع: ${bName} - قسم التوريدات والخدمات`);
+      }
+    }
+  }, [systemSettings, documentData]);
+
+  // Persist print customizer choices to localStorage
+  useEffect(() => { localStorage.setItem("mdo_print_header_ar", headerCompanyAr); }, [headerCompanyAr]);
+  useEffect(() => { localStorage.setItem("mdo_print_sub_ar", headerSubtitleAr); }, [headerSubtitleAr]);
+  useEffect(() => { localStorage.setItem("mdo_print_header_en", headerCompanyEn); }, [headerCompanyEn]);
+  useEffect(() => { localStorage.setItem("mdo_print_sub_en", headerSubtitleEn); }, [headerSubtitleEn]);
+  useEffect(() => { localStorage.setItem("mdo_print_phone", headerPhone); }, [headerPhone]);
+  useEffect(() => { localStorage.setItem("mdo_print_tax_reg", headerTaxReg); }, [headerTaxReg]);
+  useEffect(() => { localStorage.setItem("mdo_print_logo_type", logoType); }, [logoType]);
+  useEffect(() => {
+    if (logoImage) localStorage.setItem("mdo_print_logo_img", logoImage);
+    else localStorage.removeItem("mdo_print_logo_img");
+  }, [logoImage]);
+  useEffect(() => { localStorage.setItem("mdo_print_footer_terms", footerTermsAr); }, [footerTermsAr]);
+  useEffect(() => { localStorage.setItem("mdo_print_watermark_show", String(showWatermark)); }, [showWatermark]);
+  useEffect(() => { localStorage.setItem("mdo_print_watermark_text", watermarkText); }, [watermarkText]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoImage(reader.result as string);
+        setLogoType("CUSTOM_IMAGE");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Synchronize when systemSettings changes
   useEffect(() => {
@@ -110,6 +196,8 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
       setPreviewMode(isDarkMode ? "DARK" : "LIGHT");
     }
   }, [isOpen, isDarkMode]);
+
+  if (!isOpen || !documentType || !documentData) return null;
 
   const isLight = previewMode === "LIGHT";
 
@@ -371,9 +459,29 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
               <span>{isExporting ? "جاري التصدير..." : "تصدير PDF"}</span>
             </button>
 
+            {/* Custom Header & Logo Settings Button */}
+            <button
+              onClick={() => {
+                setShowPrintCustomizer(!showPrintCustomizer);
+                if (showSigSettings) setShowSigSettings(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border shadow-md active:scale-95 ${
+                showPrintCustomizer
+                  ? "bg-blue-600 border-blue-500 text-white"
+                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+              }`}
+              title="تخصيص الهيدر والفوتر والشعار والعلامة المائية للطباعة"
+            >
+              <span>🎨</span>
+              <span>تخصيص الهيدر والشعار</span>
+            </button>
+
             {/* Signature Settings Button */}
             <button
-              onClick={() => setShowSigSettings(!showSigSettings)}
+              onClick={() => {
+                setShowSigSettings(!showSigSettings);
+                if (showPrintCustomizer) setShowPrintCustomizer(false);
+              }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border shadow-md active:scale-95 ${
                 showSigSettings
                   ? "bg-amber-600 border-amber-500 text-white"
@@ -501,14 +609,215 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
           </div>
         )}
 
+        {/* DYNAMIC PRINT HEADER / FOOTER & LOGO CUSTOMIZER PANEL (Hidden in Print) */}
+        {showPrintCustomizer && (
+          <div className="bg-slate-950 border border-blue-900/60 rounded-2xl p-4 mb-6 space-y-4 text-right animate-in slide-in-from-top-3 duration-200 print:hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h4 className="text-xs font-extrabold text-blue-400 flex items-center gap-2">
+                <span>🎨</span>
+                <span>لوحة تخصيص الهيدر والشعار للطباعة لكل فرع (Dynamic Branch Header/Footer)</span>
+              </h4>
+              <button 
+                onClick={() => setShowPrintCustomizer(false)}
+                className="text-slate-400 hover:text-white text-xs font-bold"
+              >
+                إغلاق ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+              {/* Company/Branch Name Arabic */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">اسم المنشأة/الفرع (عربي):</label>
+                <input
+                  type="text"
+                  value={headerCompanyAr}
+                  onChange={(e) => setHeaderCompanyAr(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  placeholder="مجموعة بن زياد التجارية"
+                />
+              </div>
+
+              {/* Subtitle/Activity Arabic */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">نشاط/عنوان الفرع (عربي):</label>
+                <input
+                  type="text"
+                  value={headerSubtitleAr}
+                  onChange={(e) => {
+                    setHeaderSubtitleAr(e.target.value);
+                    localStorage.setItem("mdo_print_sub_ar_user", "true");
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  placeholder="الفرع الرئيسي - الكدوي"
+                />
+              </div>
+
+              {/* Company/Branch Name English */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">اسم المنشأة/الفرع (بالإنجليزية):</label>
+                <input
+                  type="text"
+                  value={headerCompanyEn}
+                  onChange={(e) => setHeaderCompanyEn(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans"
+                  placeholder="Bin Ziad Commercial Group"
+                />
+              </div>
+
+              {/* Phone numbers */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">أرقام الهواتف والتواصل:</label>
+                <input
+                  type="text"
+                  value={headerPhone}
+                  onChange={(e) => setHeaderPhone(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                  placeholder="+967 773586047 | 715779976"
+                />
+              </div>
+
+              {/* Tax & CR */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">السجل التجاري والرقم الضريبي:</label>
+                <input
+                  type="text"
+                  value={headerTaxReg}
+                  onChange={(e) => setHeaderTaxReg(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                  placeholder="س.ت: 7102030 | ضريبي: 300010020"
+                />
+              </div>
+
+              {/* Logo Selection Mode */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">نمط شعار الهيدر (Logo Style):</label>
+                <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setLogoType("DEFAULT_CREST")}
+                    className={`py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      logoType === "DEFAULT_CREST" ? "bg-blue-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    شعار رسمي
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoType("CUSTOM_IMAGE")}
+                    className={`py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      logoType === "CUSTOM_IMAGE" ? "bg-amber-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    صورة شعار
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoType("TEXT_BADGE")}
+                    className={`py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      logoType === "TEXT_BADGE" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    شارة نصية
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom Logo File Uploader */}
+              {logoType === "CUSTOM_IMAGE" && (
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="block text-[11px] font-bold text-slate-300">رفع صورة شعار الفرع (PNG / JPG):</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="block w-full text-xs text-slate-400 file:mr-4 file:py-1 file:px-2 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-slate-900 file:text-slate-300 hover:file:bg-slate-800"
+                    />
+                    {logoImage && (
+                      <button
+                        type="button"
+                        onClick={() => { setLogoImage(""); setLogoType("DEFAULT_CREST"); }}
+                        className="px-2 py-1 bg-red-950/40 border border-red-800/40 text-red-400 text-[10px] rounded-lg hover:bg-red-900/40 whitespace-nowrap"
+                      >
+                        حذف الشعار
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Terms */}
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">شروط وملاحظات الفوتر المطبوع:</label>
+                <input
+                  type="text"
+                  value={footerTermsAr}
+                  onChange={(e) => setFooterTermsAr(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  placeholder="البضاعة المباعة لا ترد ولا تستبدل إلا وفق الشروط المعتمدة"
+                />
+              </div>
+
+              {/* Watermark & Paper size */}
+              <div className="flex items-center justify-between sm:col-span-3 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="showWatermarkCheck"
+                    checked={showWatermark}
+                    onChange={(e) => setShowWatermark(e.target.checked)}
+                    className="w-4 h-4 accent-blue-500 rounded cursor-pointer"
+                  />
+                  <label htmlFor="showWatermarkCheck" className="text-slate-200 text-xs font-bold cursor-pointer">
+                    إظهار العلامة المائية الشفافة (Watermark)
+                  </label>
+                  {showWatermark && (
+                    <input
+                      type="text"
+                      value={watermarkText}
+                      onChange={(e) => setWatermarkText(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-0.5 text-xs text-amber-400 w-44 focus:outline-none"
+                    />
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 text-xs font-bold">قياس الورق:</span>
+                  <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat("A4")}
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                        paperFormat === "A4" ? "bg-blue-600 text-white" : "text-slate-400"
+                      }`}
+                    >
+                      A4 رسمي
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaperFormat("THERMAL_80MM")}
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                        paperFormat === "THERMAL_80MM" ? "bg-amber-600 text-white" : "text-slate-400"
+                      }`}
+                    >
+                      حراري POS (80mm)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ------------------------------------------------------------- */}
         {/* DOCUMENT CANVAS CONTAINER (Light Mode / Dark Mode / Print)    */}
         {/* ------------------------------------------------------------- */}
         <div
           id="printable-document-canvas"
-          className={`doc-canvas doc-font-cairo p-6 sm:p-8 rounded-2xl shadow-xl border transition-colors duration-200 space-y-6 print:p-0 print:border-none print:shadow-none ${
+          className={`doc-canvas doc-font-cairo p-6 sm:p-8 rounded-2xl shadow-xl border transition-colors duration-200 space-y-6 print:p-0 print:border-none print:shadow-none relative overflow-hidden ${
             isLight ? "doc-mode-light" : "doc-mode-dark"
-          }`}
+          } ${paperFormat === "THERMAL_80MM" ? "doc-paper-thermal" : ""}`}
           style={{
             backgroundColor: colors.canvasBg,
             color: colors.body,
@@ -516,66 +825,87 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
             fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif",
           }}
         >
-          {/* 1. Header with Enterprise Branding */}
+          {/* Dynamic Branch Watermark in Print */}
+          {showWatermark && (
+            <div className="doc-print-watermark hidden print:block pointer-events-none select-none">
+              {watermarkText}
+            </div>
+          )}
+
+          {/* 1. Header with Dynamic Branch Branding */}
           <div
-            className="flex items-start justify-between pb-4 border-b-2"
+            className="flex items-start justify-between pb-4 border-b-2 gap-2"
             style={{ borderColor: "#D4AF37" }}
           >
             {/* Right Side: Arabic Header */}
-            <div className="space-y-1 text-right">
+            <div className="space-y-1 text-right flex-1">
               <h1
                 className="doc-company-title font-extrabold text-base sm:text-lg"
                 style={{ color: colors.title }}
               >
-                🏢 مجموعة بن زياد التجارية المتحدة
+                🏢 {headerCompanyAr}
               </h1>
               <div
-                className="doc-secondary-text text-[13px] font-bold"
+                className="doc-secondary-text text-[12px] font-bold"
                 style={{ color: colors.secondary }}
               >
-                مواد بناء ومواد زراعية - الكدوي - عمارة القلمي - دور أرضي
+                {headerSubtitleAr}
               </div>
               <div
-                className="doc-meta text-[12px]"
+                className="doc-meta text-[11px]"
                 style={{ color: colors.secondary }}
               >
-                للتواصل: 0967773586047 + 715779976
+                للتواصل: {headerPhone}
               </div>
+              {headerTaxReg && (
+                <div
+                  className="doc-meta text-[10px] font-mono"
+                  style={{ color: colors.secondary }}
+                >
+                  {headerTaxReg}
+                </div>
+              )}
             </div>
 
-            {/* Middle: Luxury Logo Crest */}
-            <div className="flex-shrink-0 mx-2 sm:mx-4">
-              <div className="w-14 h-14 rounded-xl bg-[#0A2540] text-sap-secondary font-black flex flex-col items-center justify-center border-2 border-sap-secondary shadow-md">
-                <span className="text-xs font-mono tracking-tighter">MDOtkBZ</span>
-                <span className="text-[8px] text-sap-secondary/90">بن زياد</span>
-              </div>
+            {/* Middle: Dynamic Logo Display */}
+            <div className="flex-shrink-0 mx-2 sm:mx-4 flex flex-col items-center justify-center">
+              {logoType === "CUSTOM_IMAGE" && logoImage ? (
+                <img
+                  src={logoImage}
+                  alt="شعار الفرع المعتمد"
+                  className="max-h-16 max-w-[120px] object-contain"
+                />
+              ) : logoType === "TEXT_BADGE" ? (
+                <div className="px-3 py-2 rounded-xl bg-[#0A2540] text-[#D4AF37] font-black text-xs border border-[#D4AF37] text-center shadow-md">
+                  {headerCompanyAr.slice(0, 16)}
+                </div>
+              ) : (
+                <div className="w-14 h-14 rounded-xl bg-[#0A2540] text-sap-secondary font-black flex flex-col items-center justify-center border-2 border-sap-secondary shadow-md">
+                  <span className="text-xs font-mono tracking-tighter">MDOtkBZ</span>
+                  <span className="text-[8px] text-sap-secondary/90">بن زياد</span>
+                </div>
+              )}
             </div>
 
             {/* Left Side: English Header */}
-            <div className="text-left space-y-1" dir="ltr">
+            <div className="text-left space-y-1 flex-1" dir="ltr">
               <h2
                 className="font-extrabold text-[13px] sm:text-[14px]"
                 style={{ color: colors.title }}
               >
-                Bin Ziad United Commercial Group
+                {headerCompanyEn}
               </h2>
               <div
                 className="text-[11px] font-medium"
                 style={{ color: colors.secondary }}
               >
-                Building Materials & Agricultural Supplies
+                {headerSubtitleEn}
               </div>
               <div
                 className="text-[11px]"
                 style={{ color: colors.secondary }}
               >
-                Al-Kadwi - Al-Qalami Building - Ground Floor
-              </div>
-              <div
-                className="text-[11px]"
-                style={{ color: colors.secondary }}
-              >
-                Tel: +967 773586047 | 715779976
+                {headerPhone}
               </div>
             </div>
           </div>
@@ -1287,24 +1617,29 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
                 className="pb-1 font-bold text-[13px]"
                 style={{ color: "#D4AF37" }}
               >
-                مجموعة بن زياد التجارية المتحدة
+                {headerCompanyAr}
               </div>
             </div>
           </div>
 
-          {/* 6. Footer (11-12px Light) */}
+          {/* 6. Dynamic Footer & Terms */}
           <div
-            className="pt-4 border-t text-center space-y-0.5 doc-footer"
+            className="pt-4 border-t text-center space-y-1 doc-footer"
             style={{
               borderColor: colors.border,
               color: colors.footerText,
             }}
           >
-            <div>
-              Copyright © 2026 MeDo تك وبن زياد المتحدة | MeDo ERP
+            {footerTermsAr && (
+              <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 border-b border-dashed border-slate-300 dark:border-slate-700 pb-1 mb-1">
+                📌 {footerTermsAr}
+              </div>
+            )}
+            <div className="font-semibold text-[11px]">
+              جميع الحقوق محفوظة © {headerCompanyEn} | MeDo Tech & SAP/MeDO ERP
             </div>
-            <div>
-              نظام المحاسبة والإدارة المتكامل
+            <div className="text-[10px] text-slate-500">
+              طبع بواسطة: {documentData?.printedBy || 'نظام المحاسبة والإدارة المتكامل'} - {todayPrintDate}
             </div>
           </div>
         </div>

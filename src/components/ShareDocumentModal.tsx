@@ -64,8 +64,6 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
   displayCurrency,
   onOpenPrint,
 }) => {
-  if (!isOpen || !shareData) return null;
-
   const [activeChannel, setActiveChannel] = useState<"WHATSAPP" | "SMS">("WHATSAPP");
   const [selectedCountryCode, setSelectedCountryCode] = useState("967");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -98,6 +96,8 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
 
     generateMessageText(activeChannel);
   }, [shareData, activeChannel, displayCurrency]);
+
+  if (!isOpen || !shareData) return null;
 
   const generateMessageText = (channel: "WHATSAPP" | "SMS") => {
     if (!shareData) return;

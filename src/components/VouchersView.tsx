@@ -32,6 +32,7 @@ import {
   QuickAddCustomerModal,
   QuickAddVendorModal,
 } from "./QuickAddModals";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface VouchersViewProps {
   vouchers: Voucher[];
@@ -70,6 +71,18 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
 }) => {
   const [voucherTypeTab, setVoucherTypeTab] = useState<"ALL" | "RECEIPT" | "PAYMENT">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const VOUCHER_COLUMNS: ColumnDef[] = [
+    { id: "voucherNumber", label: "رقم السند", locked: true },
+    { id: "type", label: "النوع" },
+    { id: "date", label: "التاريخ" },
+    { id: "party", label: "المستفيد / المسلّم منه" },
+    { id: "paymentMethod", label: "طريقة الدفع" },
+    { id: "amount", label: "المبلغ" },
+    { id: "notes", label: "البيان" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("vouchers_list", VOUCHER_COLUMNS);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createType, setCreateType] = useState<"RECEIPT" | "PAYMENT">("RECEIPT");
 
@@ -212,15 +225,23 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
           ))}
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="بحث برقم السند أو المستفيد..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <ColumnCustomizer
+            tableKey="vouchers_list"
+            columns={VOUCHER_COLUMNS}
+            visibleColumns={visibleColumns}
+            onChange={updateVisibility}
           />
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="بحث برقم السند أو المستفيد..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -338,20 +359,20 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
           <table className="w-full text-right text-sm text-slate-200">
             <thead>
               <tr className="text-white border-b-2 border-slate-700 bg-slate-950 font-bold">
-                <th className="py-4 px-4 font-extrabold text-xs text-white">رقم السند</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">النوع</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">التاريخ</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">المستفيد / المسلّم منه</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">طريقة الدفع</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-left">المبلغ</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">البيان</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الإجراءات</th>
+                {isVisible("voucherNumber") && <th className="py-4 px-4 font-extrabold text-xs text-white">رقم السند</th>}
+                {isVisible("type") && <th className="py-4 px-4 font-extrabold text-xs text-white">النوع</th>}
+                {isVisible("date") && <th className="py-4 px-4 font-extrabold text-xs text-white">التاريخ</th>}
+                {isVisible("party") && <th className="py-4 px-4 font-extrabold text-xs text-white">المستفيد / المسلّم منه</th>}
+                {isVisible("paymentMethod") && <th className="py-4 px-4 font-extrabold text-xs text-white">طريقة الدفع</th>}
+                {isVisible("amount") && <th className="py-4 px-4 font-extrabold text-xs text-white text-left">المبلغ</th>}
+                {isVisible("notes") && <th className="py-4 px-4 font-extrabold text-xs text-white">البيان</th>}
+                {isVisible("actions") && <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الإجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/80">
               {filteredVouchers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={VOUCHER_COLUMNS.filter((c) => isVisible(c.id)).length} className="py-12 text-center text-slate-400 font-medium">
                     لا توجد سندات مسجلة
                   </td>
                 </tr>
@@ -360,68 +381,78 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
                   const isReceipt = vch.type === "RECEIPT";
                   return (
                     <tr key={vch.id} className="hover:bg-slate-800/60 transition-colors">
-                      <td className="py-4 px-4 font-mono font-black text-emerald-400 text-sm">{vch.voucherNumber}</td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`text-xs px-2.5 py-1 rounded-md font-bold flex items-center gap-1 w-fit ${
-                            isReceipt
-                              ? "bg-blue-950 text-blue-300 border border-blue-600"
-                              : "bg-amber-950 text-amber-300 border border-amber-600"
-                          }`}
-                        >
-                          {isReceipt ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
-                          <span>{isReceipt ? "قبض" : "صرف"}</span>
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-slate-200 font-medium" title={formatDualDate(vch.date)}>
-                        {formatDate(vch.date)}
-                      </td>
-                      <td className="py-4 px-4 text-slate-100 font-bold max-w-xs truncate text-sm">{vch.beneficiaryOrPayer}</td>
-                      <td className="py-4 px-4">
-                        <span className="text-xs text-slate-200 font-semibold">
-                          {vch.paymentMethod === "CASH"
-                            ? "نقداً (خزينة)"
-                            : vch.paymentMethod === "BANK_TRANSFER"
-                            ? "تحويل بنكي"
-                            : "شيك بنكي"}
-                        </span>
-                        {vch.checkNumber && (
-                          <div className="text-xs text-slate-400 font-mono mt-0.5">شيك: {vch.checkNumber}</div>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-left font-mono font-black text-base">
-                        <span className={isReceipt ? "text-emerald-400" : "text-amber-400"}>
-                          {isReceipt ? "+" : "-"}{formatMoney(vch.amount, vch.currency, currencies)}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-300 text-[11px] max-w-xs truncate">{vch.notes}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {onShareDocument && (
-                            <button
-                              onClick={() =>
-                                onShareDocument({
-                                  type: isReceipt ? "RECEIPT" : "PAYMENT",
-                                  data: vch,
-                                  recipientName: vch.beneficiaryOrPayer,
-                                })
-                              }
-                              className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
-                              title="مشاركة السند عبر واتساب / SMS"
-                            >
-                              <Share2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onPrintDocument(vch.type, vch)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
-                            title="طباعة السند"
+                      {isVisible("voucherNumber") && <td className="py-4 px-4 font-mono font-black text-emerald-400 text-sm">{vch.voucherNumber}</td>}
+                      {isVisible("type") && (
+                        <td className="py-4 px-4">
+                          <span
+                            className={`text-xs px-2.5 py-1 rounded-md font-bold flex items-center gap-1 w-fit ${
+                              isReceipt
+                                ? "bg-blue-950 text-blue-300 border border-blue-600"
+                                : "bg-amber-950 text-amber-300 border border-amber-600"
+                            }`}
                           >
-                            <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>طباعة</span>
-                          </button>
-                        </div>
-                      </td>
+                            {isReceipt ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
+                            <span>{isReceipt ? "قبض" : "صرف"}</span>
+                          </span>
+                        </td>
+                      )}
+                      {isVisible("date") && (
+                        <td className="py-4 px-4 text-slate-200 font-medium" title={formatDualDate(vch.date)}>
+                          {formatDate(vch.date)}
+                        </td>
+                      )}
+                      {isVisible("party") && <td className="py-4 px-4 text-slate-100 font-bold max-w-xs truncate text-sm">{vch.beneficiaryOrPayer}</td>}
+                      {isVisible("paymentMethod") && (
+                        <td className="py-4 px-4">
+                          <span className="text-xs text-slate-200 font-semibold">
+                            {vch.paymentMethod === "CASH"
+                              ? "نقداً (خزينة)"
+                              : vch.paymentMethod === "BANK_TRANSFER"
+                              ? "تحويل بنكي"
+                              : "شيك بنكي"}
+                          </span>
+                          {vch.checkNumber && (
+                            <div className="text-xs text-slate-400 font-mono mt-0.5">شيك: {vch.checkNumber}</div>
+                          )}
+                        </td>
+                      )}
+                      {isVisible("amount") && (
+                        <td className="py-4 px-4 text-left font-mono font-black text-base">
+                          <span className={isReceipt ? "text-emerald-400" : "text-amber-400"}>
+                            {isReceipt ? "+" : "-"}{formatMoney(vch.amount, vch.currency, currencies)}
+                          </span>
+                        </td>
+                      )}
+                      {isVisible("notes") && <td className="py-3.5 px-4 text-slate-300 text-[11px] max-w-xs truncate">{vch.notes}</td>}
+                      {isVisible("actions") && (
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: isReceipt ? "RECEIPT" : "PAYMENT",
+                                    data: vch,
+                                    recipientName: vch.beneficiaryOrPayer,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
+                                title="مشاركة السند عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onPrintDocument(vch.type, vch)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
+                              title="طباعة السند"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>طباعة</span>
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

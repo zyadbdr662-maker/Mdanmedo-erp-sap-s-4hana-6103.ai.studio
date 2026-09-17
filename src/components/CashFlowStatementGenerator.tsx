@@ -48,6 +48,7 @@ import {
   CashMovementLine,
 } from "../services/cashFlowEngine";
 import { formatMoney, formatNumberOnly } from "../services/erpStorage";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 import { formatCalendarDate, formatDualDate, getActiveCalendarType } from "../utils/calendarUtils";
 import { exportElementToPdf, getTodayFormattedDate } from "../services/pdfExporter";
 
@@ -82,6 +83,7 @@ export const CashFlowStatementGenerator: React.FC<CashFlowStatementGeneratorProp
   onShareReport,
   initialFiscalYear = "2026",
 }) => {
+  const companyMeta = TenantIsolationService.getActiveTenantDetails();
   // Method State: Direct Method (الطريقة المباشرة) vs Indirect Method (الطريقة غير المباشرة)
   const [method, setMethod] = useState<"DIRECT" | "INDIRECT">("DIRECT");
   const [fiscalYear, setFiscalYear] = useState(initialFiscalYear);
@@ -637,28 +639,28 @@ export const CashFlowStatementGenerator: React.FC<CashFlowStatementGeneratorProp
           <div className="flex items-start justify-between gap-4">
             <div className="text-right space-y-1">
               <h1 className="doc-title text-base sm:text-lg font-extrabold text-white print:text-black">
-                🏢 مجموعة بن زياد التجارية المتحدة
+                🏢 {companyMeta.nameAr}
               </h1>
               <div className="doc-date text-xs font-bold text-slate-300 print:text-slate-700">
-                مواد بناء ومواد زراعية - العنوان: الكندوي، حمر، عمران
+                {companyMeta.industry} - العنوان: {companyMeta.address}
               </div>
               <div className="doc-meta text-xs text-slate-400 print:text-slate-600">
-                للتواصل: 0967773586047 + 715779976
+                للتواصل: {companyMeta.phone}
               </div>
             </div>
             <div className="w-14 h-14 rounded-xl bg-[#0A2540] border-2 border-sap-secondary text-sap-secondary font-black text-xs flex flex-col items-center justify-center flex-shrink-0 shadow-md">
-              <span className="font-mono tracking-tighter">MDOtkBZ</span>
-              <span className="text-[8px] text-sap-secondary/90">بن زياد</span>
+              <span className="font-mono tracking-tighter">{companyMeta.logoText}</span>
+              <span className="text-[8px] text-sap-secondary/90">MeDo ERP</span>
             </div>
             <div className="text-left space-y-1" dir="ltr">
               <h2 className="text-[13px] sm:text-[14px] font-extrabold text-white print:text-black">
-                Bin Ziad United Commercial Group
+                {companyMeta.nameEn}
               </h2>
               <div className="text-[11px] text-slate-300 print:text-slate-700 font-medium">
-                Building & Agricultural Materials
+                {companyMeta.nameEn.split(" ").slice(0, 3).join(" ")} Support
               </div>
               <div className="text-[11px] text-slate-400 print:text-slate-600">
-                Tel: +967 773586047 | 715779976
+                Tel: {companyMeta.phone}
               </div>
             </div>
           </div>

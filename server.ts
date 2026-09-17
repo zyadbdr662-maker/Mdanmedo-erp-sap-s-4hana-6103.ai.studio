@@ -240,14 +240,18 @@ app.post("/api/ai/voice-search", async (req, res) => {
 // Postgres Multi-Cloud State Synchronization
 app.get("/api/erp/state", async (req, res) => {
   try {
+    const rawTenant = (req.query.tenantId as string) || (req.headers['x-tenant-id'] as string) || "default";
+    const cleanTenant = rawTenant.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const recordId = rawTenant === "default" ? "medo_erp_state" : `medo_erp_state_${cleanTenant}`;
+
     // Read the generic system state for non-financial modules
-    const stateRecord = await db.select().from(systemState).where(eq(systemState.id, "medo_erp_state")).limit(1);
+    const stateRecord = await db.select().from(systemState).where(eq(systemState.id, recordId)).limit(1);
     let fullState = stateRecord.length > 0 ? JSON.parse(stateRecord[0].data) : null;
 
     // Check if the record is missing or incomplete (e.g. missing critical modules like accounts or inventoryItems)
     if (!fullState || !Array.isArray(fullState.accounts) || fullState.accounts.length === 0) {
        // Return 404 so frontend initializes complete local defaults and pushes them
-       return res.status(404).json({ error: "No valid full state found" });
+       return res.status(404).json({ error: "No valid full state found for tenant" });
     }
     
     res.json(fullState);
@@ -259,11 +263,15 @@ app.get("/api/erp/state", async (req, res) => {
 
 app.post("/api/erp/state", async (req, res) => {
   try {
+    const rawTenant = (req.query.tenantId as string) || (req.headers['x-tenant-id'] as string) || "default";
+    const cleanTenant = rawTenant.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const recordId = rawTenant === "default" ? "medo_erp_state" : `medo_erp_state_${cleanTenant}`;
+
     const newState = req.body;
     if (!newState || typeof newState !== "object") return res.status(400).json({ error: "Invalid state" });
 
     // 1. Merge incoming state with existing state to prevent any data loss
-    const existing = await db.select().from(systemState).where(eq(systemState.id, "medo_erp_state")).limit(1);
+    const existing = await db.select().from(systemState).where(eq(systemState.id, recordId)).limit(1);
     let existingData: any = {};
     if (existing.length > 0) {
       try {
@@ -314,12 +322,12 @@ app.post("/api/erp/state", async (req, res) => {
     const jsonString = JSON.stringify(mergedState);
     
     if (existing.length > 0) {
-       await db.update(systemState).set({ data: jsonString, updatedAt: new Date() }).where(eq(systemState.id, "medo_erp_state"));
+       await db.update(systemState).set({ data: jsonString, updatedAt: new Date() }).where(eq(systemState.id, recordId));
     } else {
-       await db.insert(systemState).values({ id: "medo_erp_state", data: jsonString });
+       await db.insert(systemState).values({ id: recordId, data: jsonString });
     }
 
-    res.json({ success: true, message: "State saved and merged to Postgres Cloud SQL successfully" });
+    res.json({ success: true, message: `State saved and merged to Postgres Cloud SQL for tenant ${cleanTenant} successfully` });
   } catch (error) {
     console.error("Error saving ERP state to Postgres:", error);
     res.status(500).json({ error: "Failed to save state" });
@@ -853,6 +861,467 @@ app.post("/api/security/test-email", async (req, res) => {
   }
 });
 
+// Multi-Channel Instant Login Notification Dispatcher (Email + WhatsApp + Telegram)
+app.post("/api/security/login-notify", async (req, res) => {
+  try {
+    const {
+      username = "مستخدم غير محدد",
+      email = "user@medo-erp.com",
+      companyName = "شركة غير محددة",
+      branchName = "المركز الرئيسي",
+      role = "مستخدم",
+      ipAddress = "127.0.0.1",
+      userAgent = "متصفح الويب",
+      deviceType = "حاسوب مكتبي",
+      isTrial = false,
+      timestamp = new Date().toISOString(),
+    } = req.body;
+
+    const managerEmail = "zyadbdr925@gmail.com";
+    const managerPhone = "+0967773586047";
+    const notifyId = `LOG-${Date.now().toString(36).toUpperCase()}`;
+
+    console.log(`[LOGIN NOTIFY] 🔔 Real-time Login attempt by "${username}" (${email}) - Company: "${companyName}"`);
+
+    // 1. Prepare WhatsApp Payload
+    const whatsappMessage = encodeURIComponent(
+      `🔔 *[إشعار دخول نظام MeDo ERP]*\n\n` +
+      `👤 *المستخدم:* ${username}\n` +
+      `📧 *البريد:* ${email}\n` +
+      `🏢 *المنشأة:* ${companyName}\n` +
+      `🏷️ *الدور:* ${role}\n` +
+      `📍 *الفرع:* ${branchName}\n` +
+      `💻 *الجهاز:* ${deviceType}\n` +
+      `🌐 *IP:* ${ipAddress}\n` +
+      `⏰ *الوقت:* ${new Date(timestamp).toLocaleString("ar-YE")}\n` +
+      `🏷️ *نوع النسخة:* ${isTrial ? "نسخة تجريبية (Trial)" : "نسخة مدفوعة مفعلة"}\n\n` +
+      `🔒 _نظام المراقبة والأمان السيادي - MeDo ERP_`
+    );
+    const whatsappUrl = `https://wa.me/967773586047?text=${whatsappMessage}`;
+
+    // 2. Dispatch Email
+    let emailSent = false;
+    const transporter = getEmailTransporter();
+    const emailHtml = `
+      <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #0b1329; color: #f8fafc; padding: 24px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #3b82f6; padding-bottom: 16px;">
+          <h1 style="color: #60a5fa; font-size: 20px; margin: 0;">🏢 منظومة MeDo ERP السحابية</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">إشعار تسجيل دخول فوري إلى النظام</p>
+        </div>
+
+        <div style="background-color: ${isTrial ? '#f59e0b15' : '#10b98115'}; border: 1px solid ${isTrial ? '#f59e0b40' : '#10b98140'}; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h2 style="color: ${isTrial ? '#fbbf24' : '#34d399'}; font-size: 15px; margin: 0 0 8px 0;">
+            ${isTrial ? '⏳ تسجيل دخول مستخدم جديد (نسخة تجريبية Trial)' : '✓ تسجيل دخول مستخدم معتمد إلى النظام'}
+          </h2>
+          <p style="color: #e2e8f0; font-size: 13px; line-height: 1.6; margin: 0;">
+            تم تسجيل دخول الحساب <strong>${username}</strong> (${email}) بنجاح إلى منظومة <strong>${companyName}</strong>.
+          </p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">المستخدم:</td><td style="padding: 8px; color: #38bdf8; font-weight: bold;">${username}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">البريد الإلكتروني:</td><td style="padding: 8px; color: #f8fafc; font-family: monospace;">${email}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">الشركة / المنشأة:</td><td style="padding: 8px; color: #f8fafc; font-weight: bold;">${companyName}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">الدور والصلاحيات:</td><td style="padding: 8px; color: #cbd5e1;">${role}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">الفرع:</td><td style="padding: 8px; color: #cbd5e1;">${branchName}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">نوع الجهاز:</td><td style="padding: 8px; color: #cbd5e1;">${deviceType}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">عنوان IP:</td><td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${ipAddress}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">المتصفح:</td><td style="padding: 8px; color: #94a3b8; font-size: 11px;">${userAgent}</td></tr>
+          <tr><td style="padding: 8px; color: #94a3b8;">توقيت الدخول:</td><td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${timestamp}</td></tr>
+        </table>
+
+        <div style="background-color: #0f172a; padding: 12px; border-radius: 8px; text-align: center; font-size: 11px; color: #64748b;">
+          رقم العملية المعتمد: <strong style="color: #60a5fa;">${notifyId}</strong> • المستلم: <strong>${managerEmail}</strong> / <strong>${managerPhone}</strong>
+        </div>
+      </div>
+    `;
+
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || `MeDo ERP Monitor <${process.env.SMTP_USER || managerEmail}>`,
+          to: managerEmail,
+          subject: `🔔 [MeDo ERP - دخول مستخدم] ${username} - ${companyName}`,
+          html: emailHtml,
+        });
+        emailSent = true;
+      } catch (err: any) {
+        console.warn("[LOGIN NOTIFY] SMTP send error:", err.message);
+      }
+    } else if (process.env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "MeDo ERP Monitor <onboarding@resend.dev>",
+            to: [managerEmail],
+            subject: `🔔 [MeDo ERP - دخول مستخدم] ${username} - ${companyName}`,
+            html: emailHtml,
+          }),
+        });
+        emailSent = resendRes.ok;
+      } catch (err: any) {
+        console.warn("[LOGIN NOTIFY] Resend API error:", err.message);
+      }
+    }
+
+    // 3. Telegram Bot Dispatch (if token provided)
+    let telegramSent = false;
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+    const tgChatId = process.env.TELEGRAM_CHAT_ID;
+    if (tgToken && tgChatId) {
+      try {
+        const tgText = `🔔 *تسجيل دخول جديد إلى MeDo ERP*\n\n👤 المستخدم: ${username}\n🏢 الشركة: ${companyName}\n📧 البريد: ${email}\n💻 الجهاز: ${deviceType}\n🌐 IP: ${ipAddress}\n⏰ الوقت: ${timestamp}`;
+        await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: tgChatId,
+            text: tgText,
+            parse_mode: "Markdown",
+          }),
+        });
+        telegramSent = true;
+      } catch (tgErr: any) {
+        console.warn("[LOGIN NOTIFY] Telegram dispatch error:", tgErr.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      notifyId,
+      emailSent,
+      telegramSent,
+      whatsappUrl,
+      recipientEmail: managerEmail,
+      recipientWhatsApp: managerPhone,
+      loggedAt: timestamp,
+      status: "DISPATCHED",
+    });
+  } catch (error: any) {
+    console.error("Login notify error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Real-Time Trial Operations Milestone Dispatcher (25 ops, 45 ops, 50 ops lock)
+app.post("/api/security/trial-milestone", async (req, res) => {
+  try {
+    const {
+      milestone = "MILESTONE_25",
+      clientId = "client-1",
+      clientName = "عميل تجريبي",
+      operationsCount = 25,
+      deviceType = "حاسوب / جوال",
+      ipAddress = "127.0.0.1",
+      userAgent = "متصفح",
+      timestamp = new Date().toISOString(),
+    } = req.body;
+
+    const managerEmail = "zyadbdr925@gmail.com";
+    const managerPhone = "+0967773586047";
+    const notifyId = `MLS-${Date.now().toString(36).toUpperCase()}`;
+
+    let subject = "";
+    let title = "";
+    let color = "#3b82f6";
+    let bodyText = "";
+    let urgencyBadge = "تنبيه إداري";
+
+    if (milestone === "FIRST_ACCESS") {
+      subject = `🌟 [دخول جديد لأول مرة] العميل: ${clientName} (${clientId})`;
+      title = `دخول العميل للرابط المخصص لأول مرة`;
+      color = "#10b981";
+      bodyText = `قام العميل <strong>${clientName}</strong> بالدخول للرابط التجريبي المخصص له لأول مرة عبر جهاز <strong>${deviceType}</strong>.`;
+      urgencyBadge = "وصول جديد";
+    } else if (milestone === "MILESTONE_25") {
+      subject = `📊 [تنبيه 25 عملية - منتصف التجربة] العميل: ${clientName}`;
+      title = `العميل وصل إلى نصف الفترة التجريبية (25 عملية)`;
+      color = "#3b82f6";
+      bodyText = `وصل العميل <strong>${clientName}</strong> إلى <strong>25 عملية</strong> من أصل 50 عملية مسموحة. الإجراء المقترح: إرسال رسالة متابعة وعرض جلسة استعراض (Demo) سريعة.`;
+      urgencyBadge = "متابعة مطلوبة";
+    } else if (milestone === "MILESTONE_45") {
+      subject = `⚡ [تنبيه عاجل 45 عملية] العميل: ${clientName} قارب على الانتهاء`;
+      title = `تنبيه عاجل: العميل قارب على استنفاد العمليات (45/50)`;
+      color = "#f59e0b";
+      bodyText = `أنجز العميل <strong>${clientName}</strong> <strong>45 عملية</strong> ومتبقي له 5 عمليات فقط قبل قفل النظام. الإجراء المقترح: تذكيره بانتهاء التجربة وعرض تفاصيل الباقات والأسعار.`;
+      urgencyBadge = "عاجل - قرب الانتهاء";
+    } else if (milestone === "MILESTONE_50_LOCK") {
+      subject = `🔒 [قفل النظام - 50 عملية] انتهت تجربة العميل: ${clientName}`;
+      title = `تم قفل النظام بعد استنفاد الـ 50 عملية`;
+      color = "#ef4444";
+      bodyText = `استنفد العميل <strong>${clientName}</strong> كامل العمليات الـ 50 المخصصة للتجربة، وظهرت له شاشة القفل والاستبيان. الإجراء المطلوب: التواصل المباشر لإغلاق الصفقة وبيع النسخة الأصلية.`;
+      urgencyBadge = "إغلاق الصفقة";
+    } else {
+      subject = `🔔 [تسجيل دخول] العميل: ${clientName}`;
+      title = `دخول جديد للعميل التجريبي`;
+      bodyText = `سجل العميل <strong>${clientName}</strong> دخولاً جديداً إلى النظام.`;
+    }
+
+    console.log(`[TRIAL MILESTONE] 🎯 Milestone alert "${milestone}" for "${clientName}" (${operationsCount}/50)`);
+
+    // WhatsApp Url
+    const waText = encodeURIComponent(
+      `🚨 *[تنبيه MeDo ERP الإداري - ${urgencyBadge}]*\n\n` +
+      `🏢 *العميل:* ${clientName} (${clientId})\n` +
+      `🎯 *الحدث:* ${title}\n` +
+      `🔢 *العمليات المنجزة:* ${operationsCount} / 50\n` +
+      `💻 *نوع الجهاز:* ${deviceType}\n` +
+      `🌐 *IP:* ${ipAddress}\n` +
+      `⏰ *الوقت:* ${new Date(timestamp).toLocaleString("ar-YE")}\n\n` +
+      `👤 *المسؤول المتابع:* بدر عائض محمد (مجموعة بن زياد)`
+    );
+    const whatsappUrl = `https://wa.me/967773586047?text=${waText}`;
+
+    // Email Dispatch
+    let emailSent = false;
+    const transporter = getEmailTransporter();
+    const emailHtml = `
+      <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #0b1329; color: #f8fafc; padding: 24px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid ${color}; padding-bottom: 16px;">
+          <h1 style="color: #60a5fa; font-size: 20px; margin: 0;">🏢 منظومة MeDo ERP - رقابة النسخ التجريبية</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">إشعار مرحلي للعملاء المحتملين الثلاثة</p>
+        </div>
+        <div style="background-color: ${color}15; border: 1px solid ${color}40; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h2 style="color: ${color}; font-size: 16px; margin: 0 0 8px 0;">${title}</h2>
+          <p style="color: #e2e8f0; font-size: 14px; line-height: 1.6; margin: 0;">${bodyText}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">اسم العميل:</td><td style="padding: 8px; color: #38bdf8; font-weight: bold;">${clientName} (${clientId})</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">العمليات المنجزة:</td><td style="padding: 8px; color: ${color}; font-weight: bold; font-family: monospace;">${operationsCount} / 50 عملية</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">نوع الجهاز:</td><td style="padding: 8px; color: #cbd5e1;">${deviceType}</td></tr>
+          <tr style="border-bottom: 1px solid #1e293b;"><td style="padding: 8px; color: #94a3b8;">عنوان IP:</td><td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${ipAddress}</td></tr>
+          <tr><td style="padding: 8px; color: #94a3b8;">التوقيت:</td><td style="padding: 8px; color: #cbd5e1; font-family: monospace;">${timestamp}</td></tr>
+        </table>
+        <div style="background-color: #0f172a; padding: 12px; border-radius: 8px; text-align: center; font-size: 11px; color: #64748b;">
+          رقم الإشعار: <strong style="color: #60a5fa;">${notifyId}</strong> • المتابعة المباشرة: <strong>بدر عائض محمد</strong> (+0967773586047)
+        </div>
+      </div>
+    `;
+
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || `MeDo ERP Monitor <${process.env.SMTP_USER || managerEmail}>`,
+          to: managerEmail,
+          subject,
+          html: emailHtml,
+        });
+        emailSent = true;
+      } catch (err: any) {
+        console.warn("[TRIAL MILESTONE] SMTP error:", err.message);
+      }
+    } else if (process.env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "MeDo ERP Monitor <onboarding@resend.dev>",
+            to: [managerEmail],
+            subject,
+            html: emailHtml,
+          }),
+        });
+        emailSent = resendRes.ok;
+      } catch (err: any) {
+        console.warn("[TRIAL MILESTONE] Resend error:", err.message);
+      }
+    }
+
+    // Telegram Bot
+    let telegramSent = false;
+    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+    const tgChatId = process.env.TELEGRAM_CHAT_ID;
+    if (tgToken && tgChatId) {
+      try {
+        const tgText = `🚨 *${title}*\n\n🏢 العميل: ${clientName} (${clientId})\n🔢 العمليات: ${operationsCount}/50\n💻 الجهاز: ${deviceType}\n🌐 IP: ${ipAddress}\n⏰ الوقت: ${timestamp}`;
+        await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: tgChatId, text: tgText, parse_mode: "Markdown" }),
+        });
+        telegramSent = true;
+      } catch (tgErr: any) {
+        console.warn("[TRIAL MILESTONE] Telegram error:", tgErr.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      notifyId,
+      emailSent,
+      telegramSent,
+      whatsappUrl,
+      recipientEmail: managerEmail,
+      recipientPhone: managerPhone,
+      loggedAt: timestamp,
+    });
+  } catch (error: any) {
+    console.error("Trial milestone error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Client Local Database Provisioning Endpoint (PostgreSQL / SQLite)
+app.post("/api/saas/provision-local-db", (req, res) => {
+  try {
+    const {
+      companyName = "شركة تجريبية",
+      clientSlug = "client_db",
+      databaseType = "POSTGRES_LOCAL",
+      customEncryptionKey,
+    } = req.body;
+
+    const dbKey = customEncryptionKey || `MEDO-ENC-${Math.random().toString(36).substring(2, 10).toUpperCase()}-2026`;
+    const cleanDbName = `medo_${clientSlug.replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase()}_db`;
+
+    const sqlInitScript = `
+-- ==========================================================
+-- MeDo ERP Sovereign Database Schema for: ${companyName}
+-- Engine: ${databaseType} | Database: ${cleanDbName}
+-- Encryption Layer: AES-256 GCM (Key: ${dbKey.slice(0, 8)}********)
+-- Generated: ${new Date().toISOString()}
+-- ==========================================================
+
+CREATE DATABASE IF NOT EXISTS ${cleanDbName};
+
+CREATE TABLE IF NOT EXISTS accounts (
+  id VARCHAR(64) PRIMARY KEY,
+  code VARCHAR(32) NOT NULL UNIQUE,
+  name_ar VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255),
+  type VARCHAR(32) NOT NULL,
+  category VARCHAR(64) NOT NULL,
+  currency VARCHAR(16) DEFAULT 'YER_SANAA',
+  balance NUMERIC(18, 4) DEFAULT 0.0000,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS journal_entries (
+  id VARCHAR(64) PRIMARY KEY,
+  entry_number VARCHAR(64) NOT NULL UNIQUE,
+  date DATE NOT NULL,
+  description TEXT,
+  currency VARCHAR(16) NOT NULL,
+  exchange_rate NUMERIC(12, 6) DEFAULT 1.000000,
+  total_debit NUMERIC(18, 4) NOT NULL,
+  total_credit NUMERIC(18, 4) NOT NULL,
+  status VARCHAR(32) DEFAULT 'POSTED',
+  created_by VARCHAR(64),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id VARCHAR(64) PRIMARY KEY,
+  code VARCHAR(64) NOT NULL UNIQUE,
+  name_ar VARCHAR(255) NOT NULL,
+  name_en VARCHAR(255),
+  category VARCHAR(64),
+  unit VARCHAR(32),
+  quantity_on_hand NUMERIC(14, 2) DEFAULT 0,
+  min_stock_threshold NUMERIC(14, 2) DEFAULT 10,
+  cost_price NUMERIC(18, 4) DEFAULT 0.0000,
+  selling_price NUMERIC(18, 4) DEFAULT 0.0000,
+  currency VARCHAR(16) DEFAULT 'YER_SANAA'
+);
+    `.trim();
+
+    res.json({
+      success: true,
+      databaseName: cleanDbName,
+      databaseType,
+      encryptionKey: dbKey,
+      connectionString: databaseType === "POSTGRES_LOCAL"
+        ? `postgresql://medo_admin:${dbKey}@localhost:5432/${cleanDbName}?sslmode=prefer`
+        : `sqlite://${cleanDbName}.sqlite3?cipher=aes256cbc&key=${dbKey}`,
+      initSql: sqlInitScript,
+      status: "PROVISIONED_SUCCESSFULLY",
+      note: `تم تجهيز إعدادات قاعدة البيانات المحلية (${cleanDbName}) وتوليد مفتاح التشفير الخاص بنجاح.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// OneX Pro Data Migration & Conversion Parser Endpoint
+app.post("/api/migration/onex-pro-parse", (req, res) => {
+  try {
+    const { rawRows, mappingType = "ACCOUNTS" } = req.body;
+
+    if (!Array.isArray(rawRows)) {
+      return res.status(400).json({ error: "rawRows array is required" });
+    }
+
+    const converted: any[] = [];
+    const errors: string[] = [];
+
+    rawRows.forEach((row, idx) => {
+      try {
+        if (mappingType === "ACCOUNTS") {
+          const code = row["رقم الحساب"] || row["AccountCode"] || row["Code"] || `ACC-${idx + 101}`;
+          const name = row["اسم الحساب"] || row["AccountName"] || row["Name"] || `حساب مستورد ${idx + 1}`;
+          const balance = parseFloat(row["الرصيد"] || row["Balance"] || "0") || 0;
+          const currency = row["العملة"] || row["Currency"] || "YER_SANAA";
+
+          converted.push({
+            id: `ACC-MIG-${code}`,
+            code: String(code).trim(),
+            nameAr: String(name).trim(),
+            nameEn: row["AccountNameEn"] || "",
+            type: code.startsWith("1") ? "ASSET" : code.startsWith("2") ? "LIABILITY" : code.startsWith("3") ? "EQUITY" : code.startsWith("4") ? "REVENUE" : "EXPENSE",
+            category: "حساب مستورد من ون إكس برو",
+            currency,
+            balance,
+            isActive: true,
+          });
+        } else if (mappingType === "INVENTORY") {
+          const code = row["رقم الصنف"] || row["ItemCode"] || row["Barcode"] || `ITM-${idx + 101}`;
+          const name = row["اسم الصنف"] || row["ItemName"] || `صنف مستورد ${idx + 1}`;
+          const qty = parseFloat(row["الكمية"] || row["Qty"] || "0") || 0;
+          const cost = parseFloat(row["التكلفة"] || row["Cost"] || "0") || 0;
+          const price = parseFloat(row["سعر البيع"] || row["Price"] || "0") || 0;
+
+          converted.push({
+            id: `INV-MIG-${code}`,
+            code: String(code).trim(),
+            nameAr: String(name).trim(),
+            nameEn: row["ItemNameEn"] || "",
+            category: row["المجموعة"] || "أصناف مستوردة",
+            unit: row["الوحدة"] || "حبة",
+            quantityOnHand: qty,
+            minStockThreshold: 10,
+            costPrice: cost,
+            sellingPrice: price,
+            currency: "YER_SANAA",
+          });
+        }
+      } catch (rowErr: any) {
+        errors.push(`خطأ في السطر ${idx + 1}: ${rowErr.message}`);
+      }
+    });
+
+    res.json({
+      success: true,
+      totalParsed: rawRows.length,
+      successfullyConverted: converted.length,
+      items: converted,
+      errors,
+      status: "CONVERTED_READY_FOR_IMPORT",
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // AI OCR Paper Invoice Parsing Endpoint
 app.post("/api/gemini/parse-invoice", async (req, res) => {
   try {
@@ -1066,9 +1535,20 @@ app.post("/api/webauthn/authenticate-verify", async (req, res) => {
 
 // Vite middleware & Static serving setup
 async function startServer() {
+  // Prevent browser & iframe caching of JS/HTML resources
+  app.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

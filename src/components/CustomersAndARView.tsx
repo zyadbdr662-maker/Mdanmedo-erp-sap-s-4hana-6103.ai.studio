@@ -29,6 +29,7 @@ import {
   InventoryItem,
 } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "../services/erpStorage";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface CustomersAndARViewProps {
   customers: Customer[];
@@ -60,6 +61,30 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
   onShareDocument,
 }) => {
   const [activeTab, setActiveTab] = useState<"CUSTOMERS" | "INVOICES" | "AGING">("CUSTOMERS");
+
+  const CUSTOMER_COLUMNS: ColumnDef[] = [
+    { id: "code", label: "رمز العميل", locked: true },
+    { id: "nameAr", label: "اسم العميل والشركة" },
+    { id: "city", label: "المدينة / الفرع" },
+    { id: "phone", label: "رقم الهاتف" },
+    { id: "creditLimit", label: "الحد الائتماني" },
+    { id: "currentBalance", label: "الرصيد المدين القائم" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns: custVis, updateVisibility: updateCustVis, isVisible: isCustVis } = useColumnVisibility("customers_list", CUSTOMER_COLUMNS);
+
+  const INVOICE_COLUMNS: ColumnDef[] = [
+    { id: "invoiceNumber", label: "رقم الفاتورة", locked: true },
+    { id: "customerName", label: "العميل" },
+    { id: "date", label: "تاريخ الإصدار" },
+    { id: "dueDate", label: "تاريخ الاستحقاق" },
+    { id: "totalAmount", label: "إجمالي الفاتورة" },
+    { id: "remainingAmount", label: "المتبقي للتحصيل" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns: invVis, updateVisibility: updateInvVis, isVisible: isInvVis } = useColumnVisibility("invoices_list", INVOICE_COLUMNS);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
@@ -358,7 +383,7 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
       {/* 1. Customers Table View */}
       {activeTab === "CUSTOMERS" && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
             <div className="relative w-72">
               <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -369,66 +394,90 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
               />
             </div>
-            <span className="text-xs text-slate-400 font-mono">إجمالي العملاء: {customers.length}</span>
+            <div className="flex items-center gap-3">
+              <ColumnCustomizer
+                tableKey="customers_list"
+                columns={CUSTOMER_COLUMNS}
+                visibleColumns={custVis}
+                onChange={updateCustVis}
+              />
+              <span className="text-xs text-slate-400 font-mono">إجمالي العملاء: {customers.length}</span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-800 bg-slate-950/70">
-                  <th className="py-3 px-4 font-semibold">رمز العميل</th>
-                  <th className="py-3 px-4 font-semibold">اسم العميل والشركة</th>
-                  <th className="py-3 px-4 font-semibold">المدينة / الفرع</th>
-                  <th className="py-3 px-4 font-semibold">رقم الهاتف</th>
-                  <th className="py-3 px-4 font-semibold text-left">الحد الائتماني</th>
-                  <th className="py-3 px-4 font-semibold text-left">الرصيد المدين القائم</th>
-                  <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>
+                  {isCustVis("code") && <th className="py-3 px-4 font-semibold">رمز العميل</th>}
+                  {isCustVis("nameAr") && <th className="py-3 px-4 font-semibold">اسم العميل والشركة</th>}
+                  {isCustVis("city") && <th className="py-3 px-4 font-semibold">المدينة / الفرع</th>}
+                  {isCustVis("phone") && <th className="py-3 px-4 font-semibold">رقم الهاتف</th>}
+                  {isCustVis("creditLimit") && <th className="py-3 px-4 font-semibold text-left">الحد الائتماني</th>}
+                  {isCustVis("currentBalance") && <th className="py-3 px-4 font-semibold text-left">الرصيد المدين القائم</th>}
+                  {isCustVis("actions") && <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {filteredCustomers.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-emerald-400">{c.code}</td>
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-100">{c.nameAr}</div>
-                      {c.nameEn && <div className="text-[10px] text-slate-400 font-mono">{c.nameEn}</div>}
-                    </td>
-                    <td className="py-3 px-4 text-slate-300">{c.city || "صنعاء"}</td>
-                    <td className="py-3 px-4 font-mono text-slate-400">{c.phone || "-"}</td>
-                    <td className="py-3 px-4 text-left font-mono text-slate-400">
-                      {formatMoney(c.creditLimit, c.currency, currencies)}
-                    </td>
-                    <td className="py-3 px-4 text-left font-mono font-bold text-emerald-400 text-sm">
-                      {formatMoney(c.currentBalance, c.currency, currencies)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {onShareDocument && (
-                          <button
-                            onClick={() =>
-                              onShareDocument({
-                                type: "STATEMENT",
-                                data: c,
-                                recipientName: c.nameAr,
-                                recipientPhone: c.phone,
-                              })
-                            }
-                            className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
-                            title="مشاركة كشف الحساب عبر واتساب / SMS"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setSelectedCustomerForStatement(c)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
-                        >
-                          كشف حساب
-                        </button>
-                      </div>
+                {filteredCustomers.length === 0 ? (
+                  <tr>
+                    <td colSpan={CUSTOMER_COLUMNS.filter((c) => isCustVis(c.id)).length} className="text-center py-8 text-slate-500">
+                      لا يوجد عملاء مطبقون على تصفية البحث
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
+                      {isCustVis("code") && <td className="py-3 px-4 font-mono font-bold text-emerald-400">{c.code}</td>}
+                      {isCustVis("nameAr") && (
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-100">{c.nameAr}</div>
+                          {c.nameEn && <div className="text-[10px] text-slate-400 font-mono">{c.nameEn}</div>}
+                        </td>
+                      )}
+                      {isCustVis("city") && <td className="py-3 px-4 text-slate-300">{c.city || "صنعاء"}</td>}
+                      {isCustVis("phone") && <td className="py-3 px-4 font-mono text-slate-400">{c.phone || "-"}</td>}
+                      {isCustVis("creditLimit") && (
+                        <td className="py-3 px-4 text-left font-mono text-slate-400">
+                          {formatMoney(c.creditLimit, c.currency, currencies)}
+                        </td>
+                      )}
+                      {isCustVis("currentBalance") && (
+                        <td className="py-3 px-4 text-left font-mono font-bold text-emerald-400 text-sm">
+                          {formatMoney(c.currentBalance, c.currency, currencies)}
+                        </td>
+                      )}
+                      {isCustVis("actions") && (
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: "STATEMENT",
+                                    data: c,
+                                    recipientName: c.nameAr,
+                                    recipientPhone: c.phone,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
+                                title="مشاركة كشف الحساب عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setSelectedCustomerForStatement(c)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
+                            >
+                              كشف حساب
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -438,7 +487,7 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
       {/* 2. Invoices Table View */}
       {activeTab === "INVOICES" && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3">
             <div className="relative w-72">
               <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -449,61 +498,85 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
               />
             </div>
-            <span className="text-xs text-slate-400 font-mono">إجمالي الفواتير: {invoices.length}</span>
+            <div className="flex items-center gap-3">
+              <ColumnCustomizer
+                tableKey="invoices_list"
+                columns={INVOICE_COLUMNS}
+                visibleColumns={invVis}
+                onChange={updateInvVis}
+              />
+              <span className="text-xs text-slate-400 font-mono">إجمالي الفواتير: {invoices.length}</span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-800 bg-slate-950/70">
-                  <th className="py-3 px-4 font-semibold">رقم الفاتورة</th>
-                  <th className="py-3 px-4 font-semibold">العميل</th>
-                  <th className="py-3 px-4 font-semibold">تاريخ الإصدار</th>
-                  <th className="py-3 px-4 font-semibold">تاريخ الاستحقاق</th>
-                  <th className="py-3 px-4 font-semibold text-left">إجمالي الفاتورة</th>
-                  <th className="py-3 px-4 font-semibold text-left">المتبقي للتحصيل</th>
-                  <th className="py-3 px-4 font-semibold text-center">الحالة</th>
-                  <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>
+                  {isInvVis("invoiceNumber") && <th className="py-3 px-4 font-semibold">رقم الفاتورة</th>}
+                  {isInvVis("customerName") && <th className="py-3 px-4 font-semibold">العميل</th>}
+                  {isInvVis("date") && <th className="py-3 px-4 font-semibold">تاريخ الإصدار</th>}
+                  {isInvVis("dueDate") && <th className="py-3 px-4 font-semibold">تاريخ الاستحقاق</th>}
+                  {isInvVis("totalAmount") && <th className="py-3 px-4 font-semibold text-left">إجمالي الفاتورة</th>}
+                  {isInvVis("remainingAmount") && <th className="py-3 px-4 font-semibold text-left">المتبقي للتحصيل</th>}
+                  {isInvVis("status") && <th className="py-3 px-4 font-semibold text-center">الحالة</th>}
+                  {isInvVis("actions") && <th className="py-3 px-4 font-semibold text-center">الإجراءات</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {filteredInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-emerald-400">{inv.invoiceNumber}</td>
-                    <td className="py-3 px-4 font-bold text-slate-100">{inv.customerName}</td>
-                    <td className="py-3 px-4 text-slate-300">{inv.date}</td>
-                    <td className="py-3 px-4 text-slate-400 font-mono">{inv.dueDate}</td>
-                    <td className="py-3 px-4 text-left font-mono font-bold text-white">
-                      {formatMoney(inv.totalAmount, inv.currency, currencies)}
-                    </td>
-                    <td className="py-3 px-4 text-left font-mono font-bold text-amber-400">
-                      {formatMoney(inv.remainingAmount, inv.currency, currencies)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                          inv.status === "PAID"
-                            ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                            : inv.status === "PARTIALLY_PAID" || (inv.status as string) === "PARTIAL"
-                            ? "bg-blue-950 text-blue-400 border border-blue-800"
-                            : "bg-amber-950 text-amber-400 border border-amber-800"
-                        }`}
-                      >
-                        {inv.status === "PAID" ? "مسددة بالكامل" : inv.status === "PARTIALLY_PAID" || (inv.status as string) === "PARTIAL" ? "مسددة جزئياً" : "صادرة / غير مسددة"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => onPrintDocument("INVOICE", inv)}
-                        className="flex items-center gap-1 mx-auto px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
-                        title="طباعة الفاتورة الضريبية الرسمية"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>طباعة</span>
-                      </button>
+                {filteredInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={INVOICE_COLUMNS.filter((c) => isInvVis(c.id)).length} className="text-center py-8 text-slate-500">
+                      لا توجد فواتير مطابقة
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredInvoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-slate-800/40 transition-colors">
+                      {isInvVis("invoiceNumber") && <td className="py-3 px-4 font-mono font-bold text-emerald-400">{inv.invoiceNumber}</td>}
+                      {isInvVis("customerName") && <td className="py-3 px-4 font-bold text-slate-100">{inv.customerName}</td>}
+                      {isInvVis("date") && <td className="py-3 px-4 text-slate-300">{inv.date}</td>}
+                      {isInvVis("dueDate") && <td className="py-3 px-4 text-slate-400 font-mono">{inv.dueDate}</td>}
+                      {isInvVis("totalAmount") && (
+                        <td className="py-3 px-4 text-left font-mono font-bold text-white">
+                          {formatMoney(inv.totalAmount, inv.currency, currencies)}
+                        </td>
+                      )}
+                      {isInvVis("remainingAmount") && (
+                        <td className="py-3 px-4 text-left font-mono font-bold text-amber-400">
+                          {formatMoney(inv.remainingAmount, inv.currency, currencies)}
+                        </td>
+                      )}
+                      {isInvVis("status") && (
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              inv.status === "PAID"
+                                ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                                : inv.status === "PARTIALLY_PAID" || (inv.status as string) === "PARTIAL"
+                                ? "bg-blue-950 text-blue-400 border border-blue-800"
+                                : "bg-amber-950 text-amber-400 border border-amber-800"
+                            }`}
+                          >
+                            {inv.status === "PAID" ? "مسددة بالكامل" : inv.status === "PARTIALLY_PAID" || (inv.status as string) === "PARTIAL" ? "مسددة جزئياً" : "صادرة / غير مسددة"}
+                          </span>
+                        </td>
+                      )}
+                      {isInvVis("actions") && (
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            onClick={() => onPrintDocument("INVOICE", inv)}
+                            className="flex items-center gap-1 mx-auto px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors"
+                            title="طباعة الفاتورة الضريبية الرسمية"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>طباعة</span>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

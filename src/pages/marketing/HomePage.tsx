@@ -79,43 +79,43 @@ export const HomePage = () => {
   ];
 
   return (
-    <div className="bg-slate-50 font-['Cairo',sans-serif]">
-      {/* Jaw-Dropping Hero Section */}
-      <section className="relative bg-[#050B14] text-white pt-28 pb-36 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-white/5">
-        {/* Dynamic Glowing Orbs Background */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-[#d4af37]/30 to-[#f39c12]/10 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-bl from-[#1E3A8A]/40 to-[#0A2540]/20 blur-[150px] rounded-full pointer-events-none mix-blend-screen" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-[#1A6B3C]/15 blur-[160px] rounded-full pointer-events-none mix-blend-screen" />
+    <div className="bg-[#f4f7fc] font-['Cairo',sans-serif]">
+      {/* Institutional Corporate Hero Section */}
+      <section className="relative bg-gradient-to-br from-[#0a2540] via-[#0e2c4d] to-[#1a3a6a] text-white pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-[#d4af37]/30 shadow-2xl">
+        {/* Dynamic Glowing Orbs Background & Tech Grid */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-[#d4af37]/25 to-[#f39c12]/10 blur-[130px] rounded-full pointer-events-none mix-blend-screen" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-bl from-[#1E3A8A]/50 to-[#0A2540]/30 blur-[160px] rounded-full pointer-events-none mix-blend-screen" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] bg-[#d4af37]/10 blur-[150px] rounded-full pointer-events-none mix-blend-screen" />
         
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
+        {/* Modern Tech Circuit Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.04] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto text-center relative z-10 flex flex-col items-center">
           
           {/* Top Badge */}
-          <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 backdrop-blur-xl text-white px-5 py-2 rounded-full text-sm font-bold tracking-wider mb-10 shadow-[0_0_25px_rgba(212,175,55,0.2)] hover:bg-white/10 transition-all cursor-default">
+          <div className="inline-flex items-center gap-3 bg-[#0a2540]/80 border border-[#d4af37]/40 backdrop-blur-xl text-white px-5 py-2 rounded-full text-sm font-bold tracking-wider mb-8 shadow-[0_0_25px_rgba(212,175,55,0.25)] hover:bg-[#0a2540] transition-all cursor-default">
             <span className="flex h-2.5 w-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d4af37] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#d4af37]"></span>
             </span>
-            <span className="text-[#d4af37]">v4.5</span>
+            <span className="text-[#d4af37] font-mono font-bold">v4.5 Enterprise</span>
             <span className="h-4 w-px bg-white/20 mx-1"></span>
-            <span>{lang === 'ar' ? 'ميدو تك للحلول البرمجية - إبداع بلا حدود' : 'MeDo Tech Solutions - Limitless Innovation'}</span>
+            <span className="text-slate-200">{lang === 'ar' ? 'ميدو تك للحلول البرمجية المتكاملة' : 'MeDo Tech Enterprise Software Solutions'}</span>
           </div>
 
-          {/* Main Title - Stunning Gradient */}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-8 leading-[1.15] drop-shadow-2xl">
+          {/* Main Title */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-7 leading-[1.2] drop-shadow-2xl text-white">
             {lang === 'ar' ? (
               <>
                 مستقبل إدارة الأعمال <br className="hidden sm:block" />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#e67e22] filter drop-shadow-lg">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#f39c12] filter drop-shadow-lg">
                   يبدأ من هنا.
                 </span>
               </>
             ) : (
               <>
-                The Future of Enterprise <br className="hidden sm:block" />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#e67e22] filter drop-shadow-lg">
+                The Future of Business Management <br className="hidden sm:block" />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#f39c12] filter drop-shadow-lg">
                   Begins Here.
                 </span>
               </>
@@ -123,46 +123,46 @@ export const HomePage = () => {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl sm:text-2xl text-slate-300 font-medium mb-12 max-w-4xl mx-auto leading-relaxed drop-shadow-md">
+          <p className="text-lg sm:text-xl text-slate-200 font-medium mb-10 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
             {lang === 'ar'
-              ? 'منظومة MeDo ERP السحابية.. قوة الأداء، أناقة التصميم، وأمان بمستوى بنكي. نُعيد صياغة معايير الأنظمة الإدارية والمحاسبية لنجعل من تعقيدات العمل متعة بصرية وعملية.'
-              : 'MeDo ERP Cloud Platform.. Power, Elegance, and Bank-grade Security. Redefining enterprise management standards to turn business complexities into visual and operational delight.'}
+              ? 'منظومة SAP/MeDO ERP السحابية.. قوة الأداء، أناقة التصميم، وأمان بمستوى بنكي. نُعيد صياغة معايير الأنظمة الإدارية والمحاسبية لنجعل من تعقيدات العمل متعة بصرية وعملية.'
+              : 'SAP/MeDO ERP Cloud Platform.. Power, Elegance, and Bank-grade Security. Redefining enterprise management standards to turn business complexities into visual and operational delight.'}
           </p>
 
           {/* Action CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
             <Link 
               to="/pricing" 
               onClick={() => handleTrialClick('hero_free_trial')}
-              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] px-10 py-5 rounded-2xl text-lg font-black shadow-[0_10px_40px_rgba(212,175,55,0.4)] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(212,175,55,0.6)] border-b-4 border-[#b8860b]"
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] px-9 py-4 rounded-2xl text-base sm:text-lg font-black shadow-[0_10px_35px_rgba(212,175,55,0.4)] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_15px_45px_rgba(212,175,55,0.6)] border border-[#b8860b]"
             >
-              <Sparkles className="w-6 h-6 text-[#0a1525] group-hover:animate-pulse" />
+              <Sparkles className="w-5 h-5 text-[#0a2540] group-hover:animate-pulse" />
               <span>{lang === 'ar' ? 'ابدأ رحلة النجاح الآن' : 'Start Your Journey Now'}</span>
             </Link>
             
             <Link 
               to="/erp" 
-              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#0a1525]/80 hover:bg-[#0a1525] border border-white/10 hover:border-[#d4af37]/50 text-white px-10 py-5 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:-translate-y-1 backdrop-blur-xl shadow-xl hover:shadow-[0_10px_30px_rgba(10,37,64,0.5)]"
+              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#0a2540]/60 hover:bg-[#0a2540] border-2 border-[#d4af37] hover:border-[#f1c40f] text-white px-9 py-4 rounded-2xl text-base sm:text-lg font-bold transition-all duration-300 transform hover:-translate-y-1 backdrop-blur-xl shadow-lg hover:shadow-[0_10px_30px_rgba(10,37,64,0.6)]"
             >
-              <Building2 className="w-6 h-6 text-[#d4af37]" />
+              <Building2 className="w-5 h-5 text-[#d4af37]" />
               <span>{lang === 'ar' ? 'تسجيل الدخول للنظام' : 'Login to System'}</span>
             </Link>
           </div>
 
-          {/* Features Strip */}
-          <div className="mt-16 flex items-center justify-center gap-6 sm:gap-12 text-sm text-slate-400 flex-wrap font-semibold bg-white/5 border border-white/10 px-8 py-4 rounded-2xl backdrop-blur-md shadow-2xl">
+          {/* Features Strip (Trust Badges) */}
+          <div className="mt-14 flex items-center justify-center gap-4 sm:gap-10 text-xs sm:text-sm text-slate-200 flex-wrap font-bold bg-[#0a2540]/80 border border-[#d4af37]/30 px-6 sm:px-8 py-3.5 rounded-2xl backdrop-blur-md shadow-xl">
             <span className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#1e7e34]" />
-              {lang === 'ar' ? 'حماية بنكية (256-bit)' : 'Bank-grade Security'}
+              <ShieldCheck className="w-5 h-5 text-[#d4af37]" />
+              {lang === 'ar' ? 'حماية بنكية (256-bit)' : 'Bank-grade Security (256-bit)'}
             </span>
-            <span className="hidden sm:block text-slate-600">|</span>
+            <span className="hidden sm:block text-[#d4af37]/40">|</span>
             <span className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-[#d4af37]" />
+              <Zap className="w-5 h-5 text-amber-400" />
               {lang === 'ar' ? 'سرعة فائقة وأداء مذهل' : 'Lightning Fast Performance'}
             </span>
-            <span className="hidden sm:block text-slate-600">|</span>
+            <span className="hidden sm:block text-[#d4af37]/40">|</span>
             <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-[#38bdf8]" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               {lang === 'ar' ? 'مطابق لمعايير IFRS/GAAP' : 'IFRS/GAAP Compliant'}
             </span>
           </div>
@@ -176,7 +176,7 @@ export const HomePage = () => {
             <span>{lang === 'ar' ? 'شامل ومترابط' : 'Comprehensive & Integrated'}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">
-            {lang === 'ar' ? '✨ الوحدات الرئيسية في منظومة MeDo ERP' : '✨ Core Modules of MeDo ERP'}
+            {lang === 'ar' ? '✨ الوحدات الرئيسية في منظومة SAP/MeDO ERP' : '✨ Core Modules of SAP/MeDO ERP'}
           </h2>
           <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
             {lang === 'ar'

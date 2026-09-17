@@ -31,6 +31,8 @@ import { formatDate, formatDualDate } from "../utils/formatters";
 import { SmartAiJournalModal } from "./SmartAiJournalModal";
 import { BiometricApprovalModal } from "./security/BiometricApprovalModal";
 import { cloudSecurityService } from "../services/cloudSecurityService";
+import { ExportPdfButton } from "./ExportPdfButton";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface JournalEntriesViewProps {
   journalEntries: JournalEntry[];
@@ -60,6 +62,19 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSmartAiModal, setShowSmartAiModal] = useState(false);
   const [selectedEntryForView, setSelectedEntryForView] = useState<JournalEntry | null>(null);
+
+  // Column Customization Hook
+  const JOURNAL_COLUMNS: ColumnDef[] = [
+    { id: "entryNumber", label: "رقم القيد", locked: true },
+    { id: "date", label: "التاريخ / الفترة" },
+    { id: "type", label: "النوع" },
+    { id: "description", label: "البيان والوصف المحاسبي" },
+    { id: "totalDebit", label: "إجمالي المدين" },
+    { id: "totalCredit", label: "إجمالي الدائن" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("journal_entries", JOURNAL_COLUMNS);
 
   // Biometric WebAuthn Financial Approval State
   const [biometricPending, setBiometricPending] = useState<{
@@ -270,6 +285,12 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          <ExportPdfButton
+            targetId="journal-entries-table-container"
+            reportTitle="سجل سندات قيود اليومية المحاسبية المعتمدة"
+            filename="سجل_قيود_اليومية.pdf"
+            label="تصدير القيود PDF"
+          />
           <button
             onClick={() => setShowSmartAiModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md active:scale-95"
@@ -311,91 +332,112 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="بحث برقم القيد أو البيان أو المرجع..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+        {/* Search & Column Customizer */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <ColumnCustomizer
+            tableKey="journal_entries"
+            columns={JOURNAL_COLUMNS}
+            visibleColumns={visibleColumns}
+            onChange={updateVisibility}
           />
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="بحث برقم القيد أو البيان أو المرجع..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
         </div>
       </div>
 
       {/* Entries Table */}
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+      <div id="journal-entries-table-container" className="bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-sm text-slate-200">
             <thead>
               <tr className="text-white border-b-2 border-slate-700 bg-slate-950 font-bold">
-                <th className="py-4 px-4 font-extrabold text-xs text-white">رقم القيد</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">التاريخ / الفترة</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">النوع</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white">البيان والوصف المحاسبي</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-left">إجمالي المدين</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-left">إجمالي الدائن</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الحالة</th>
-                <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الإجراءات</th>
+                {isVisible("entryNumber") && <th className="py-4 px-4 font-extrabold text-xs text-white">رقم القيد</th>}
+                {isVisible("date") && <th className="py-4 px-4 font-extrabold text-xs text-white">التاريخ / الفترة</th>}
+                {isVisible("type") && <th className="py-4 px-4 font-extrabold text-xs text-white">النوع</th>}
+                {isVisible("description") && <th className="py-4 px-4 font-extrabold text-xs text-white">البيان والوصف المحاسبي</th>}
+                {isVisible("totalDebit") && <th className="py-4 px-4 font-extrabold text-xs text-white text-left">إجمالي المدين</th>}
+                {isVisible("totalCredit") && <th className="py-4 px-4 font-extrabold text-xs text-white text-left">إجمالي الدائن</th>}
+                {isVisible("status") && <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الحالة</th>}
+                {isVisible("actions") && <th className="py-4 px-4 font-extrabold text-xs text-white text-center">الإجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/80">
               {filteredEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={JOURNAL_COLUMNS.filter((c) => isVisible(c.id)).length} className="py-12 text-center text-slate-400 font-medium">
                     لا توجد قيود يومية مطابقة للفلتر المحدد
                   </td>
                 </tr>
               ) : (
                 filteredEntries.map((je) => (
                   <tr key={je.id} className="hover:bg-slate-800/60 transition-colors">
-                    <td className="py-4 px-4 font-mono font-black text-emerald-400 text-sm">{je.entryNumber}</td>
-                    <td className="py-4 px-4 text-slate-200 font-medium">
-                      <div title={formatDualDate(je.date)} className="font-semibold text-slate-100">
-                        {formatDate(je.date)}
-                      </div>
-                      <div className="text-xs text-slate-400 font-mono mt-0.5">{je.period}</div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-200 font-bold border border-slate-600">
-                        {je.type === "OPENING"
-                          ? "افتتاحي"
-                          : je.type === "RECEIPT"
-                          ? "قبض"
-                          : je.type === "PAYMENT"
-                          ? "صرف"
-                          : je.type === "DEPRECIATION"
-                          ? "إهلاك"
-                          : "يومية عام"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-slate-100 font-semibold max-w-sm">
-                      <div className="truncate text-sm">{je.description}</div>
-                      {je.reference && (
-                        <div className="text-xs text-slate-300 font-mono mt-0.5">مرجع: {je.reference}</div>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-left font-mono font-black text-emerald-400 text-base">
-                      {formatMoney(je.totalDebit, je.currency, currencies)}
-                    </td>
-                    <td className="py-4 px-4 text-left font-mono font-black text-blue-400 text-base">
-                      {formatMoney(je.totalCredit, je.currency, currencies)}
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span
-                        className={`text-xs px-3 py-1 rounded-md font-bold ${
-                          je.status === "POSTED"
-                            ? "bg-emerald-950 text-emerald-300 border border-emerald-600"
-                            : je.status === "APPROVED"
-                            ? "bg-blue-950 text-blue-300 border border-blue-600"
-                            : "bg-amber-950 text-amber-300 border border-amber-600"
-                        }`}
-                      >
-                        {je.status === "POSTED" ? "مرحل" : je.status === "APPROVED" ? "معتمد" : "مسودة"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
+                    {isVisible("entryNumber") && <td className="py-4 px-4 font-mono font-black text-emerald-400 text-sm">{je.entryNumber}</td>}
+                    {isVisible("date") && (
+                      <td className="py-4 px-4 text-slate-200 font-medium">
+                        <div title={formatDualDate(je.date)} className="font-semibold text-slate-100">
+                          {formatDate(je.date)}
+                        </div>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">{je.period}</div>
+                      </td>
+                    )}
+                    {isVisible("type") && (
+                      <td className="py-4 px-4">
+                        <span className="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-200 font-bold border border-slate-600">
+                          {je.type === "OPENING"
+                            ? "افتتاحي"
+                            : je.type === "RECEIPT"
+                            ? "قبض"
+                            : je.type === "PAYMENT"
+                            ? "صرف"
+                            : je.type === "DEPRECIATION"
+                            ? "إهلاك"
+                            : "يومية عام"}
+                        </span>
+                      </td>
+                    )}
+                    {isVisible("description") && (
+                      <td className="py-4 px-4 text-slate-100 font-semibold max-w-sm">
+                        <div className="truncate text-sm">{je.description}</div>
+                        {je.reference && (
+                          <div className="text-xs text-slate-300 font-mono mt-0.5">مرجع: {je.reference}</div>
+                        )}
+                      </td>
+                    )}
+                    {isVisible("totalDebit") && (
+                      <td className="py-4 px-4 text-left font-mono font-black text-emerald-400 text-base">
+                        {formatMoney(je.totalDebit, je.currency, currencies)}
+                      </td>
+                    )}
+                    {isVisible("totalCredit") && (
+                      <td className="py-4 px-4 text-left font-mono font-black text-blue-400 text-base">
+                        {formatMoney(je.totalCredit, je.currency, currencies)}
+                      </td>
+                    )}
+                    {isVisible("status") && (
+                      <td className="py-4 px-4 text-center">
+                        <span
+                          className={`text-xs px-3 py-1 rounded-md font-bold ${
+                            je.status === "POSTED"
+                              ? "bg-emerald-950 text-emerald-300 border border-emerald-600"
+                              : je.status === "APPROVED"
+                              ? "bg-blue-950 text-blue-300 border border-blue-600"
+                              : "bg-amber-950 text-amber-300 border border-amber-600"
+                          }`}
+                        >
+                          {je.status === "POSTED" ? "مرحل" : je.status === "APPROVED" ? "معتمد" : "مسودة"}
+                        </span>
+                      </td>
+                    )}
+                    {isVisible("actions") && (
+                      <td className="py-4 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => setSelectedEntryForView(je)}
@@ -425,6 +467,7 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
                         )}
                       </div>
                     </td>
+                    )}
                   </tr>
                 ))
               )}

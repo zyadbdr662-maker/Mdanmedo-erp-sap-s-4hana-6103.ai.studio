@@ -26,6 +26,8 @@ import {
   Boxes,
   Network,
   Lock,
+  BookMarked,
+  Cloud,
 } from "lucide-react";
 import { CurrencyCode, CurrencyInfo, ERPUser, CalendarType } from "../types/erp";
 import { LocalSyncEngine } from "../services/localSyncEngine";
@@ -63,6 +65,7 @@ interface HeaderProps {
   isAdminUnlocked?: boolean;
   onOpenAdminGateway?: () => void;
   onLockAdmin?: () => void;
+  onOpenTrialManager?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -91,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
   isAdminUnlocked,
   onOpenAdminGateway,
   onLockAdmin,
+  onOpenTrialManager,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
@@ -192,18 +196,18 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2.5 pl-3 border-l border-slate-700/60 rtl:border-l rtl:border-r-0 rtl:pl-3 rtl:pr-0 shrink-0">
             <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#0B192C] via-[#1E3A8A] to-[#0A192F] border border-blue-400/50 shadow-md shadow-blue-950/40 text-blue-200">
               <div className="flex flex-col items-center justify-center leading-none">
-                <span className="text-[10px] font-black tracking-tighter text-white">MDO</span>
-                <span className="text-[6.5px] font-bold text-amber-200/90 tracking-widest">بن زياد</span>
+                <span className="text-[10px] font-black tracking-tighter text-white">SAP</span>
+                <span className="text-[6.5px] font-bold text-amber-200/90 tracking-widest">MeDO</span>
               </div>
             </div>
             <div className="hidden xl:flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-100 tracking-tight">مجموعة بن زياد التجارية المتحدة</span>
+                <span className="text-xs font-bold text-slate-100 tracking-tight">نظام SAP/MeDO ERP</span>
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">
-                  SAP Fiori
+                  S/4HANA
                 </span>
               </div>
-              <span className="text-[10px] font-medium text-slate-300">نظام MeDo ERP للمحاسبة والمالية</span>
+              <span className="text-[10px] font-medium text-slate-300">منظومة الإدارة السحابية والفوترة الإلكترونية</span>
             </div>
           </div>
 
@@ -328,6 +332,25 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </button>
           )}
+
+          {/* Cloud SaaS Platform & License Management (المنصة السحابية وإدارة التراخيص) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("SAAS_PLATFORM")}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-950 via-[#0C2A4A] to-blue-950 hover:from-sky-900 hover:to-blue-900 text-sky-200 hover:text-white border border-sky-400/50 hover:border-sky-300 text-xs font-bold transition-all shadow-md shadow-sky-950/50 active:scale-95 group cursor-pointer"
+            title="المنصة السحابية وإدارة التراخيص والموزعين (Cloud SaaS & License Center)"
+            aria-label="المنصة السحابية SaaS"
+          >
+            <div className="w-5 h-5 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 group-hover:scale-110 group-hover:bg-sky-500 group-hover:text-slate-950 transition-all flex-shrink-0">
+              <Cloud className="w-3.5 h-3.5 text-sky-300 group-hover:text-slate-950" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold tracking-tight hidden sm:inline">المنصة السحابية</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-500/30 text-sky-200 border border-sky-400/40 font-mono font-bold tracking-tighter">
+                SaaS
+              </span>
+            </div>
+          </button>
 
           {/* Direct & Permanent Access Button for Integrated ERP Suite (المنظومة المحاسبية والإدارية المتكاملة) */}
           <button
@@ -481,6 +504,32 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Automatic Cloud Sync & Offline Status Indicator */}
           <SyncStatusIndicator onNavigateToSync={() => setActiveTab("CLOUD_SYNC")} />
 
+          {/* System Refresh Trigger (زر إنعاش النظام) */}
+          {onRefreshData && (
+            <button
+              id="top-system-refresh-btn"
+              type="button"
+              onClick={onRefreshData}
+              disabled={isRefreshing}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer select-none ${
+                isRefreshing
+                  ? "bg-emerald-950/90 border-emerald-500/70 text-emerald-200 opacity-90 cursor-wait shadow-emerald-950/40"
+                  : "bg-slate-950 hover:bg-emerald-950/60 border-slate-800 hover:border-emerald-600/50 text-slate-300 hover:text-emerald-300 shadow-slate-950/40"
+              }`}
+              title="إنعاش النظام: إعادة قراءة البيانات، احتساب القيود المحاسبية، وتحديث أرصدة الحسابات والمستودعات فورياً"
+              aria-label="إنعاش النظام"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 text-emerald-400 ${
+                  isRefreshing ? "animate-spin text-emerald-300" : ""
+                }`}
+              />
+              <span className="text-[11.5px] font-bold">
+                {isRefreshing ? "جاري الإنعاش..." : "إنعاش النظام"}
+              </span>
+            </button>
+          )}
+
           {/* PWA Install Button */}
           <PWAInstallButton variant="header" />
 
@@ -510,6 +559,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden xl:inline">الجولة التعريفية</span>
             </button>
           )}
+
+          {/* Accounting User Manual Trigger */}
+          <button
+            onClick={() => setActiveTab("USER_MANUAL")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+            title="دليل الاستخدام والتشغيل المحاسبي الشامل"
+          >
+            <BookMarked className="w-4 h-4 text-emerald-400" />
+            <span className="hidden lg:inline">دليل الاستخدام المحاسبي</span>
+          </button>
 
           {/* AI Copilot Trigger */}
           <button
@@ -618,6 +677,17 @@ export const Header: React.FC<HeaderProps> = ({
               )
             )}
 
+            {onOpenTrialManager && (
+              <button
+                onClick={onOpenTrialManager}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600/25 to-amber-500/15 hover:from-amber-600/40 hover:to-amber-500/30 text-amber-300 border border-amber-500/40 shadow text-xs font-bold transition-all cursor-pointer"
+                title="لوحة رقابة ومتابعة النسخ التجريبية للعملاء الثلاثة"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span className="hidden md:inline">رقابة النسخ التجريبية 🎯</span>
+              </button>
+            )}
+
             {onLogout && (
               <button
                 onClick={onLogout}
@@ -701,6 +771,16 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     <ShieldCheck className="w-4 h-4 text-blue-400" />
                     <span>الصلاحيات وأمان النظام</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      setActiveTab("SAAS_PLATFORM");
+                    }}
+                    className="w-full flex items-center gap-2 p-2 rounded-xl text-sky-300 hover:text-white hover:bg-sky-950/60 border border-sky-500/20 transition-colors cursor-pointer font-bold"
+                  >
+                    <Cloud className="w-4 h-4 text-sky-400" />
+                    <span>المنصة السحابية والتراخيص (SaaS)</span>
                   </button>
                   {onOpenSystemUpdate && (
                     <button

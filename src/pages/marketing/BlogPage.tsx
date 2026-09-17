@@ -68,12 +68,12 @@ export const BlogPage = () => {
             {lang === 'ar' ? 'مركز المعرفة والأخبار' : 'Knowledge & News Hub'}
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#0A2540] mb-4 tracking-tight leading-tight">
-            {lang === 'ar' ? 'مدونة MeDo ERP وحلول الأعمال' : 'MeDo ERP & Business Solutions Blog'}
+            {lang === 'ar' ? 'مدونة SAP/MeDO ERP وحلول الأعمال' : 'SAP/MeDO ERP & Business Solutions Blog'}
           </h1>
           <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
             {lang === 'ar'
-              ? 'أحدث المقالات والرؤى المتخصصة في أنظمة تخطيط الموارد، تقنيات الذكاء الاصطناعي المالي، إدارة التدفقات النقدية، وقصص نجاح مجموعة بن زياد.'
-              : 'Latest insights and guides on ERP, financial AI, cash flow management, and Bin Ziyad Group success stories.'}
+              ? 'أحدث المقالات والرؤى المتخصصة في أنظمة تخطيط الموارد، تقنيات الذكاء الاصطناعي المالي، إدارة التدفقات النقدية، ونماذج التحول الرقمي.'
+              : 'Latest insights and guides on ERP, financial AI, cash flow management, and digital transformation stories.'}
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export const BlogPage = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={lang === 'ar' ? 'ابحث عن مقال، موضوع، أو كلمة مفتاحية (مثال: ذكاء اصطناعي، تدفقات، بن زياد)...' : 'Search articles by title, topic, or keyword...'}
+              placeholder={lang === 'ar' ? 'ابحث عن مقال، موضوع، أو كلمة مفتاحية (مثال: ذكاء اصطناعي، تدفقات، محاسبة)...' : 'Search articles by title, topic, or keyword...'}
               className="w-full pr-12 pl-4 py-3.5 bg-white rounded-2xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:border-transparent shadow-xs transition"
             />
             {searchQuery && (

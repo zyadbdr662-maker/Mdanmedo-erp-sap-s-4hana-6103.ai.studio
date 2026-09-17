@@ -49,6 +49,7 @@ import { formatDate, formatDualDate } from "../utils/formatters";
 import { generateZatcaQr } from "../utils/zatca";
 import { QuickAddCustomerModal, QuickAddItemModal } from "./QuickAddModals";
 import { ElectronicInvoicingModule } from "./ElectronicInvoicingModule";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface SalesAndReturnsViewProps {
   invoices: Invoice[];
@@ -82,6 +83,21 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
   onShareDocument,
 }) => {
   const [activeTab, setActiveTab] = useState<"ALL" | "SALES" | "RETURNS" | "EXPENSES" | "EINVOICE">("ALL");
+
+  const SALES_COLUMNS: ColumnDef[] = [
+    { id: "invoiceNumber", label: "رقم الفاتورة / المستند", locked: true },
+    { id: "type", label: "النوع" },
+    { id: "customerName", label: "العميل" },
+    { id: "date", label: "التاريخ" },
+    { id: "totalAmount", label: "إجمالي الفاتورة" },
+    { id: "salesExpenseAmount", label: "مصروفات المبيعات" },
+    { id: "paidAmount", label: "المدفوع" },
+    { id: "remainingAmount", label: "المتبقي (الذمة)" },
+    { id: "paymentMethod", label: "وسيلة الدفع" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "إجراءات", locked: true },
+  ];
+  const { visibleColumns: salesVis, updateVisibility: updateSalesVis, isVisible: isSalesVis } = useColumnVisibility("sales_and_returns_list", SALES_COLUMNS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState("ALL");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("ALL");
@@ -759,7 +775,13 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                <ColumnCustomizer
+                  tableKey="sales_and_returns_list"
+                  columns={SALES_COLUMNS}
+                  visibleColumns={salesVis}
+                  onChange={updateSalesVis}
+                />
                 <span className="text-xs text-slate-400">عدد النتائج: {filteredInvoices.length}</span>
               </div>
             </div>
@@ -982,23 +1004,23 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
           <table className="w-full text-right text-xs">
             <thead>
               <tr className="bg-slate-950/80 text-slate-400 border-b border-slate-800">
-                <th className="p-3.5 font-semibold">رقم الفاتورة / المستند</th>
-                <th className="p-3.5 font-semibold">النوع</th>
-                <th className="p-3.5 font-semibold">العميل</th>
-                <th className="p-3.5 font-semibold">التاريخ</th>
-                <th className="p-3.5 font-semibold text-left">إجمالي الفاتورة</th>
-                <th className="p-3.5 font-semibold text-left">مصروفات المبيعات</th>
-                <th className="p-3.5 font-semibold text-left">المدفوع</th>
-                <th className="p-3.5 font-semibold text-left">المتبقي (الذمة)</th>
-                <th className="p-3.5 font-semibold">وسيلة الدفع</th>
-                <th className="p-3.5 font-semibold">الحالة</th>
-                <th className="p-3.5 font-semibold text-center">إجراءات</th>
+                {isSalesVis("invoiceNumber") && <th className="p-3.5 font-semibold">رقم الفاتورة / المستند</th>}
+                {isSalesVis("type") && <th className="p-3.5 font-semibold">النوع</th>}
+                {isSalesVis("customerName") && <th className="p-3.5 font-semibold">العميل</th>}
+                {isSalesVis("date") && <th className="p-3.5 font-semibold">التاريخ</th>}
+                {isSalesVis("totalAmount") && <th className="p-3.5 font-semibold text-left">إجمالي الفاتورة</th>}
+                {isSalesVis("salesExpenseAmount") && <th className="p-3.5 font-semibold text-left">مصروفات المبيعات</th>}
+                {isSalesVis("paidAmount") && <th className="p-3.5 font-semibold text-left">المدفوع</th>}
+                {isSalesVis("remainingAmount") && <th className="p-3.5 font-semibold text-left">المتبقي (الذمة)</th>}
+                {isSalesVis("paymentMethod") && <th className="p-3.5 font-semibold">وسيلة الدفع</th>}
+                {isSalesVis("status") && <th className="p-3.5 font-semibold">الحالة</th>}
+                {isSalesVis("actions") && <th className="p-3.5 font-semibold text-center">إجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="p-8 text-center text-slate-500">
+                  <td colSpan={SALES_COLUMNS.filter((c) => isSalesVis(c.id)).length} className="p-8 text-center text-slate-500">
                     <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     لا توجد فواتير أو مرتجعات مطابقة لمعايير البحث الحالية
                   </td>
@@ -1011,136 +1033,158 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
 
                   return (
                     <tr key={inv.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3.5 font-semibold text-base text-slate-200">
-                        <div className="flex items-center gap-1.5">
-                          <span>{inv.invoiceNumber}</span>
-                          {inv.originalInvoiceNumber && (
-                            <span className="text-xs text-slate-400 font-sans">
-                              (أصل: {inv.originalInvoiceNumber})
+                      {isSalesVis("invoiceNumber") && (
+                        <td className="p-3.5 font-semibold text-base text-slate-200">
+                          <div className="flex items-center gap-1.5">
+                            <span>{inv.invoiceNumber}</span>
+                            {inv.originalInvoiceNumber && (
+                              <span className="text-xs text-slate-400 font-sans">
+                                (أصل: {inv.originalInvoiceNumber})
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {isSalesVis("type") && (
+                        <td className="p-3.5">
+                          {isReturn ? (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-950/80 text-rose-300 border border-rose-800/60">
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              مرتجع مبيعات
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
+                              <ShoppingBag className="w-3.5 h-3.5" />
+                              فاتورة مبيعات
                             </span>
                           )}
-                        </div>
-                      </td>
+                        </td>
+                      )}
 
-                      <td className="p-3.5">
-                        {isReturn ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-950/80 text-rose-300 border border-rose-800/60">
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            مرتجع مبيعات
+                      {isSalesVis("customerName") && (
+                        <td className="p-3.5 font-semibold text-base text-slate-200">
+                          {inv.customerName || inv.partyName || "عميل نقدي"}
+                        </td>
+                      )}
+
+                      {isSalesVis("date") && (
+                        <td className="p-3.5 text-slate-400 font-mono font-medium text-sm" title={formatDualDate(inv.date)}>
+                          {formatDate(inv.date)}
+                        </td>
+                      )}
+
+                      {isSalesVis("totalAmount") && (
+                        <td className="p-3.5 text-left font-mono font-bold text-base lg:text-lg">
+                          <span className={isReturn ? "text-rose-400" : "text-sap-secondary dark:text-[#F5D76E]"}>
+                            {isReturn ? "-" : "+"}
+                            {formatMoney(inv.totalAmount, inv.currency, currencies)}
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            فاتورة مبيعات
-                          </span>
-                        )}
-                      </td>
+                        </td>
+                      )}
 
-                      <td className="p-3.5 font-semibold text-base text-slate-200">
-                        {inv.customerName || inv.partyName || "عميل نقدي"}
-                      </td>
-
-                      <td className="p-3.5 text-slate-400 font-mono font-medium text-sm" title={formatDualDate(inv.date)}>
-                        {formatDate(inv.date)}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono font-bold text-base lg:text-lg">
-                        <span className={isReturn ? "text-rose-400" : "text-sap-secondary dark:text-[#F5D76E]"}>
-                          {isReturn ? "-" : "+"}
-                          {formatMoney(inv.totalAmount, inv.currency, currencies)}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono">
-                        {(inv.salesExpenseAmount || 0) > 0 ? (
-                          <span className="text-purple-400 font-medium">
-                            {formatMoney(inv.salesExpenseAmount || 0, inv.currency, currencies)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono text-cyan-400">
-                        {formatMoney(inv.paidAmount || (inv.status === "PAID" ? inv.totalAmount : 0), inv.currency, currencies)}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono">
-                        {(inv.remainingAmount || 0) > 0 ? (
-                          <span className="text-amber-400 font-bold">
-                            {formatMoney(inv.remainingAmount || 0, inv.currency, currencies)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">0.00</span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${pMethod.color}`}
-                        >
-                          <PMIcon className="w-3 h-3" />
-                          <span>{pMethod.label}</span>
-                        </span>
-                      </td>
-
-                      <td className="p-3.5">
-                        {inv.status === "PAID" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">
-                            مسددة بالكامل
-                          </span>
-                        )}
-                        {inv.status === "PARTIALLY_PAID" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-950 text-amber-400 border border-amber-800">
-                            سداد جزئي
-                          </span>
-                        )}
-                        {inv.status === "PENDING" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-950 text-rose-400 border border-rose-800">
-                            آجل (مستحقة)
-                          </span>
-                        )}
-                        {inv.status === "RETURNED" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-950 text-purple-400 border border-purple-800">
-                            مرتجع مرحل
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {onShareDocument && (
-                            <button
-                              onClick={() =>
-                                onShareDocument({
-                                  type: "INVOICE",
-                                  data: inv,
-                                  recipientName: inv.customerName,
-                                  recipientPhone: inv.customerPhone,
-                                })
-                              }
-                              className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
-                              title="مشاركة عبر واتساب / SMS"
-                            >
-                              <Share2 className="w-4 h-4" />
-                            </button>
+                      {isSalesVis("salesExpenseAmount") && (
+                        <td className="p-3.5 text-left font-mono">
+                          {(inv.salesExpenseAmount || 0) > 0 ? (
+                            <span className="text-purple-400 font-medium">
+                              {formatMoney(inv.salesExpenseAmount || 0, inv.currency, currencies)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">-</span>
                           )}
-                          <button
-                            onClick={() => onPrintDocument("INVOICE", inv)}
-                            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                            title="معاينة وطباعة الفاتورة"
+                        </td>
+                      )}
+
+                      {isSalesVis("paidAmount") && (
+                        <td className="p-3.5 text-left font-mono text-cyan-400">
+                          {formatMoney(inv.paidAmount || (inv.status === "PAID" ? inv.totalAmount : 0), inv.currency, currencies)}
+                        </td>
+                      )}
+
+                      {isSalesVis("remainingAmount") && (
+                        <td className="p-3.5 text-left font-mono">
+                          {(inv.remainingAmount || 0) > 0 ? (
+                            <span className="text-amber-400 font-bold">
+                              {formatMoney(inv.remainingAmount || 0, inv.currency, currencies)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">0.00</span>
+                          )}
+                        </td>
+                      )}
+
+                      {isSalesVis("paymentMethod") && (
+                        <td className="p-3.5">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${pMethod.color}`}
                           >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setSelectedInvoiceDetails(inv)}
-                            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                            title="تفاصيل البنود والمصروفات"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                            <PMIcon className="w-3 h-3" />
+                            <span>{pMethod.label}</span>
+                          </span>
+                        </td>
+                      )}
+
+                      {isSalesVis("status") && (
+                        <td className="p-3.5">
+                          {inv.status === "PAID" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">
+                              مسددة بالكامل
+                            </span>
+                          )}
+                          {inv.status === "PARTIALLY_PAID" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-950 text-amber-400 border border-amber-800">
+                              سداد جزئي
+                            </span>
+                          )}
+                          {inv.status === "PENDING" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-950 text-rose-400 border border-rose-800">
+                              آجل (مستحقة)
+                            </span>
+                          )}
+                          {inv.status === "RETURNED" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-950 text-purple-400 border border-purple-800">
+                              مرتجع مرحل
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {isSalesVis("actions") && (
+                        <td className="p-3.5 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: "INVOICE",
+                                    data: inv,
+                                    recipientName: inv.customerName,
+                                    recipientPhone: inv.customerPhone,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
+                                title="مشاركة عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onPrintDocument("INVOICE", inv)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                              title="معاينة وطباعة الفاتورة"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedInvoiceDetails(inv)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                              title="تفاصيل البنود والمصروفات"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

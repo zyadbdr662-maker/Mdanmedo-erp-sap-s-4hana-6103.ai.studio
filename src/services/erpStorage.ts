@@ -72,6 +72,10 @@ import {
   INITIAL_SAAS_CLIENTS,
 } from "../data/initialERPData";
 
+import { TenantIsolationService, KNOWN_TENANTS } from "./tenantIsolationService";
+import { getMockTrialState } from "../data/mockTrialData";
+import { getStored200Tenants } from "../data/preGeneratedTenants";
+
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
   companyNameAr: "مجموعة مـيـدو التجارية والمالية الذكية (ش.م.ي)",
   companyNameEn: "MeDo Smart Enterprise & Financial Group Inc.",
@@ -111,7 +115,51 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
   },
 };
 
-const STORAGE_KEYS = {
+export function getTenantDefaultSettings(tenantSlug: string): SystemSettings {
+  if (tenantSlug === "albadr-pharma-2026" || tenantSlug === "client-albadr") {
+    return TenantIsolationService.getAlBadrIsolatedState().systemSettings || DEFAULT_SYSTEM_SETTINGS;
+  }
+
+  const cleanSlug = (tenantSlug || "").toLowerCase().trim();
+
+  // 1. Check known trial clients (client-1, client-2, client-3, etc.)
+  const known = KNOWN_TENANTS[cleanSlug];
+  if (known) {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: known.nameAr,
+      companyNameEn: known.nameEn,
+      email: known.adminEmail,
+    };
+  }
+
+  // 2. Check 200 tenants directory (company-1 to company-200 or custom)
+  try {
+    const storedTenants = getStored200Tenants();
+    const matchedTenant = storedTenants.find(
+      (t) => t.slug.toLowerCase() === cleanSlug || t.id.toLowerCase() === cleanSlug || `company-${t.index}` === cleanSlug
+    );
+
+    if (matchedTenant) {
+      return {
+        ...DEFAULT_SYSTEM_SETTINGS,
+        companyNameAr: matchedTenant.companyNameAr,
+        companyNameEn: matchedTenant.companyNameEn,
+        commercialRegister: matchedTenant.commercialReg,
+        taxNumber: matchedTenant.taxNumber,
+        phone: matchedTenant.assignedAdminPhone,
+        address: `${matchedTenant.city} - الفرع الرئيسي`,
+        email: matchedTenant.assignedAdminEmail,
+      };
+    }
+  } catch (e) {
+    console.error("Error matching tenant settings:", e);
+  }
+
+  return DEFAULT_SYSTEM_SETTINGS;
+}
+
+export const STORAGE_KEYS = {
   BRANCHES: "medo_erp_branches_v1",
   ACTIVE_BRANCH_ID: "medo_erp_active_branch_id_v1",
   ACCOUNTS: "medo_erp_accounts_v1",
@@ -150,6 +198,18 @@ const STORAGE_KEYS = {
   EXCHANGE_TRANSACTIONS: "medo_erp_exchange_transactions_v1",
   SAAS_CLIENTS: "medo_erp_saas_clients_v1",
 };
+
+/**
+ * Returns dynamic tenant-isolated storage keys
+ */
+export function getStorageKey(baseKey: keyof typeof STORAGE_KEYS, overrideTenant?: string): string {
+  const tenant = overrideTenant || TenantIsolationService.resolveActiveTenant();
+  if (tenant && tenant !== "default") {
+    const cleanTenant = tenant.replace(/[^a-zA-Z0-9_-]/g, "_");
+    return `medo_tenant_${cleanTenant}_${STORAGE_KEYS[baseKey]}`;
+  }
+  return STORAGE_KEYS[baseKey];
+}
 
 export interface ERPFullState {
   branches?: Branch[];
@@ -192,32 +252,66 @@ export interface ERPFullState {
   saasClients?: SaaSClient[];
 }
 
-export function loadERPState(): ERPFullState {
+export function loadERPState(overrideTenant?: string): ERPFullState {
+  const activeTenant = overrideTenant || TenantIsolationService.resolveActiveTenant();
+
+  // If active tenant is Al-Badr Pharmaceuticals, ensure isolated initial dataset is loaded if not yet set
+  if (activeTenant === "albadr-pharma-2026" || activeTenant === "client-albadr") {
+    const rawCustKey = getStorageKey("CUSTOMERS", activeTenant);
+    const hasInitializedAlBadr = localStorage.getItem(rawCustKey) !== null;
+    if (!hasInitializedAlBadr) {
+      const isolatedState = TenantIsolationService.getAlBadrIsolatedState();
+      saveERPState(isolatedState, activeTenant);
+      return isolatedState;
+    }
+  }
+
+  // If active tenant is one of the 3 trial clients, ensure isolated mock trial dataset is loaded if not yet set
+  if (TenantIsolationService.isTrialClientTenant(activeTenant)) {
+    const rawCustKey = getStorageKey("CUSTOMERS", activeTenant);
+    const hasInitializedTrial = localStorage.getItem(rawCustKey) !== null;
+    if (!hasInitializedTrial) {
+      const isolatedTrialState = getMockTrialState(activeTenant);
+      saveERPState(isolatedTrialState, activeTenant);
+      return isolatedTrialState;
+    }
+  }
+
   try {
-    const rawBranches = localStorage.getItem(STORAGE_KEYS.BRANCHES);
-    const branches: Branch[] = rawBranches ? JSON.parse(rawBranches) : INITIAL_BRANCHES;
-    const activeBranchId = localStorage.getItem(STORAGE_KEYS.ACTIVE_BRANCH_ID) || "ALL";
+    const rawBranches = localStorage.getItem(getStorageKey("BRANCHES", activeTenant));
+    const branches: Branch[] = rawBranches
+      ? JSON.parse(rawBranches)
+      : (activeTenant === "albadr-pharma-2026" ? (TenantIsolationService.getAlBadrIsolatedState().branches || INITIAL_BRANCHES) : INITIAL_BRANCHES);
+    const activeBranchId = localStorage.getItem(getStorageKey("ACTIVE_BRANCH_ID", activeTenant)) || branches?.[0]?.id || "ALL";
 
-    const rawAccounts = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-    const accounts: Account[] = rawAccounts ? JSON.parse(rawAccounts) : INITIAL_ACCOUNTS;
+    const rawAccounts = localStorage.getItem(getStorageKey("ACCOUNTS", activeTenant));
+    const accounts: Account[] = rawAccounts
+      ? JSON.parse(rawAccounts)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().accounts : INITIAL_ACCOUNTS);
 
-    const rawJournals = localStorage.getItem(STORAGE_KEYS.JOURNAL_ENTRIES);
-    const journalEntries: JournalEntry[] = rawJournals ? JSON.parse(rawJournals) : INITIAL_JOURNAL_ENTRIES;
+    const rawJournals = localStorage.getItem(getStorageKey("JOURNAL_ENTRIES", activeTenant));
+    const journalEntries: JournalEntry[] = rawJournals ? JSON.parse(rawJournals) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_JOURNAL_ENTRIES);
 
-    const rawVouchers = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
-    const vouchers: Voucher[] = rawVouchers ? JSON.parse(rawVouchers) : INITIAL_VOUCHERS;
+    const rawVouchers = localStorage.getItem(getStorageKey("VOUCHERS", activeTenant));
+    const vouchers: Voucher[] = rawVouchers ? JSON.parse(rawVouchers) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_VOUCHERS);
 
-    const rawCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-    const customers: Customer[] = rawCustomers ? JSON.parse(rawCustomers) : INITIAL_CUSTOMERS;
+    const rawCustomers = localStorage.getItem(getStorageKey("CUSTOMERS", activeTenant));
+    const customers: Customer[] = rawCustomers
+      ? JSON.parse(rawCustomers)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().customers : INITIAL_CUSTOMERS);
 
-    const rawVendors = localStorage.getItem(STORAGE_KEYS.VENDORS);
-    const vendors: Vendor[] = rawVendors ? JSON.parse(rawVendors) : INITIAL_VENDORS;
+    const rawVendors = localStorage.getItem(getStorageKey("VENDORS", activeTenant));
+    const vendors: Vendor[] = rawVendors
+      ? JSON.parse(rawVendors)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().vendors : INITIAL_VENDORS);
 
-    const rawInvoices = localStorage.getItem(STORAGE_KEYS.INVOICES);
-    let invoices: Invoice[] = rawInvoices ? JSON.parse(rawInvoices) : INITIAL_INVOICES;
+    const rawInvoices = localStorage.getItem(getStorageKey("INVOICES", activeTenant));
+    let invoices: Invoice[] = rawInvoices
+      ? JSON.parse(rawInvoices)
+      : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_INVOICES);
     
-    // Ensure initial purchase bills exist if missing in current state
-    if (localStorage.getItem("medo_load_sample_data_flag") !== "false") {
+    // Ensure initial purchase bills exist if missing in current state for default dev workspace
+    if (activeTenant === "default" && localStorage.getItem("medo_load_sample_data_flag") !== "false") {
       const hasPurchaseInvoices = invoices.some((i) => i.type === "PURCHASE" || i.type === "PURCHASE_RETURN");
       if (!hasPurchaseInvoices) {
         const initialPurchases = INITIAL_INVOICES.filter((i) => i.type === "PURCHASE" || i.type === "PURCHASE_RETURN");
@@ -226,45 +320,75 @@ export function loadERPState(): ERPFullState {
     }
     const bills = invoices.filter((i) => i.type === "PURCHASE" || i.type === "PURCHASE_RETURN");
 
-    const rawAssets = localStorage.getItem(STORAGE_KEYS.FIXED_ASSETS);
-    const fixedAssets: FixedAsset[] = rawAssets ? JSON.parse(rawAssets) : INITIAL_FIXED_ASSETS;
+    const rawAssets = localStorage.getItem(getStorageKey("FIXED_ASSETS", activeTenant));
+    const fixedAssets: FixedAsset[] = rawAssets
+      ? JSON.parse(rawAssets)
+      : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_FIXED_ASSETS);
 
-    const rawBanks = localStorage.getItem(STORAGE_KEYS.BANK_ACCOUNTS);
-    const bankAccounts: BankAccountItem[] = rawBanks ? JSON.parse(rawBanks) : INITIAL_BANK_ACCOUNTS;
+    const rawBanks = localStorage.getItem(getStorageKey("BANK_ACCOUNTS", activeTenant));
+    const bankAccounts: BankAccountItem[] = rawBanks
+      ? JSON.parse(rawBanks)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().bankAccounts : INITIAL_BANK_ACCOUNTS);
 
-    const rawVaults = localStorage.getItem(STORAGE_KEYS.CASH_VAULTS);
-    const cashVaults: CashVaultItem[] = rawVaults ? JSON.parse(rawVaults) : INITIAL_CASH_VAULTS;
+    const rawVaults = localStorage.getItem(getStorageKey("CASH_VAULTS", activeTenant));
+    const cashVaults: CashVaultItem[] = rawVaults
+      ? JSON.parse(rawVaults)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().cashVaults : INITIAL_CASH_VAULTS);
 
-    const rawCostCenters = localStorage.getItem(STORAGE_KEYS.COST_CENTERS);
-    const costCenters: CostCenter[] = rawCostCenters ? JSON.parse(rawCostCenters) : INITIAL_COST_CENTERS;
+    const rawCostCenters = localStorage.getItem(getStorageKey("COST_CENTERS", activeTenant));
+    const costCenters: CostCenter[] = rawCostCenters
+      ? JSON.parse(rawCostCenters)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().costCenters : INITIAL_COST_CENTERS);
 
-    const rawCurrencies = localStorage.getItem(STORAGE_KEYS.CURRENCIES);
+    const rawCurrencies = localStorage.getItem(getStorageKey("CURRENCIES", activeTenant));
     const currencies: CurrencyInfo[] = rawCurrencies ? JSON.parse(rawCurrencies) : INITIAL_CURRENCIES;
 
-    const rawUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    const currentUser: ERPUser = rawUser ? JSON.parse(rawUser) : INITIAL_USERS[0];
+    const rawUser = localStorage.getItem(getStorageKey("CURRENT_USER", activeTenant));
+    const currentUser: ERPUser = rawUser
+      ? JSON.parse(rawUser)
+      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().currentUser : INITIAL_USERS[0]);
 
-    const rawSelectedCurrency = localStorage.getItem(STORAGE_KEYS.SELECTED_CURRENCY) as CurrencyCode;
+    const rawSelectedCurrency = localStorage.getItem(getStorageKey("SELECTED_CURRENCY", activeTenant)) as CurrencyCode;
     const selectedDisplayCurrency: CurrencyCode = rawSelectedCurrency || "YER_SANAA";
 
-    const rawSettings = localStorage.getItem(STORAGE_KEYS.SYSTEM_SETTINGS);
+    const rawSettings = localStorage.getItem(getStorageKey("SYSTEM_SETTINGS", activeTenant));
+    const fallbackSettings = getTenantDefaultSettings(activeTenant);
     const parsedSettings = rawSettings ? JSON.parse(rawSettings) : {};
+
+    const storedNameAr = parsedSettings.companyNameAr || "";
+    const isGenericDefaultName =
+      !storedNameAr ||
+      storedNameAr.includes("مـيـدو التجارية والمالية") ||
+      storedNameAr.includes("ميدو التجارية والمالية");
+
     const systemSettings: SystemSettings = {
-      ...DEFAULT_SYSTEM_SETTINGS,
+      ...fallbackSettings,
       ...parsedSettings,
+      ...(isGenericDefaultName && activeTenant !== "default"
+        ? {
+            companyNameAr: fallbackSettings.companyNameAr,
+            companyNameEn: fallbackSettings.companyNameEn,
+            commercialRegister: fallbackSettings.commercialRegister,
+            taxNumber: fallbackSettings.taxNumber,
+            phone: fallbackSettings.phone,
+            email: fallbackSettings.email,
+            address: fallbackSettings.address,
+          }
+        : {}),
       scheduledBackup: {
-        ...DEFAULT_SYSTEM_SETTINGS.scheduledBackup,
+        ...fallbackSettings?.scheduledBackup,
         ...(parsedSettings.scheduledBackup || {}),
         enabled: parsedSettings.scheduledBackup?.enabled !== false, // Always active
       },
     };
 
-    const rawInventory = localStorage.getItem(STORAGE_KEYS.INVENTORY_ITEMS);
-    let inventoryItems: InventoryItem[] = rawInventory ? JSON.parse(rawInventory) : INITIAL_INVENTORY_ITEMS;
+    const rawInventory = localStorage.getItem(getStorageKey("INVENTORY_ITEMS", activeTenant));
+    let inventoryItems: InventoryItem[] = rawInventory
+      ? JSON.parse(rawInventory)
+      : (activeTenant === "albadr-pharma-2026" ? (TenantIsolationService.getAlBadrIsolatedState().inventoryItems || []) : INITIAL_INVENTORY_ITEMS);
     
-    // Auto-inject Tobacco & Moassel if missing (bypasses stale localStorage cache)
-    // Only if not explicitly a clean SaaS tenant
-    if (localStorage.getItem("medo_load_sample_data_flag") !== "false") {
+    // Auto-inject Tobacco & Moassel if missing ONLY for default development workspace
+    if (activeTenant === "default" && localStorage.getItem("medo_load_sample_data_flag") !== "false") {
       const hasTobacco = inventoryItems.some(
         (item) => item.category === "التبغ والمعسل" || item.code.startsWith("INV-TOB-")
       );
@@ -274,70 +398,70 @@ export function loadERPState(): ERPFullState {
         );
         if (tobaccoItems.length > 0) {
           inventoryItems = [...inventoryItems, ...tobaccoItems];
-          localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(inventoryItems));
+          localStorage.setItem(getStorageKey("INVENTORY_ITEMS", activeTenant), JSON.stringify(inventoryItems));
         }
       }
     }
 
-    const rawMovements = localStorage.getItem(STORAGE_KEYS.STOCK_MOVEMENTS);
-    const stockMovements: StockMovement[] = rawMovements ? JSON.parse(rawMovements) : INITIAL_STOCK_MOVEMENTS;
+    const rawMovements = localStorage.getItem(getStorageKey("STOCK_MOVEMENTS", activeTenant));
+    const stockMovements: StockMovement[] = rawMovements ? JSON.parse(rawMovements) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_STOCK_MOVEMENTS);
 
-    const rawRequests = localStorage.getItem(STORAGE_KEYS.UNAVAILABLE_REQUESTS);
-    const unavailableRequests: UnavailableItemRequest[] = rawRequests ? JSON.parse(rawRequests) : INITIAL_UNAVAILABLE_REQUESTS;
+    const rawRequests = localStorage.getItem(getStorageKey("UNAVAILABLE_REQUESTS", activeTenant));
+    const unavailableRequests: UnavailableItemRequest[] = rawRequests ? JSON.parse(rawRequests) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_UNAVAILABLE_REQUESTS);
 
-    const rawRoles = localStorage.getItem(STORAGE_KEYS.ROLES);
+    const rawRoles = localStorage.getItem(getStorageKey("ROLES", activeTenant));
     const roles: ERPRole[] = rawRoles ? JSON.parse(rawRoles) : INITIAL_ROLES;
 
-    const rawUsersList = localStorage.getItem(STORAGE_KEYS.USERS_LIST);
-    const usersList: ERPUser[] = rawUsersList ? JSON.parse(rawUsersList) : INITIAL_USERS;
+    const rawUsersList = localStorage.getItem(getStorageKey("USERS_LIST", activeTenant));
+    const usersList: ERPUser[] = rawUsersList ? JSON.parse(rawUsersList) : (activeTenant === "albadr-pharma-2026" ? [currentUser] : INITIAL_USERS);
 
-    const rawEmployees = localStorage.getItem(STORAGE_KEYS.HR_EMPLOYEES);
-    const hrEmployees: HREmployee[] = rawEmployees ? JSON.parse(rawEmployees) : INITIAL_HR_EMPLOYEES;
+    const rawEmployees = localStorage.getItem(getStorageKey("HR_EMPLOYEES", activeTenant));
+    const hrEmployees: HREmployee[] = rawEmployees ? JSON.parse(rawEmployees) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_EMPLOYEES);
 
-    const rawDecisions = localStorage.getItem(STORAGE_KEYS.HR_DECISIONS);
-    const hrDecisions: HRAdministrativeDecision[] = rawDecisions ? JSON.parse(rawDecisions) : INITIAL_HR_DECISIONS;
+    const rawDecisions = localStorage.getItem(getStorageKey("HR_DECISIONS", activeTenant));
+    const hrDecisions: HRAdministrativeDecision[] = rawDecisions ? JSON.parse(rawDecisions) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_DECISIONS);
 
-    const rawAttendance = localStorage.getItem(STORAGE_KEYS.HR_ATTENDANCE);
-    const hrAttendanceRecords: HRAttendanceRecord[] = rawAttendance ? JSON.parse(rawAttendance) : INITIAL_HR_ATTENDANCE;
+    const rawAttendance = localStorage.getItem(getStorageKey("HR_ATTENDANCE", activeTenant));
+    const hrAttendanceRecords: HRAttendanceRecord[] = rawAttendance ? JSON.parse(rawAttendance) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_ATTENDANCE);
 
-    const rawShifts = localStorage.getItem(STORAGE_KEYS.HR_SHIFTS);
-    const hrShifts: HRWorkingShift[] = rawShifts ? JSON.parse(rawShifts) : INITIAL_HR_SHIFTS;
+    const rawShifts = localStorage.getItem(getStorageKey("HR_SHIFTS", activeTenant));
+    const hrShifts: HRWorkingShift[] = rawShifts ? JSON.parse(rawShifts) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_SHIFTS);
 
-    const rawPayrolls = localStorage.getItem(STORAGE_KEYS.HR_PAYROLLS);
-    const hrPayrolls: HRMonthlyPayroll[] = rawPayrolls ? JSON.parse(rawPayrolls) : INITIAL_HR_PAYROLLS;
+    const rawPayrolls = localStorage.getItem(getStorageKey("HR_PAYROLLS", activeTenant));
+    const hrPayrolls: HRMonthlyPayroll[] = rawPayrolls ? JSON.parse(rawPayrolls) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_PAYROLLS);
 
-    const rawCorr = localStorage.getItem(STORAGE_KEYS.CORRESPONDENCES);
-    const correspondences: CorrespondenceDocument[] = rawCorr ? JSON.parse(rawCorr) : INITIAL_CORRESPONDENCES;
+    const rawCorr = localStorage.getItem(getStorageKey("CORRESPONDENCES", activeTenant));
+    const correspondences: CorrespondenceDocument[] = rawCorr ? JSON.parse(rawCorr) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CORRESPONDENCES);
 
-    const rawApr = localStorage.getItem(STORAGE_KEYS.APPROVAL_REQUESTS);
-    const approvalRequests: ApprovalRequest[] = rawApr ? JSON.parse(rawApr) : INITIAL_APPROVAL_REQUESTS;
+    const rawApr = localStorage.getItem(getStorageKey("APPROVAL_REQUESTS", activeTenant));
+    const approvalRequests: ApprovalRequest[] = rawApr ? JSON.parse(rawApr) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_APPROVAL_REQUESTS);
 
-    const rawAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-    const auditLogs: AuditLogEntry[] = rawAudit ? JSON.parse(rawAudit) : INITIAL_AUDIT_LOGS;
+    const rawAudit = localStorage.getItem(getStorageKey("AUDIT_LOGS", activeTenant));
+    const auditLogs: AuditLogEntry[] = rawAudit ? JSON.parse(rawAudit) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_AUDIT_LOGS);
 
-    const rawAlerts = localStorage.getItem(STORAGE_KEYS.SYSTEM_ALERTS);
-    const systemAlerts: SystemAlert[] = rawAlerts ? JSON.parse(rawAlerts) : INITIAL_SYSTEM_ALERTS;
+    const rawAlerts = localStorage.getItem(getStorageKey("SYSTEM_ALERTS", activeTenant));
+    const systemAlerts: SystemAlert[] = rawAlerts ? JSON.parse(rawAlerts) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_SYSTEM_ALERTS);
 
-    const rawChannels = localStorage.getItem(STORAGE_KEYS.CHAT_CHANNELS);
-    const chatChannels: ChatChannel[] = rawChannels ? JSON.parse(rawChannels) : INITIAL_CHAT_CHANNELS;
+    const rawChannels = localStorage.getItem(getStorageKey("CHAT_CHANNELS", activeTenant));
+    const chatChannels: ChatChannel[] = rawChannels ? JSON.parse(rawChannels) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CHAT_CHANNELS);
 
-    const rawMessages = localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES);
-    const chatMessages: ChatMessage[] = rawMessages ? JSON.parse(rawMessages) : INITIAL_CHAT_MESSAGES;
+    const rawMessages = localStorage.getItem(getStorageKey("CHAT_MESSAGES", activeTenant));
+    const chatMessages: ChatMessage[] = rawMessages ? JSON.parse(rawMessages) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CHAT_MESSAGES);
 
-    const rawCirc = localStorage.getItem(STORAGE_KEYS.CIRCULARS);
-    const administrativeCirculars: AdministrativeCircular[] = rawCirc ? JSON.parse(rawCirc) : INITIAL_ADMINISTRATIVE_CIRCULARS;
+    const rawCirc = localStorage.getItem(getStorageKey("CIRCULARS", activeTenant));
+    const administrativeCirculars: AdministrativeCircular[] = rawCirc ? JSON.parse(rawCirc) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_ADMINISTRATIVE_CIRCULARS);
 
-    const rawWfRules = localStorage.getItem(STORAGE_KEYS.WORKFLOW_RULES);
-    const workflowRules: WorkflowRouteRule[] = rawWfRules ? JSON.parse(rawWfRules) : INITIAL_WORKFLOW_RULES;
+    const rawWfRules = localStorage.getItem(getStorageKey("WORKFLOW_RULES", activeTenant));
+    const workflowRules: WorkflowRouteRule[] = rawWfRules ? JSON.parse(rawWfRules) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_WORKFLOW_RULES);
 
-    const rawExchangeAccs = localStorage.getItem(STORAGE_KEYS.EXCHANGE_ACCOUNTS);
-    const exchangeAccounts: ExchangeAccount[] = rawExchangeAccs ? JSON.parse(rawExchangeAccs) : INITIAL_EXCHANGE_ACCOUNTS;
+    const rawExchangeAccs = localStorage.getItem(getStorageKey("EXCHANGE_ACCOUNTS", activeTenant));
+    const exchangeAccounts: ExchangeAccount[] = rawExchangeAccs ? JSON.parse(rawExchangeAccs) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_EXCHANGE_ACCOUNTS);
 
-    const rawExchangeTxs = localStorage.getItem(STORAGE_KEYS.EXCHANGE_TRANSACTIONS);
-    const exchangeTransactions: ExchangeTransaction[] = rawExchangeTxs ? JSON.parse(rawExchangeTxs) : INITIAL_EXCHANGE_TRANSACTIONS;
+    const rawExchangeTxs = localStorage.getItem(getStorageKey("EXCHANGE_TRANSACTIONS", activeTenant));
+    const exchangeTransactions: ExchangeTransaction[] = rawExchangeTxs ? JSON.parse(rawExchangeTxs) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_EXCHANGE_TRANSACTIONS);
 
-    const rawSaasClients = localStorage.getItem(STORAGE_KEYS.SAAS_CLIENTS);
-    const saasClients: SaaSClient[] = rawSaasClients ? JSON.parse(rawSaasClients) : INITIAL_SAAS_CLIENTS;
+    const rawSaasClients = localStorage.getItem(getStorageKey("SAAS_CLIENTS", activeTenant));
+    const saasClients: SaaSClient[] = rawSaasClients ? JSON.parse(rawSaasClients) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_SAAS_CLIENTS);
 
     return {
       branches,
@@ -381,7 +505,7 @@ export function loadERPState(): ERPFullState {
     };
   } catch (error) {
     console.error("Failed to load ERP state from localStorage:", error);
-    return {
+    const fallback = activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState() : {
       branches: INITIAL_BRANCHES,
       activeBranchId: "ALL",
       accounts: INITIAL_ACCOUNTS,
@@ -396,7 +520,7 @@ export function loadERPState(): ERPFullState {
       costCenters: INITIAL_COST_CENTERS,
       currencies: INITIAL_CURRENCIES,
       currentUser: INITIAL_USERS[0],
-      selectedDisplayCurrency: "YER_SANAA",
+      selectedDisplayCurrency: "YER_SANAA" as CurrencyCode,
       systemSettings: DEFAULT_SYSTEM_SETTINGS,
       inventoryItems: INITIAL_INVENTORY_ITEMS,
       stockMovements: INITIAL_STOCK_MOVEMENTS,
@@ -420,48 +544,50 @@ export function loadERPState(): ERPFullState {
       exchangeTransactions: INITIAL_EXCHANGE_TRANSACTIONS,
       saasClients: INITIAL_SAAS_CLIENTS,
     };
+    return fallback;
   }
 }
 
-export function saveERPState(state: Partial<ERPFullState>): void {
+export function saveERPState(state: Partial<ERPFullState>, overrideTenant?: string): void {
+  const activeTenant = overrideTenant || TenantIsolationService.resolveActiveTenant();
   try {
-    if (state.branches) localStorage.setItem(STORAGE_KEYS.BRANCHES, JSON.stringify(state.branches));
-    if (state.activeBranchId) localStorage.setItem(STORAGE_KEYS.ACTIVE_BRANCH_ID, state.activeBranchId);
-    if (state.accounts) localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(state.accounts));
-    if (state.journalEntries) localStorage.setItem(STORAGE_KEYS.JOURNAL_ENTRIES, JSON.stringify(state.journalEntries));
-    if (state.vouchers) localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(state.vouchers));
-    if (state.customers) localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(state.customers));
-    if (state.vendors) localStorage.setItem(STORAGE_KEYS.VENDORS, JSON.stringify(state.vendors));
-    if (state.invoices) localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(state.invoices));
-    if (state.fixedAssets) localStorage.setItem(STORAGE_KEYS.FIXED_ASSETS, JSON.stringify(state.fixedAssets));
-    if (state.bankAccounts) localStorage.setItem(STORAGE_KEYS.BANK_ACCOUNTS, JSON.stringify(state.bankAccounts));
-    if (state.cashVaults) localStorage.setItem(STORAGE_KEYS.CASH_VAULTS, JSON.stringify(state.cashVaults));
-    if (state.costCenters) localStorage.setItem(STORAGE_KEYS.COST_CENTERS, JSON.stringify(state.costCenters));
-    if (state.currencies) localStorage.setItem(STORAGE_KEYS.CURRENCIES, JSON.stringify(state.currencies));
-    if (state.currentUser) localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(state.currentUser));
-    if (state.selectedDisplayCurrency) localStorage.setItem(STORAGE_KEYS.SELECTED_CURRENCY, state.selectedDisplayCurrency);
-    if (state.systemSettings) localStorage.setItem(STORAGE_KEYS.SYSTEM_SETTINGS, JSON.stringify(state.systemSettings));
-    if (state.inventoryItems) localStorage.setItem(STORAGE_KEYS.INVENTORY_ITEMS, JSON.stringify(state.inventoryItems));
-    if (state.stockMovements) localStorage.setItem(STORAGE_KEYS.STOCK_MOVEMENTS, JSON.stringify(state.stockMovements));
-    if (state.unavailableRequests) localStorage.setItem(STORAGE_KEYS.UNAVAILABLE_REQUESTS, JSON.stringify(state.unavailableRequests));
-    if (state.roles) localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(state.roles));
-    if (state.usersList) localStorage.setItem(STORAGE_KEYS.USERS_LIST, JSON.stringify(state.usersList));
-    if (state.hrEmployees) localStorage.setItem(STORAGE_KEYS.HR_EMPLOYEES, JSON.stringify(state.hrEmployees));
-    if (state.hrDecisions) localStorage.setItem(STORAGE_KEYS.HR_DECISIONS, JSON.stringify(state.hrDecisions));
-    if (state.hrAttendanceRecords) localStorage.setItem(STORAGE_KEYS.HR_ATTENDANCE, JSON.stringify(state.hrAttendanceRecords));
-    if (state.hrShifts) localStorage.setItem(STORAGE_KEYS.HR_SHIFTS, JSON.stringify(state.hrShifts));
-    if (state.hrPayrolls) localStorage.setItem(STORAGE_KEYS.HR_PAYROLLS, JSON.stringify(state.hrPayrolls));
-    if (state.correspondences) localStorage.setItem(STORAGE_KEYS.CORRESPONDENCES, JSON.stringify(state.correspondences));
-    if (state.approvalRequests) localStorage.setItem(STORAGE_KEYS.APPROVAL_REQUESTS, JSON.stringify(state.approvalRequests));
-    if (state.workflowRules) localStorage.setItem(STORAGE_KEYS.WORKFLOW_RULES, JSON.stringify(state.workflowRules));
-    if (state.auditLogs) localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(state.auditLogs));
-    if (state.systemAlerts) localStorage.setItem(STORAGE_KEYS.SYSTEM_ALERTS, JSON.stringify(state.systemAlerts));
-    if (state.chatChannels) localStorage.setItem(STORAGE_KEYS.CHAT_CHANNELS, JSON.stringify(state.chatChannels));
-    if (state.chatMessages) localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(state.chatMessages));
-    if (state.administrativeCirculars) localStorage.setItem(STORAGE_KEYS.CIRCULARS, JSON.stringify(state.administrativeCirculars));
-    if (state.exchangeAccounts) localStorage.setItem(STORAGE_KEYS.EXCHANGE_ACCOUNTS, JSON.stringify(state.exchangeAccounts));
-    if (state.exchangeTransactions) localStorage.setItem(STORAGE_KEYS.EXCHANGE_TRANSACTIONS, JSON.stringify(state.exchangeTransactions));
-    if (state.saasClients) localStorage.setItem(STORAGE_KEYS.SAAS_CLIENTS, JSON.stringify(state.saasClients));
+    if (state.branches) localStorage.setItem(getStorageKey("BRANCHES", activeTenant), JSON.stringify(state.branches));
+    if (state.activeBranchId) localStorage.setItem(getStorageKey("ACTIVE_BRANCH_ID", activeTenant), state.activeBranchId);
+    if (state.accounts) localStorage.setItem(getStorageKey("ACCOUNTS", activeTenant), JSON.stringify(state.accounts));
+    if (state.journalEntries) localStorage.setItem(getStorageKey("JOURNAL_ENTRIES", activeTenant), JSON.stringify(state.journalEntries));
+    if (state.vouchers) localStorage.setItem(getStorageKey("VOUCHERS", activeTenant), JSON.stringify(state.vouchers));
+    if (state.customers) localStorage.setItem(getStorageKey("CUSTOMERS", activeTenant), JSON.stringify(state.customers));
+    if (state.vendors) localStorage.setItem(getStorageKey("VENDORS", activeTenant), JSON.stringify(state.vendors));
+    if (state.invoices) localStorage.setItem(getStorageKey("INVOICES", activeTenant), JSON.stringify(state.invoices));
+    if (state.fixedAssets) localStorage.setItem(getStorageKey("FIXED_ASSETS", activeTenant), JSON.stringify(state.fixedAssets));
+    if (state.bankAccounts) localStorage.setItem(getStorageKey("BANK_ACCOUNTS", activeTenant), JSON.stringify(state.bankAccounts));
+    if (state.cashVaults) localStorage.setItem(getStorageKey("CASH_VAULTS", activeTenant), JSON.stringify(state.cashVaults));
+    if (state.costCenters) localStorage.setItem(getStorageKey("COST_CENTERS", activeTenant), JSON.stringify(state.costCenters));
+    if (state.currencies) localStorage.setItem(getStorageKey("CURRENCIES", activeTenant), JSON.stringify(state.currencies));
+    if (state.currentUser) localStorage.setItem(getStorageKey("CURRENT_USER", activeTenant), JSON.stringify(state.currentUser));
+    if (state.selectedDisplayCurrency) localStorage.setItem(getStorageKey("SELECTED_CURRENCY", activeTenant), state.selectedDisplayCurrency);
+    if (state.systemSettings) localStorage.setItem(getStorageKey("SYSTEM_SETTINGS", activeTenant), JSON.stringify(state.systemSettings));
+    if (state.inventoryItems) localStorage.setItem(getStorageKey("INVENTORY_ITEMS", activeTenant), JSON.stringify(state.inventoryItems));
+    if (state.stockMovements) localStorage.setItem(getStorageKey("STOCK_MOVEMENTS", activeTenant), JSON.stringify(state.stockMovements));
+    if (state.unavailableRequests) localStorage.setItem(getStorageKey("UNAVAILABLE_REQUESTS", activeTenant), JSON.stringify(state.unavailableRequests));
+    if (state.roles) localStorage.setItem(getStorageKey("ROLES", activeTenant), JSON.stringify(state.roles));
+    if (state.usersList) localStorage.setItem(getStorageKey("USERS_LIST", activeTenant), JSON.stringify(state.usersList));
+    if (state.hrEmployees) localStorage.setItem(getStorageKey("HR_EMPLOYEES", activeTenant), JSON.stringify(state.hrEmployees));
+    if (state.hrDecisions) localStorage.setItem(getStorageKey("HR_DECISIONS", activeTenant), JSON.stringify(state.hrDecisions));
+    if (state.hrAttendanceRecords) localStorage.setItem(getStorageKey("HR_ATTENDANCE", activeTenant), JSON.stringify(state.hrAttendanceRecords));
+    if (state.hrShifts) localStorage.setItem(getStorageKey("HR_SHIFTS", activeTenant), JSON.stringify(state.hrShifts));
+    if (state.hrPayrolls) localStorage.setItem(getStorageKey("HR_PAYROLLS", activeTenant), JSON.stringify(state.hrPayrolls));
+    if (state.correspondences) localStorage.setItem(getStorageKey("CORRESPONDENCES", activeTenant), JSON.stringify(state.correspondences));
+    if (state.approvalRequests) localStorage.setItem(getStorageKey("APPROVAL_REQUESTS", activeTenant), JSON.stringify(state.approvalRequests));
+    if (state.workflowRules) localStorage.setItem(getStorageKey("WORKFLOW_RULES", activeTenant), JSON.stringify(state.workflowRules));
+    if (state.auditLogs) localStorage.setItem(getStorageKey("AUDIT_LOGS", activeTenant), JSON.stringify(state.auditLogs));
+    if (state.systemAlerts) localStorage.setItem(getStorageKey("SYSTEM_ALERTS", activeTenant), JSON.stringify(state.systemAlerts));
+    if (state.chatChannels) localStorage.setItem(getStorageKey("CHAT_CHANNELS", activeTenant), JSON.stringify(state.chatChannels));
+    if (state.chatMessages) localStorage.setItem(getStorageKey("CHAT_MESSAGES", activeTenant), JSON.stringify(state.chatMessages));
+    if (state.administrativeCirculars) localStorage.setItem(getStorageKey("CIRCULARS", activeTenant), JSON.stringify(state.administrativeCirculars));
+    if (state.exchangeAccounts) localStorage.setItem(getStorageKey("EXCHANGE_ACCOUNTS", activeTenant), JSON.stringify(state.exchangeAccounts));
+    if (state.exchangeTransactions) localStorage.setItem(getStorageKey("EXCHANGE_TRANSACTIONS", activeTenant), JSON.stringify(state.exchangeTransactions));
+    if (state.saasClients) localStorage.setItem(getStorageKey("SAAS_CLIENTS", activeTenant), JSON.stringify(state.saasClients));
   } catch (error) {
     console.error("Error saving ERP state:", error);
   }

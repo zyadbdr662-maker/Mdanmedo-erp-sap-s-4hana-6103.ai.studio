@@ -29,10 +29,12 @@ import {
   Voucher,
 } from "../types/erp";
 import { convertCurrency, formatMoney, formatNumberOnly } from "../services/erpStorage";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 import { AccountLedgerModal } from "./AccountLedgerModal";
 import { exportFinancialReportToPdf, getTodayFormattedDate } from "../services/pdfExporter";
 import { CashFlowStatementGenerator } from "./CashFlowStatementGenerator";
 import { ZatcaVatReturnGenerator } from "./ZatcaVatReturnGenerator";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface FinancialReportsViewProps {
   accounts: Account[];
@@ -65,9 +67,19 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   onOpenAi,
   onShareReport,
 }) => {
+  const companyMeta = TenantIsolationService.getActiveTenantDetails();
   const [reportType, setReportType] = useState<"BALANCE_SHEET" | "INCOME_STATEMENT" | "TRIAL_BALANCE" | "CASH_FLOW" | "VAT_RETURN">(initialReportType);
   const [fiscalYear, setFiscalYear] = useState("2026");
   const [selectedLedgerAccount, setSelectedLedgerAccount] = useState<Account | null>(null);
+
+  const TRIAL_BALANCE_COLUMNS: ColumnDef[] = [
+    { id: "code", label: "رمز الحساب", locked: true },
+    { id: "nameAr", label: "اسم الحساب المالي" },
+    { id: "category", label: "التصنيف" },
+    { id: "debit", label: "أرصدة مدينة (Debit)" },
+    { id: "credit", label: "أرصدة دائنة (Credit)" },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("trial_balance", TRIAL_BALANCE_COLUMNS);
 
   // Non-header active accounts
   const nonHeaders = accounts.filter((a) => !a.isHeader);
@@ -190,6 +202,12 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
             <span>تحليل القوائم عبر AI</span>
           </button>
+          <ColumnCustomizer
+            tableKey="trial_balance"
+            columns={TRIAL_BALANCE_COLUMNS}
+            visibleColumns={visibleColumns}
+            onChange={updateVisibility}
+          />
           <button
             onClick={handleExportPdf}
             disabled={isExportingPdf}
@@ -267,28 +285,28 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             <div className="flex items-start justify-between gap-4">
               <div className="text-right space-y-1">
                 <h1 className="doc-title text-base sm:text-lg font-extrabold text-white print:text-black">
-                  🏢 مجموعة بن زياد التجارية المتحدة
+                  🏢 {companyMeta.nameAr}
                 </h1>
                 <div className="doc-date text-xs font-bold text-slate-300 print:text-slate-700">
-                  مواد بناء ومواد زراعية - العنوان: الكندوي، حمر، عمران
+                  {companyMeta.industry} - العنوان: {companyMeta.address}
                 </div>
                 <div className="doc-meta text-xs text-slate-400 print:text-slate-600">
-                  للتواصل: 0967773586047 + 715779976
+                  للتواصل: {companyMeta.phone}
                 </div>
               </div>
               <div className="w-14 h-14 rounded-xl bg-[#0A2540] border-2 border-sap-secondary text-sap-secondary font-black text-xs flex flex-col items-center justify-center flex-shrink-0 shadow-md">
-                <span className="font-mono tracking-tighter">MDOtkBZ</span>
-                <span className="text-[8px] text-sap-secondary/90">بن زياد</span>
+                <span className="font-mono tracking-tighter">{companyMeta.logoText}</span>
+                <span className="text-[8px] text-sap-secondary/90">MeDo ERP</span>
               </div>
               <div className="text-left space-y-1" dir="ltr">
                 <h2 className="text-[13px] sm:text-[14px] font-extrabold text-white print:text-black">
-                  Bin Ziad United Commercial Group
+                  {companyMeta.nameEn}
                 </h2>
                 <div className="text-[11px] text-slate-300 print:text-slate-700 font-medium">
-                  Building & Agricultural Materials
+                  {companyMeta.nameEn.split(" ").slice(0, 3).join(" ")} Support
                 </div>
                 <div className="text-[11px] text-slate-400 print:text-slate-600">
-                  Tel: +967 773586047 | 715779976
+                  Tel: {companyMeta.phone}
                 </div>
               </div>
             </div>
@@ -509,11 +527,11 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               <table className="w-full text-right text-xs">
                 <thead>
                   <tr className="bg-slate-950 text-slate-400 border-b border-slate-800">
-                    <th className="py-2.5 px-3 font-semibold">رمز الحساب</th>
-                    <th className="py-2.5 px-3 font-semibold">اسم الحساب المالي</th>
-                    <th className="py-2.5 px-3 font-semibold">التصنيف</th>
-                    <th className="py-2.5 px-3 font-semibold text-left">أرصدة مدينة (Debit)</th>
-                    <th className="py-2.5 px-3 font-semibold text-left">أرصدة دائنة (Credit)</th>
+                    {isVisible("code") && <th className="py-2.5 px-3 font-semibold">رمز الحساب</th>}
+                    {isVisible("nameAr") && <th className="py-2.5 px-3 font-semibold">اسم الحساب المالي</th>}
+                    {isVisible("category") && <th className="py-2.5 px-3 font-semibold">التصنيف</th>}
+                    {isVisible("debit") && <th className="py-2.5 px-3 font-semibold text-left">أرصدة مدينة (Debit)</th>}
+                    {isVisible("credit") && <th className="py-2.5 px-3 font-semibold text-left">أرصدة دائنة (Credit)</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -527,28 +545,36 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                         className="hover:bg-slate-800/50 cursor-pointer transition-colors"
                         title="انقر لفتح كشف حساب الأستاذ العام"
                       >
-                        <td className="py-2 px-3 font-mono font-bold text-emerald-400">{acc.code}</td>
-                        <td className="py-2 px-3 text-slate-200 font-medium">{acc.nameAr}</td>
-                        <td className="py-2 px-3 text-slate-400 text-[11px]">{acc.category}</td>
-                        <td className="py-2 px-3 text-left font-mono font-bold text-emerald-400">
-                          {isDebit && bal !== 0 ? formatNumberOnly(bal) : "-"}
-                        </td>
-                        <td className="py-2 px-3 text-left font-mono font-bold text-blue-400">
-                          {!isDebit && bal !== 0 ? formatNumberOnly(bal) : "-"}
-                        </td>
+                        {isVisible("code") && <td className="py-2 px-3 font-mono font-bold text-emerald-400">{acc.code}</td>}
+                        {isVisible("nameAr") && <td className="py-2 px-3 text-slate-200 font-medium">{acc.nameAr}</td>}
+                        {isVisible("category") && <td className="py-2 px-3 text-slate-400 text-[11px]">{acc.category}</td>}
+                        {isVisible("debit") && (
+                          <td className="py-2 px-3 text-left font-mono font-bold text-emerald-400">
+                            {isDebit && bal !== 0 ? formatNumberOnly(bal) : "-"}
+                          </td>
+                        )}
+                        {isVisible("credit") && (
+                          <td className="py-2 px-3 text-left font-mono font-bold text-blue-400">
+                            {!isDebit && bal !== 0 ? formatNumberOnly(bal) : "-"}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-950 font-bold border-t-2 border-slate-700 text-sm">
-                    <td colSpan={3} className="py-3 px-3 text-white">إجمالي ميزان المراجعة:</td>
-                    <td className="py-3 px-3 text-left font-mono text-emerald-400">
-                      {formatMoney(trialTotalDebit, displayCurrency, currencies)}
-                    </td>
-                    <td className="py-3 px-3 text-left font-mono text-blue-400">
-                      {formatMoney(trialTotalCredit, displayCurrency, currencies)}
-                    </td>
+                    <td colSpan={["code", "nameAr", "category"].filter((c) => isVisible(c)).length} className="py-3 px-3 text-white">إجمالي ميزان المراجعة:</td>
+                    {isVisible("debit") && (
+                      <td className="py-3 px-3 text-left font-mono text-emerald-400">
+                        {formatMoney(trialTotalDebit, displayCurrency, currencies)}
+                      </td>
+                    )}
+                    {isVisible("credit") && (
+                      <td className="py-3 px-3 text-left font-mono text-blue-400">
+                        {formatMoney(trialTotalCredit, displayCurrency, currencies)}
+                      </td>
+                    )}
                   </tr>
                 </tfoot>
               </table>

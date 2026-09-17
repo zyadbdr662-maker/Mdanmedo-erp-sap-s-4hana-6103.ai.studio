@@ -53,7 +53,7 @@ export const AboutPage = () => {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-[#B8860B]/20 border border-[#B8860B]/40 text-sap-secondary px-4 py-1.5 rounded-full text-xs font-black tracking-wide mb-6">
               <Building2 className="w-4 h-4 text-[#B8860B]" />
-              <span>{lang === 'ar' ? '🏢 عن ميدو تك وبن زياد المتحدة' : 'About MeDo Tech & Bin Ziad United'}</span>
+              <span>{lang === 'ar' ? '🏢 عن ميدو تك للحلول البرمجية' : 'About MeDo Tech Solutions'}</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-6 leading-tight">
@@ -64,8 +64,8 @@ export const AboutPage = () => {
 
             <p className="text-lg sm:text-xl text-gray-200 leading-relaxed font-semibold max-w-4xl">
               {lang === 'ar'
-                ? 'ميدو تك للحلول البرمجية، بالشراكة الاستراتيجية مع بن زياد المتحدة، هي شركة يمنية رائدة في تقديم أنظمة ERP سحابية متطورة، مصممة لتحويل العمليات التشغيلية إلى أصول ذكية.'
-                : 'MeDo Tech for Software Solutions, in strategic partnership with Bin Ziad United, is a pioneering Yemeni enterprise delivering advanced cloud ERP systems, designed to transform operational workflows into intelligent assets.'}
+                ? 'ميدو تك للحلول البرمجية هي شركة تقنية رائدة في تطوير أنظمة ERP السحابية والمكتبية المتطورة، مصممة لتحويل العمليات التشغيلية والمالية إلى أصول ذكية موثوقة بمعايير عالمية.'
+                : 'MeDo Tech for Software Solutions is a pioneering software enterprise delivering advanced cloud and desktop ERP systems, designed to transform operational and financial workflows into intelligent, reliable enterprise assets.'}
             </p>
           </div>
         </div>
@@ -120,8 +120,8 @@ export const AboutPage = () => {
             </div>
             <p className="text-base text-[#1A2B4C]">
               {lang === 'ar'
-                ? 'المبادئ التي تقود كل قرار نتخذه وكل ميزة نطورها في منظومة MeDo ERP.'
-                : 'The principles that guide every design decision and code deployment in MeDo ERP.'}
+                ? 'المبادئ التي تقود كل قرار نتخذه وكل ميزة نطورها في منظومة SAP/MeDO ERP.'
+                : 'The principles that guide every design decision and code deployment in SAP/MeDO ERP.'}
             </p>
           </div>
 
@@ -143,26 +143,26 @@ export const AboutPage = () => {
           </div>
         </div>
 
-        {/* Strategic Partnership Note */}
+        {/* Enterprise Excellence Note */}
         <div className="bg-amber-50/60 border-2 border-[#B8860B]/40 rounded-3xl p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-right">
             <div className="inline-block bg-[#B8860B] text-white text-xs font-black px-3 py-1 rounded-full uppercase mb-2">
-              {lang === 'ar' ? 'شراكة استراتيجية رائدة' : 'Strategic Partnership'}
+              {lang === 'ar' ? 'منظومة سحابية متطورة' : 'Advanced Cloud Platform'}
             </div>
             <h3 className="text-2xl font-black text-[#0A0A0A]">
-              {lang === 'ar' ? 'ميدو تك للحلول البرمجية & مجموعة بن زياد المتحدة' : 'MeDo Tech Solutions & Bin Ziad United Group'}
+              {lang === 'ar' ? 'منظومة SAP/MeDO ERP للحلول الإدارية والمحاسبية' : 'SAP/MeDO ERP Enterprise Solutions'}
             </h3>
             <p className="text-base text-[#1A2B4C] max-w-3xl font-medium leading-relaxed">
               {lang === 'ar'
-                ? 'تكامل فريد يجمع بين الخبرة العميقة لمجموعة بن زياد في التجارة وإدارة الأعمال، والقدرات الهندسية الرفيعة لفريق ميدو تك لتوفير أفضل تجربة ERP في السوق اليمني والإقليمي.'
-                : 'A strategic synergy combining Bin Ziad Group commercial expertise with MeDo Tech software engineering prowess.'}
+                ? 'حلول برمجية متكاملة مصممة خصيصاً لتلبية متطلبات الشركات والمؤسسات التجارية والصناعية والخدمية وفق أحدث المعايير المحاسبية الدولية IFRS/GAAP مع دعم العمل دون اتصال بالإنترنت.'
+                : 'Integrated software solutions tailored for commercial, industrial, and service enterprises following international accounting standards with full offline capability.'}
             </p>
           </div>
           <Link
-            to="/blog/4"
+            to="/system"
             className="shrink-0 inline-flex items-center gap-2 bg-[#0A0A0A] hover:bg-[#1A2B4C] text-white font-bold text-sm px-6 py-3 rounded-xl transition"
           >
-            <span>{lang === 'ar' ? 'اقرأ قصة النجاح' : 'Read Success Story'}</span>
+            <span>{lang === 'ar' ? 'استكشف وحدات النظام' : 'Explore System Modules'}</span>
             <ArrowRight className="w-4 h-4 mr-1 transition-transform" />
           </Link>
         </div>

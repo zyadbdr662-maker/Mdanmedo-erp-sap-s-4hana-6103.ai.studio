@@ -161,7 +161,7 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">إنشاء مساحة عمل سحابية</h2>
           <p className="text-slate-400 text-sm mt-2 max-w-md">
-            احصل على نسختك التجريبية المعزولة تماماً من نظام MeDo ERP بأعلى معايير الأمان (SAP Standards).
+            احصل على نسختك التجريبية المعزولة تماماً من نظام SAP/MeDO ERP بأعلى معايير الأمان (SAP Standards).
           </p>
         </div>
 

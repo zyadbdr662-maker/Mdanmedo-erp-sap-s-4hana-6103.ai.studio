@@ -26,6 +26,14 @@ import {
   Check,
   Trash2,
   Plus,
+  Battery,
+  BatteryCharging,
+  BatteryMedium,
+  Zap,
+  Power,
+  ToggleLeft,
+  ToggleRight,
+  Info,
 } from "lucide-react";
 import {
   NetworkConnectionMode,
@@ -69,7 +77,15 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
   const [newSnapshotName, setNewSnapshotName] = useState("");
-  const [activeSubTab, setActiveSubTab] = useState<"OUTBOX" | "LOCAL_DB" | "CONFLICTS" | "BACKUP">("OUTBOX");
+  const [activeSubTab, setActiveSubTab] = useState<
+    "OUTBOX" | "LOCAL_DB" | "CONFLICTS" | "BACKUP" | "POWER_SETTINGS"
+  >("OUTBOX");
+
+  const [syncChargingOnly, setSyncChargingOnly] = useState<boolean>(syncEngine.isSyncOnlyWhileCharging());
+  const [isCharging, setIsCharging] = useState<boolean>(syncEngine.isDeviceCharging());
+  const [batteryLevel, setBatteryLevel] = useState<number>(syncEngine.getBatteryLevel());
+  const [simulatedCharging, setSimulatedCharging] = useState<boolean | null>(syncEngine.getSimulatedCharging());
+  const [hasBatteryApi, setHasBatteryApi] = useState<boolean>(syncEngine.isBatteryApiSupported());
 
   useEffect(() => {
     const unsub = syncEngine.subscribe(() => {
@@ -78,6 +94,11 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
       setOutbox(syncEngine.getOutbox());
       setConflictLogs(syncEngine.getConflictLogs());
       setSnapshots(syncEngine.getSnapshots());
+      setSyncChargingOnly(syncEngine.isSyncOnlyWhileCharging());
+      setIsCharging(syncEngine.isDeviceCharging());
+      setBatteryLevel(syncEngine.getBatteryLevel());
+      setSimulatedCharging(syncEngine.getSimulatedCharging());
+      setHasBatteryApi(syncEngine.isBatteryApiSupported());
     });
     return () => unsub();
   }, [syncEngine]);
@@ -94,7 +115,11 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
     syncEngine.setConflictStrategy(strat);
   };
 
-  const handleStartSync = async () => {
+  const handleToggleChargingOnly = (enabled: boolean) => {
+    syncEngine.setSyncOnlyWhileCharging(enabled);
+  };
+
+  const handleStartSync = async (bypassBatteryCheck: boolean = false) => {
     if (networkMode === "OFFLINE") {
       setNetworkMode("ONLINE");
       syncEngine.setNetworkMode("ONLINE");
@@ -108,6 +133,7 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
     const result = await syncEngine.triggerSync({
       branchFilter: selectedBranch,
       moduleFilter: selectedModule,
+      bypassBatteryCheck,
       onProgress: (prog, msg) => {
         setSyncProgress(prog);
         setSyncMessage(msg);
@@ -355,11 +381,76 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
           <HardDrive className="w-4 h-4" />
           <span>النسخ الاحتياطي المشفر والاستعادة</span>
         </button>
+
+        <button
+          onClick={() => setActiveSubTab("POWER_SETTINGS")}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeSubTab === "POWER_SETTINGS"
+              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+              : "text-slate-400 hover:text-slate-200 bg-[#0A2540]/60"
+          }`}
+        >
+          <BatteryCharging className="w-4 h-4" />
+          <span>إعدادات حفظ البطارية (Battery & Power)</span>
+          {syncChargingOnly ? (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                isCharging
+                  ? "bg-emerald-950 text-emerald-300 border border-emerald-700/60"
+                  : "bg-amber-950 text-amber-300 border border-amber-700/60"
+              }`}
+            >
+              {isCharging ? "شحن ⚡" : "بطارية 🔋"}
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-400 font-mono">({batteryLevel}%)</span>
+          )}
+        </button>
       </div>
 
       {/* Tab 1: Sync Outbox Queue */}
       {activeSubTab === "OUTBOX" && (
         <div className="space-y-6">
+          {/* Battery Saver Alert Banner if suspended */}
+          {syncChargingOnly && !isCharging && (
+            <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-600/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-amber-950 border border-amber-700 text-amber-400">
+                  <Battery className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-amber-200 flex items-center gap-2">
+                    <span>وضع المزامنة عند الشحن فقط مفعل ⚡</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-900/80 text-amber-300 font-mono">
+                      البطارية: {batteryLevel}%
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-amber-300/80 mt-0.5">
+                    المزامنة التلقائية معلقة لحماية بطارية الجهاز من الاستهلاك السريع. سيتم رفع العمليات فور وصل الشاحن، أو يمكنك المزامنة الفورية الآن بالتجاوز.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => handleStartSync(true)}
+                  disabled={isSyncing}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
+                >
+                  مزامنة استثنائية بالتجاوز ⚡
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab("POWER_SETTINGS")}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  إعدادات الشحن
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Quick Action bar & Sync Execution Card */}
           <div className="bg-[#0A2540] border border-slate-800 rounded-3xl p-5 shadow-md">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -377,7 +468,7 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
               {/* Sync Trigger and Simulation Buttons */}
               <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={handleStartSync}
+                  onClick={() => handleStartSync(false)}
                   disabled={isSyncing}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all shadow-md cursor-pointer ${
                     isSyncing
@@ -896,6 +987,247 @@ export const OfflineSyncCenter: React.FC<OfflineSyncCenterProps> = ({ onClose, o
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Power Saving & Battery Sync Settings */}
+      {activeSubTab === "POWER_SETTINGS" && (
+        <div className="space-y-6">
+          {/* Main Hero Card */}
+          <div className="bg-[#0A2540] border border-slate-800 rounded-3xl p-6 shadow-md">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`p-2 rounded-xl border ${
+                      isCharging
+                        ? "bg-emerald-950 border-emerald-700 text-emerald-400"
+                        : "bg-amber-950 border-amber-700 text-amber-400"
+                    }`}
+                  >
+                    {isCharging ? (
+                      <BatteryCharging className="w-6 h-6 text-emerald-400" />
+                    ) : (
+                      <Battery className="w-6 h-6 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <span>وضع المزامنة عند الشحن فقط (Battery Saver Mode)</span>
+                      <span
+                        className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
+                          syncChargingOnly
+                            ? isCharging
+                              ? "bg-emerald-950 text-emerald-300 border-emerald-600"
+                              : "bg-amber-950 text-amber-300 border-amber-600"
+                            : "bg-slate-900 text-slate-400 border-slate-700"
+                        }`}
+                      >
+                        {syncChargingOnly
+                          ? isCharging
+                            ? "مفعل ومتاح (متصل بالشاحن ⚡)"
+                            : "مفعل (معلق بالبطارية 🔋)"
+                          : "معطل (مزامنة عادية)"}
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      تقليل استهلاك طاقة الجهاز وحفظ البطارية عند العمل الميداني أو في الفروع خارج الشبكة الكهربائية.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Master Toggle Button */}
+              <button
+                type="button"
+                onClick={() => handleToggleChargingOnly(!syncChargingOnly)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-black transition-all border cursor-pointer shadow-lg active:scale-95 whitespace-nowrap self-start lg:self-auto ${
+                  syncChargingOnly
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-700/30"
+                    : "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700"
+                }`}
+              >
+                {syncChargingOnly ? (
+                  <>
+                    <ToggleRight className="w-5 h-5 text-emerald-100" />
+                    <span>الوضع مفعل (المزامنة عند الشحن فقط) ⚡</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-5 h-5 text-slate-400" />
+                    <span>تفعيل المزامنة عند الشحن فقط</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Battery Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+              {/* Battery Level Card */}
+              <div className="p-4 rounded-2xl bg-[#071829] border border-slate-800/80 space-y-2">
+                <span className="text-xs text-slate-400 font-bold block">مستوى شحن البطارية الحالي</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black font-mono text-white">{batteryLevel}%</span>
+                  <span className="text-xs text-slate-400 font-normal">
+                    {batteryLevel > 70 ? "ممتاز" : batteryLevel > 30 ? "متوسط" : "منخفض"}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isCharging
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                        : batteryLevel > 30
+                        ? "bg-amber-400"
+                        : "bg-rose-500"
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(5, batteryLevel))}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Power Source Card */}
+              <div className="p-4 rounded-2xl bg-[#071829] border border-slate-800/80 space-y-2">
+                <span className="text-xs text-slate-400 font-bold block">مصدر الطاقة وحالة التوصيل</span>
+                <div className="flex items-center gap-2">
+                  {isCharging ? (
+                    <Zap className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <BatteryMedium className="w-5 h-5 text-amber-400" />
+                  )}
+                  <span
+                    className={`text-sm font-black ${
+                      isCharging ? "text-emerald-300" : "text-amber-300"
+                    }`}
+                  >
+                    {isCharging ? "متصل بالشاحن (AC Adapter ⚡)" : "يعمل على طاقة البطارية (DC 🔋)"}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {hasBatteryApi
+                    ? "قراءة تلقائية مباشرة من مستشعر الجهاز (Battery API)"
+                    : simulatedCharging !== null
+                    ? "قراءة وضع المحاكاة اليدوية للمطورين"
+                    : "محرك الطاقة القياسي المتوافق"}
+                </div>
+              </div>
+
+              {/* Engine Sync Verdict Card */}
+              <div className="p-4 rounded-2xl bg-[#071829] border border-slate-800/80 space-y-2">
+                <span className="text-xs text-slate-400 font-bold block">قرار محرك المزامنة التلقائية</span>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2
+                    className={`w-5 h-5 ${
+                      !syncChargingOnly || isCharging ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-black ${
+                      !syncChargingOnly || isCharging ? "text-emerald-300" : "text-amber-300"
+                    }`}
+                  >
+                    {!syncChargingOnly || isCharging ? "المزامنة مسموحة ونشطة" : "المزامنة التلقائية معلقة"}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {!syncChargingOnly
+                    ? "المزامنة تعمل بصورة طبيعية دون اشتراط الشحن."
+                    : isCharging
+                    ? "تم اكتشاف توصيل الشاحن، المزامنة مسموحة."
+                    : "يتم حفظ العمليات محلياً لحين توصيل الشاحن."}
+                </div>
+              </div>
+            </div>
+
+            {/* Test Simulation Controls */}
+            <div className="mt-6 pt-5 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                  <span>أدوات محاكاة الشاحن لاختبار السيناريوهات:</span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  يتيح لك اختبار سلوك النظام عند فصل الشاحن أو توصيله على الأجهزة المكتبية أو المتصفحات التي تقيّد مستشعر البطارية.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => syncEngine.setSimulatedCharging(true)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    simulatedCharging === true
+                      ? "bg-emerald-950 border-emerald-500 text-emerald-200 shadow-sm"
+                      : "bg-[#071829] border-slate-700 text-slate-300 hover:text-white"
+                  }`}
+                >
+                  ⚡ محاكاة متصل بالشاحن
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => syncEngine.setSimulatedCharging(false)}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    simulatedCharging === false
+                      ? "bg-amber-950 border-amber-500 text-amber-200 shadow-sm"
+                      : "bg-[#071829] border-slate-700 text-slate-300 hover:text-white"
+                  }`}
+                >
+                  🔋 محاكاة فصل الشاحن (على البطارية)
+                </button>
+
+                {simulatedCharging !== null && (
+                  <button
+                    type="button"
+                    onClick={() => syncEngine.setSimulatedCharging(null)}
+                    className="px-2.5 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                    title="الرجوع للقراءة التلقائية للمتصفح"
+                  >
+                    إعادة ضبط
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Technical Policy Details Card */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#0A2540] border border-slate-800 rounded-3xl p-5 shadow-md space-y-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>كيف يعمل وضع المزامنة عند الشحن فقط؟</span>
+              </h3>
+              <ul className="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                <li>
+                  <strong className="text-white">تأجيل عمليات النقل الثقيلة:</strong> تجميع المعاملات في قاعدة البيانات المحلية المشفرة وتأجيل الاتصالات الدورية بالسحابة لحين توصيل مصدر طاقة خارجي.
+                </li>
+                <li>
+                  <strong className="text-white">حماية البطارية من السخونة:</strong> إجراء المزامنة والتحقق من التجزئة وتشفير السجلات أثناء الشحن يجنب استنزاف بطارية الهاتف أو الجهاز اللوحي في الفروع.
+                </li>
+                <li>
+                  <strong className="text-white">استقلالية تامة للعمليات:</strong> يستمر الموظف في إصدار الفواتير وطباعة السندات بدون أي تأخير، حيث تُخزن العمليات في طابور محلي غير متطاير.
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-[#0A2540] border border-slate-800 rounded-3xl p-5 shadow-md space-y-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-cyan-400" />
+                <span>المزامنة اليدوية الاستثنائية</span>
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                حتى وإن كان وضع الشحن فقط مفعلاً والجهاز يعمل على البطارية، يمكنك دائماً الضغط على زر المزامنة الاستثنائية لتجاوز فحص البطارية ورفع العمليات فوراً في الحالات الطارئة.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleStartSync(true)}
+                disabled={isSyncing}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+                <span>بدء مزامنة استثنائية فوراً (تجاوز فحص الشحن) ⚡</span>
+              </button>
             </div>
           </div>
         </div>

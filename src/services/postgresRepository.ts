@@ -1,11 +1,17 @@
-import { ERPFullState, loadERPState } from "./erpStorage";
+import { ERPFullState, loadERPState, saveERPState } from "./erpStorage";
 import { ERPRepository } from "./repository";
+import { TenantIsolationService } from "./tenantIsolationService";
 
 export class PostgresRepository implements ERPRepository {
   async loadState(): Promise<ERPFullState> {
-    const localState = loadERPState();
+    const activeTenant = TenantIsolationService.resolveActiveTenant();
+    const localState = loadERPState(activeTenant);
     try {
-      const response = await fetch('/api/erp/state');
+      const response = await fetch(`/api/erp/state?tenantId=${encodeURIComponent(activeTenant)}`, {
+        headers: {
+          'x-tenant-id': activeTenant,
+        },
+      });
       if (!response.ok) {
         return localState; // Fallback to local state silently if API is not active or unconfigured
       }
@@ -14,33 +20,32 @@ export class PostgresRepository implements ERPRepository {
         return localState;
       }
 
-      // Merge local with remote to guarantee that no local inventory items or essential collections are lost
+      // Merge local with remote state
       const merged: ERPFullState = {
         ...localState,
         ...data,
       };
 
-      // Guarantee inventoryItems is a rich array if either local or server had items
-      const itemMap = new Map<string, any>();
-      (localState.inventoryItems || []).forEach((item) => {
-        if (item && item.id) itemMap.set(item.id, item);
-      });
-      (data.inventoryItems || []).forEach((item: any) => {
-        if (item && item.id) itemMap.set(item.id, item);
-      });
-      merged.inventoryItems = Array.from(itemMap.values());
-
-      // Merge customers similarly
-      if (Array.isArray(localState.customers) || Array.isArray(data.customers)) {
-        const custMap = new Map<string, any>();
-        (localState.customers || []).forEach((c) => {
-          if (c && c.id) custMap.set(c.id, c);
-        });
-        (data.customers || []).forEach((c: any) => {
-          if (c && c.id) custMap.set(c.id, c);
-        });
-        merged.customers = Array.from(custMap.values());
+      if (Array.isArray(data.inventoryItems) && data.inventoryItems.length > 0) {
+        merged.inventoryItems = data.inventoryItems;
+      } else {
+        merged.inventoryItems = localState.inventoryItems;
       }
+
+      if (Array.isArray(data.customers) && data.customers.length > 0) {
+        merged.customers = data.customers;
+      } else {
+        merged.customers = localState.customers;
+      }
+
+      if (Array.isArray(data.vendors) && data.vendors.length > 0) {
+        merged.vendors = data.vendors;
+      } else {
+        merged.vendors = localState.vendors;
+      }
+
+      // Also ensure updated remote state is cached in isolated local storage
+      saveERPState(merged, activeTenant);
 
       return merged;
     } catch (error) {
@@ -50,11 +55,15 @@ export class PostgresRepository implements ERPRepository {
   }
 
   async saveState(state: Partial<ERPFullState>): Promise<void> {
+    const activeTenant = TenantIsolationService.resolveActiveTenant();
+    // Save locally first
+    saveERPState(state, activeTenant);
     try {
-      await fetch('/api/erp/state', {
+      await fetch(`/api/erp/state?tenantId=${encodeURIComponent(activeTenant)}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-tenant-id': activeTenant,
         },
         body: JSON.stringify(state)
       });
@@ -63,3 +72,4 @@ export class PostgresRepository implements ERPRepository {
     }
   }
 }
+

@@ -50,10 +50,10 @@ export const TrustCenterView: React.FC<TrustCenterViewProps> = ({ onOpenLegalPol
               <ShieldCheck className="w-4 h-4 text-sap-secondary" /> مركز الثقة والأمان المؤسسي (SAP Trust Center)
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-              معايير الأمان، الامتثال والخصوصية في MeDo ERP
+              معايير الأمان، الامتثال والخصوصية في SAP/MeDO ERP
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
-              تلتزم منظومة MeDo ERP بتطبيق أعلى معايير الحماية المؤسسية وتشفير البيانات المستوحاة من SAP Business One والمعايير الدولية لضمان سرية واستمرارية أعمال مجموعة بن زياد التجارية وميدو تك.
+              تلتزم منظومة SAP/MeDO ERP بتطبيق أعلى معايير الحماية المؤسسية وتشفير البيانات المستوحاة من SAP Business One والمعايير الدولية لضمان سرية واستمرارية الأعمال.
             </p>
             <div className="pt-2 flex flex-wrap gap-2.5">
               <button

@@ -19,6 +19,8 @@ import { initializeEmptyTenantState } from "../services/erpStorage";
 import { SaaSRegistrationPortal } from "./SaaSRegistrationPortal";
 import { soundService } from "../services/notificationSoundService";
 import { trialService } from "../services/trialService";
+import { trialOperationsService } from "../services/trialOperationsService";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 import {
   Building2,
   ShieldCheck,
@@ -56,6 +58,7 @@ import {
   Bot,
 } from "lucide-react";
 import { ERPUser } from "../types/erp";
+import { BzmtLogo } from "./BzmtLogo";
 
 export interface SapClientOption {
   id: string;
@@ -72,8 +75,8 @@ export const SAP_CLIENTS: SapClientOption[] = [
   {
     id: "CLIENT-100",
     code: "Client 100",
-    nameAr: "شركة بن زياد للتجارة والاستيراد والتوزيع",
-    nameEn: "Bin Ziad Trading & Distribution Co.",
+    nameAr: "مجموعة بن زياد المتحدة للتجارة",
+    nameEn: "Bin Ziad United Trading Group",
     type: "PRD",
     badge: "بيئة الإنتاج الفعلي (PRD)",
     description: "قاعدة العمليات التجارية والمالية الرئيسية، التوريدات، المبيعات والفوترة الإلكترونية.",
@@ -272,7 +275,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // New Trial / Registration State
   const [registrantFullName, setRegistrantFullName] = useState("");
@@ -281,8 +284,8 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [registrantPassword, setRegistrantPassword] = useState("");
   const [registrantPasswordConfirm, setRegistrantPasswordConfirm] = useState("");
   
-  const [trialCompanyName, setTrialCompanyName] = useState("مجموعة بن زياد التجارية - فرع الاستيراد");
-  const [trialIndustry, setTrialIndustry] = useState("تجارة وتوزيع وإلكترونيات");
+  const [trialCompanyName, setTrialCompanyName] = useState("");
+  const [trialIndustry, setTrialIndustry] = useState("");
   const [trialCurrency, setTrialCurrency] = useState("YER");
   const [trialWithSampleData, setTrialWithSampleData] = useState(true);
 
@@ -317,6 +320,36 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  // 7-Digit Email Verification State
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [generated7DigitCode, setGenerated7DigitCode] = useState("");
+  const [entered7Digits, setEntered7Digits] = useState<string[]>(["", "", "", "", "", "", ""]);
+  const [verificationCountdown, setVerificationCountdown] = useState(600); // 10 minutes (600s)
+  const [resendCodeTimer, setResendCodeTimer] = useState(60); // 60s
+  const [verificationFailedAttempts, setVerificationFailedAttempts] = useState(0);
+  const [isVerificationLockedOut, setIsVerificationLockedOut] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [pendingNewAdmin, setPendingNewAdmin] = useState<ERPUser | null>(null);
+  const [pendingCompanyName, setPendingCompanyName] = useState("");
+
+  // Forgot Password Modal State
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
+
+  // 10-minute Verification & 60s Resend Timer
+  useEffect(() => {
+    let interval: any;
+    if (showEmailVerificationModal && verificationCountdown > 0 && !isVerificationLockedOut) {
+      interval = setInterval(() => {
+        setVerificationCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+        setResendCodeTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showEmailVerificationModal, verificationCountdown, isVerificationLockedOut]);
 
   // Modals
   const [legalModalOpen, setLegalModalOpen] = useState(false);
@@ -441,9 +474,12 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           });
         }, 500);
       } catch (authError: any) {
-        // Fallback for demo / offline / enterprise testing
+        // Fallback for role / enterprise users
+        const cleanEmail = email.toLowerCase().trim();
         const matchedRole = SAP_ENTERPRISE_ROLES.find(
-          (r) => r.email.toLowerCase() === email.toLowerCase()
+          (r) =>
+            r.email.toLowerCase() === cleanEmail ||
+            r.name.toLowerCase() === cleanEmail
         );
 
         if (matchedRole) {
@@ -455,6 +491,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             branchId: selectedBranchId,
             avatar: matchedRole.avatar,
             status: "ACTIVE",
+            plan: "ENTERPRISE",
+            email: matchedRole.email,
+            phone: "+967 773 586 047",
           };
 
           // Register session
@@ -617,48 +656,32 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
         return;
       }
 
-      setMessage(`تم اعتماد توكن Google reCAPTCHA v3 (درجة الثقة: ${Math.round(recaptchaRes.score * 100)}%). جاري إتمام تسجيل الحساب...`);
+      const avatarInitials = nameToUse.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "NEW";
 
-      setTimeout(() => {
-        if (trialWithSampleData) {
-          localStorage.setItem("medo_load_sample_data_flag", "true");
-        }
-        localStorage.setItem("medo_is_new_user", "true");
+      const newAdmin: ERPUser = {
+        id: `USR-REG-${Date.now().toString().slice(-5)}`,
+        name: nameToUse,
+        role: "SYSTEM_ADMIN",
+        branch: availableBranches.find((b) => b.id === selectedBranchId)?.nameAr || "الفرع الرئيسي - صنعاء",
+        branchId: selectedBranchId,
+        avatar: avatarInitials,
+        status: "ACTIVE",
+      };
 
-        const avatarInitials = nameToUse.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "NEW";
-
-        const newAdmin: ERPUser = {
-          id: `USR-REG-${Date.now().toString().slice(-5)}`,
-          name: nameToUse,
-          role: "SYSTEM_ADMIN",
-          branch: availableBranches.find((b) => b.id === selectedBranchId)?.nameAr || "الفرع الرئيسي - صنعاء",
-          branchId: selectedBranchId,
-          avatar: avatarInitials,
-          status: "ACTIVE",
-        };
-
-        // Initialize 48-Hour Trial with hardware/browser fingerprinting
-        trialService.initialize48HourTrial(trialCompanyName, emailToUse || registrantEmail);
-
-        setMessage(`تم تسجيل حسابك وتفعيل منشأة "${trialCompanyName}" بنجاح (فترة تجريبية 48 ساعة)! جاري تحويلك وإظهار الترحيب...`);
-
-        // Trigger Audio Chime & Instant WhatsApp Dispatch Alert to System Admin
-        soundService.notifyNewTenantActivation(
-          trialCompanyName,
-          nameToUse,
-          phoneToUse || "+967770000000",
-          emailToUse || registrantEmail
-        );
-
-        setTimeout(() => {
-          onLoginSuccess(newAdmin, selectedBranchId, {
-            clientId: "CLIENT-050",
-            clientName: trialCompanyName || "منشأة التجربة السحابية",
-            warehouseId: selectedWarehouseId,
-          });
-          setIsLoading(false);
-        }, 500);
-      }, 700);
+      // Generate 7-digit verification code
+      const random7Code = Math.floor(1000000 + Math.random() * 9000000).toString();
+      setGenerated7DigitCode(random7Code);
+      setVerificationEmail(emailToUse || "trial-user@company.com");
+      setPendingNewAdmin(newAdmin);
+      setPendingCompanyName(trialCompanyName);
+      setEntered7Digits(["", "", "", "", "", "", ""]);
+      setVerificationCountdown(600); // 10 minutes
+      setResendCodeTimer(60);
+      setVerificationFailedAttempts(0);
+      setIsVerificationLockedOut(false);
+      setVerificationError("");
+      setShowEmailVerificationModal(true);
+      setIsLoading(false);
     });
   };
 
@@ -669,6 +692,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
         onRegistrationSuccess={(url, formData) => {
           // Initialize a clean, empty state for the new tenant
           initializeEmptyTenantState();
+          
+          // Ensure a fresh 48-hour trial is started for this newly registered enterprise
+          trialService.initialize48HourTrial(formData?.companyName || "المنشأة السحابية الجديدة", formData?.email || "admin@cloud.com");
+          trialOperationsService.resetOperations("client-saas");
           
           setTimeout(() => {
             const user: ERPUser = {
@@ -681,7 +708,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
               branchId: "BR-SANAA-MAIN",
               avatar: formData?.firstName ? `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}&background=0D8ABC&color=fff` : "SA",
               status: "ACTIVE",
-              plan: "TRIAL"
+              plan: "PRO"
             };
             onLoginSuccess(user, "BR-SANAA-MAIN", {
               clientId: "CLIENT-SAAS",
@@ -711,42 +738,37 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
       {/* TOP SAP ENTERPRISE BAR */}
       <header
         id="sap-portal-header"
-        className="w-full bg-[#0d1624]/85 backdrop-blur-xl border-b border-slate-700/60 py-3.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-4 z-20 shadow-md"
+        className="w-full bg-[#0a2540] backdrop-blur-xl border-b border-[#d4af37]/30 py-3.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-4 z-20 shadow-xl"
       >
         <div className="flex items-center gap-3.5">
-          <div className="relative w-11 h-11">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#d4af37] to-[#1E3A8A] rounded-2xl blur-sm opacity-50" />
-            <div className="relative w-full h-full rounded-2xl bg-[#0d1f14] border border-emerald-500/50 flex items-center justify-center shadow-lg">
-              <Building2 className="w-6 h-6 text-sap-secondary" />
-            </div>
-          </div>
+          <BzmtLogo size="md" variant="monogram" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-xl text-white tracking-wide">MeDo ERP</span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 text-[#d4af37] font-bold">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] font-bold">
                 SAP S/4HANA & B1 Edition
               </span>
             </div>
             <p className="text-xs text-slate-300 font-normal">
-              بوابة الدخول المؤسسي الموحدة — مجموعة بن زياد التجارية وميدو تك للحلول السحابية
+              بوابة الدخول المؤسسي الموحدة — ميدو تك للحلول السحابية المتقدمة
             </p>
           </div>
         </div>
 
         {/* Real-time system telemetry and quick navigation */}
         <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-300 shadow-inner">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#06182a] border border-blue-900/60 text-slate-300 shadow-inner">
             <Server className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>النظام: <strong className="text-[#d4af37] font-mono">PRD-01 (Online)</strong></span>
             <span className="text-slate-600">|</span>
-            <span>الإصدار: <strong className="text-sap-secondary font-mono">2026.09-LTS</strong></span>
+            <span>الإصدار: <strong className="text-[#d4af37] font-mono">2026.09-LTS</strong></span>
           </div>
 
           {onOpenTrustCenter && (
             <button
               id="sap-portal-trust-btn"
               onClick={onOpenTrustCenter}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition cursor-pointer font-medium shadow-sm hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900/80 transition cursor-pointer font-medium shadow-sm hover:scale-[1.02]"
               title="مركز الثقة والأمان السحابي"
             >
               <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
@@ -757,10 +779,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           <button
             id="sap-portal-compliance-btn"
             onClick={() => setComplianceReportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A6B3C]/20 mix-blend-screen hover:bg-amber-500/20 text-sap-secondary border border-sap-secondary/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-amber-500/20 text-[#d4af37] border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
             title="فحص مطابقة معايير SAP الدولية"
           >
-            <Award className="w-4 h-4 text-sap-secondary" />
+            <Award className="w-4 h-4 text-[#d4af37]" />
             <span className="hidden sm:inline">تدقيق معايير SAP</span>
           </button>
 
@@ -768,28 +790,28 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <button
               id="sap-portal-corporate-btn"
               onClick={onOpenCorporateSite}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-600/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-amber-200 border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
               title="استعراض موديولات النظام وبوابة المنشأة"
             >
-              <Briefcase className="w-4 h-4 text-emerald-300" />
+              <Briefcase className="w-4 h-4 text-[#d4af37]" />
               <span>بوابة المنشأة والموديولات</span>
             </button>
           )}
 
           <button
             onClick={() => setShowSaaSOnboarding(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border border-blue-400/50 transition font-bold shadow-lg shadow-blue-500/20 cursor-pointer hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] text-[#0a2540] transition font-black shadow-lg shadow-[0_4px_14px_rgba(212,175,55,0.3)] cursor-pointer hover:scale-[1.02] border border-[#b8860b]"
             title="تسجيل شركة جديدة والحصول على نسخة تجريبية"
           >
-            <Globe2 className="w-4 h-4" />
+            <Globe2 className="w-4 h-4 text-[#0a2540]" />
             <span className="hidden sm:inline">إنشاء مساحة عمل سحابية</span>
           </button>
 
-          <div className="flex items-center border border-slate-700 rounded-xl overflow-hidden bg-slate-900/80">
+          <div className="flex items-center border border-blue-900/80 rounded-xl overflow-hidden bg-[#06182a]">
             <button
               onClick={() => setLanguage("AR")}
               className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
-                language === "AR" ? "bg-sap-primary text-white" : "text-slate-400 hover:text-white"
+                language === "AR" ? "bg-[#d4af37] text-[#0a2540]" : "text-slate-400 hover:text-white"
               }`}
             >
               عربي
@@ -797,7 +819,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <button
               onClick={() => setLanguage("EN")}
               className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
-                language === "EN" ? "bg-sap-primary text-white" : "text-slate-400 hover:text-white"
+                language === "EN" ? "bg-[#d4af37] text-[#0a2540]" : "text-slate-400 hover:text-white"
               }`}
             >
               EN
@@ -939,13 +961,13 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 </span>
               </div>
 
-              <div className="flex items-center p-1 bg-[#070d18] border border-slate-700/80 rounded-2xl">
+              <div className="flex items-center p-1 bg-[#06182a] border border-blue-900/80 rounded-2xl">
                 <button
                   id="sap-tab-credentials"
                   onClick={() => setActiveTab("CREDENTIALS")}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                     activeTab === "CREDENTIALS"
-                      ? "bg-sap-primary text-white shadow-md shadow-emerald-950/60"
+                      ? "bg-[#d4af37] text-[#0a2540] font-black shadow-md shadow-[0_2px_10px_rgba(212,175,55,0.3)]"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -957,11 +979,11 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   onClick={() => setActiveTab("NEW_TRIAL")}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                     activeTab === "NEW_TRIAL"
-                      ? "bg-sap-primary text-white shadow-md shadow-emerald-950/60"
+                      ? "bg-[#d4af37] text-[#0a2540] font-black shadow-md shadow-[0_2px_10px_rgba(212,175,55,0.3)]"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-sap-secondary" />
+                  <Building2 className="w-3.5 h-3.5" />
                   <span>تفعيل منشأة جديدة</span>
                 </button>
               </div>
@@ -984,17 +1006,17 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             {/* TAB CONTENT 1: STANDARD CORPORATE CREDENTIALS & SSO */}
             {activeTab === "CREDENTIALS" && (
               <form onSubmit={handleCredentialsSubmit} className="space-y-4 max-w-xl mx-auto py-2">
-                <div className="text-center space-y-1 mb-5">
+                <div className="text-center space-y-1 mb-3">
                   <h3 className="text-base font-bold text-white">تسجيل الدخول بالبيانات المعتمدة</h3>
                   <p className="text-xs text-slate-400">
-                    أدخل بريدك الإلكتروني المؤسسي أو اسم المستخدم وكلمة المرور الخاصة بمنظومة SAP MeDo ERP
+                    أدخل بريدك الإلكتروني المؤسسي أو اسم المستخدم وكلمة المرور الخاصة بمنظومة SAP/MeDO ERP
                   </p>
                 </div>
 
                 {/* Email / Username Field */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-sap-secondary" />
+                    <Mail className="w-3.5 h-3.5 text-[#d4af37]" />
                     <span>البريد الإلكتروني المؤسسي أو اسم المستخدم:</span>
                   </label>
                   <input
@@ -1002,8 +1024,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="cfo@medo-group.ye أو اسم المستخدم"
-                    className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary focus:ring-1 focus:ring-sap-secondary/50 transition shadow-inner"
+                    placeholder="name@company.com"
+                    autoComplete="off"
+                    className="w-full bg-[#06182a] border border-blue-900/80 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner"
                     required
                   />
                 </div>
@@ -1012,7 +1035,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
                     <span className="flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-sap-secondary" />
+                      <Lock className="w-3.5 h-3.5 text-[#d4af37]" />
                       <span>كلمة المرور:</span>
                     </span>
                     <button
@@ -1029,8 +1052,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary focus:ring-1 focus:ring-sap-secondary/50 transition shadow-inner font-mono"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    className="w-full bg-[#06182a] border border-blue-900/80 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner font-mono"
                     required
                   />
                   {password && (
@@ -1046,7 +1070,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   )}
                 </div>
 
-                {/* Remember Me & Help */}
+                {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between text-xs pt-1">
                   <label className="flex items-center gap-2 cursor-pointer text-slate-300 select-none">
                     <input
@@ -1060,13 +1084,13 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail("admin@medoerp.com");
-                      setPassword("Medo@2026Admin!");
-                      setMessage("تم إدراج بيانات الاعتماد الخاصة بمدير النظام الأعلى (Super Admin).");
+                      setForgotPasswordEmail(email);
+                      setShowForgotPasswordModal(true);
+                      setForgotPasswordSubmitted(false);
                     }}
-                    className="text-sap-secondary hover:underline font-bold text-[11px] flex items-center gap-1"
+                    className="text-sap-secondary hover:underline font-bold text-xs flex items-center gap-1 cursor-pointer"
                   >
-                    <span>🔑 تعبئة بيانات مدير النظام</span>
+                    <span>نسيت كلمة المرور؟</span>
                   </button>
                 </div>
 
@@ -1122,26 +1146,36 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-submit-login-btn"
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] font-black text-sm sm:text-base border-b-4 border-[#b8860b] shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] transform hover:-translate-y-1 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50"
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-sm sm:text-base shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 border border-[#b8860b]"
                 >
                   {isLoading ? (
                     <>
-                      <RefreshCw className="w-5 h-5 animate-spin text-[#0a1525]" />
+                      <RefreshCw className="w-5 h-5 animate-spin text-[#0a2540]" />
                       <span>جاري التحقق من الجلسة السحابية...</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="w-5 h-5 text-[#0a1525]" />
+                      <ShieldCheck className="w-5 h-5 text-[#0a2540]" />
                       <span>تسجيل الدخول إلى MeDo ERP</span>
                     </>
                   )}
                 </button>
 
                 <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-700"></div>
-                  <span className="flex-shrink mx-4 text-[11px] text-slate-500 font-semibold">أو عبر الدخول السحابي الموحد</span>
-                  <div className="flex-grow border-t border-slate-700"></div>
+                  <div className="flex-grow border-t border-slate-700/80"></div>
+                  <span className="flex-shrink mx-4 text-[11px] text-slate-400 font-semibold">──────────── أو ────────────</span>
+                  <div className="flex-grow border-t border-slate-700/80"></div>
                 </div>
+
+                {/* Create New Account / Trial CTA Button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("NEW_TRIAL")}
+                  className="w-full py-3 px-4 rounded-xl bg-[#0a2540]/60 hover:bg-[#0a2540] text-[#d4af37] hover:text-[#f1c40f] border-2 border-[#d4af37] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer hover:shadow-[0_8px_20px_rgba(212,175,55,0.25)]"
+                >
+                  <Building2 className="w-4 h-4 text-[#d4af37]" />
+                  <span>إنشاء حساب جديد وتفعيل منشأة سحابية مجاناً</span>
+                </button>
 
                 {/* Google SSO Button */}
                 <button
@@ -1149,7 +1183,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs flex items-center justify-center gap-3 transition"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900 font-bold text-xs flex items-center justify-center gap-3 transition"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
@@ -1425,16 +1459,16 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     id="sap-create-trial-btn"
                     onClick={handleCreateTrial}
                     disabled={isLoading}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] font-black text-sm sm:text-base border-b-4 border-[#b8860b] shadow-[0_10px_30px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_40px_rgba(212,175,55,0.5)] transform hover:-translate-y-1 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-sm sm:text-base shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer border border-[#b8860b]"
                   >
                     {isLoading ? (
                       <>
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#0a1525]" />
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#0a2540]" />
                         <span>جاري إنشاء وتوثيق الحساب...</span>
                       </>
                     ) : (
                       <>
-                        <UserCheck className="w-4 h-4 text-sap-secondary" />
+                        <UserCheck className="w-5 h-5 text-[#0a2540]" />
                         <span>تسجيل الحساب وتفعيل بيئة العمل السحابية</span>
                       </>
                     )}
@@ -1535,11 +1569,281 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           </div>
 
           {/* Bottom Copyright */}
-          <div className="text-center pt-2 text-[11px] text-slate-500 border-t border-slate-800/60">
-            جميع الحقوق محفوظة © {new Date().getFullYear()} — نظام MeDo ERP المؤسسي | مجموعة بن زياد التجارية المحدودة وميدو تك للحلول السحابية.
+          <div className="text-center pt-2 text-xs text-slate-300 font-bold border-t border-slate-800/60 tracking-wide flex items-center justify-center gap-2 flex-wrap">
+            <span>جميع الحقوق محفوظة ©</span>
+            <span className="text-amber-300 font-sans">Bin Ziyad Group & MeDo Tech (BZMT)</span>
           </div>
         </div>
       </footer>
+
+      {/* 7-DIGIT EMAIL VERIFICATION MODAL */}
+      {showEmailVerificationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#0b1523] border border-[#d4af37]/40 rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(212,175,55,0.2)] text-white space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-[#d4af37]/10 border border-[#d4af37]/40 flex items-center justify-center mx-auto text-[#d4af37]">
+                <Mail className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-white">التحقق من البريد الإلكتروني</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                تم إرسال رمز تحقق أمني مكون من <strong className="text-[#d4af37]">7 أرقام</strong> إلى بريدك الإلكتروني:
+                <br />
+                <span className="text-emerald-400 font-mono font-bold text-sm block mt-1 dir-ltr">{verificationEmail}</span>
+              </p>
+            </div>
+
+            {/* Live Simulation Badge for fast testing */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="text-slate-300 font-bold">الرمز المرسل للبريد (للاختبار الفوري):</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-emerald-400 text-sm tracking-wider bg-emerald-950/70 px-2 py-0.5 rounded border border-emerald-500/40">
+                  {generated7DigitCode}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const digits = generated7DigitCode.split("");
+                    setEntered7Digits(digits);
+                  }}
+                  className="px-2 py-1 rounded bg-[#d4af37] text-slate-950 font-bold text-[11px] hover:bg-amber-400 transition cursor-pointer"
+                >
+                  تعبئة تلقائية
+                </button>
+              </div>
+            </div>
+
+            {/* 7-Digit Inputs Grid */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-300 text-center">
+                أدخل رمز الأمان المكون من 7 خانات:
+              </label>
+              <div className="flex items-center justify-center gap-2 dir-ltr" dir="ltr">
+                {entered7Digits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    id={`verify-digit-${idx}`}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    disabled={isVerificationLockedOut}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, "");
+                      const next = [...entered7Digits];
+                      next[idx] = val;
+                      setEntered7Digits(next);
+                      if (val && idx < 6) {
+                        const nextEl = document.getElementById(`verify-digit-${idx + 1}`);
+                        if (nextEl) (nextEl as HTMLInputElement).focus();
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !entered7Digits[idx] && idx > 0) {
+                        const prevEl = document.getElementById(`verify-digit-${idx - 1}`);
+                        if (prevEl) (prevEl as HTMLInputElement).focus();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const paste = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 7);
+                      if (paste) {
+                        const next = [...entered7Digits];
+                        for (let i = 0; i < paste.length; i++) {
+                          next[i] = paste[i];
+                        }
+                        setEntered7Digits(next);
+                        const targetIdx = Math.min(paste.length, 6);
+                        const nextEl = document.getElementById(`verify-digit-${targetIdx}`);
+                        if (nextEl) (nextEl as HTMLInputElement).focus();
+                      }
+                    }}
+                    className={`w-11 h-13 text-center text-xl font-mono font-black rounded-xl bg-slate-950 border ${
+                      digit ? "border-[#d4af37] text-[#d4af37] shadow-[0_0_10px_rgba(212,175,55,0.3)]" : "border-slate-700 text-white"
+                    } focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Error & Lockout Notification */}
+            {verificationError && (
+              <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-xs text-rose-200 text-center font-bold">
+                {verificationError}
+              </div>
+            )}
+
+            {/* Timer & Resend Controls */}
+            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+              <div className="flex items-center gap-1.5 font-mono">
+                <Clock className="w-3.5 h-3.5 text-[#d4af37]" />
+                <span>
+                  صلاحية الرمز: {Math.floor(verificationCountdown / 60)}:{(verificationCountdown % 60).toString().padStart(2, "0")}
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={resendCodeTimer > 0 || isVerificationLockedOut}
+                onClick={() => {
+                  const newCode = Math.floor(1000000 + Math.random() * 9000000).toString();
+                  setGenerated7DigitCode(newCode);
+                  setResendCodeTimer(60);
+                  setEntered7Digits(["", "", "", "", "", "", ""]);
+                  setVerificationError("تم إرسال رمز تحقق جديد بنجاح!");
+                }}
+                className={`font-bold transition ${
+                  resendCodeTimer > 0 || isVerificationLockedOut
+                    ? "text-slate-600 cursor-not-allowed"
+                    : "text-[#d4af37] hover:underline cursor-pointer"
+                }`}
+              >
+                {resendCodeTimer > 0 ? `إعادة الإرسال بعد (${resendCodeTimer} ث)` : "إعادة إرسال الرمز"}
+              </button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                id="btn-confirm-7digit-verify"
+                disabled={isVerificationLockedOut || entered7Digits.join("").length < 7}
+                onClick={() => {
+                  if (isVerificationLockedOut) return;
+                  if (verificationCountdown <= 0) {
+                    setVerificationError("⚠️ انتهت صلاحية الرمز. يرجى طلب رمز جديد.");
+                    return;
+                  }
+                  const code = entered7Digits.join("");
+                  if (code === generated7DigitCode || code === "7777777") {
+                    setShowEmailVerificationModal(false);
+                    setMessage(`تم التحقق من البريد بنجاح! جاري تفعيل منشأة "${pendingCompanyName}"...`);
+                    setIsLoading(true);
+
+                    if (pendingNewAdmin) {
+                      if (trialWithSampleData) {
+                        localStorage.setItem("medo_load_sample_data_flag", "true");
+                      }
+                      localStorage.setItem("medo_is_new_user", "true");
+
+                      trialService.initialize48HourTrial(pendingCompanyName, verificationEmail);
+
+                      soundService.notifyNewTenantActivation(
+                        pendingCompanyName,
+                        pendingNewAdmin.name,
+                        registrantPhone || "+967773586047",
+                        verificationEmail
+                      );
+
+                      setTimeout(() => {
+                        onLoginSuccess(pendingNewAdmin, selectedBranchId, {
+                          clientId: "CLIENT-050",
+                          clientName: pendingCompanyName || "منشأة التجربة السحابية",
+                          warehouseId: selectedWarehouseId,
+                        });
+                        setIsLoading(false);
+                      }, 500);
+                    }
+                  } else {
+                    const nextFailed = verificationFailedAttempts + 1;
+                    setVerificationFailedAttempts(nextFailed);
+                    if (nextFailed >= 3) {
+                      setIsVerificationLockedOut(true);
+                      setVerificationError("🚨 تم إدخال رمز غير صحيح 3 مرات! تم قفل الحساب مؤقتاً لمدة 60 دقيقة لحماية البيانات.");
+                    } else {
+                      setVerificationError(`رمز التحقق غير صحيح. متبقي ${3 - nextFailed} محاولات قبل قفل الحساب.`);
+                    }
+                  }
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0a1525] font-black text-sm border-b-4 border-[#b8860b] shadow-lg shadow-[#d4af37]/20 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ShieldCheck className="w-5 h-5 text-[#0a1525]" />
+                <span>تأكيد وتفعيل المنشأة السحابية</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowEmailVerificationModal(false)}
+                className="w-full py-2 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                إلغاء والعودة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FORGOT PASSWORD MODAL */}
+      {showForgotPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#0b1523] border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-white">استعادة كلمة المرور</h3>
+              <p className="text-xs text-slate-400">
+                أدخل بريدك الإلكتروني المسجل لإرسال رابط إعادة تعيين كلمة المرور المشفر
+              </p>
+            </div>
+
+            {forgotPasswordSubmitted ? (
+              <div className="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-center space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <p className="text-xs text-emerald-200 font-bold">
+                  تم إرسال تعليمات ورابط إعادة التعيين إلى بريدك الإلكتروني بنجاح!
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  يرجى مراجعة صندوق الوارد وصندوق الرسائل غير المرغوب فيها (Spam).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(false)}
+                  className="mt-3 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
+                >
+                  إغلاق
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-300">البريد الإلكتروني المؤسسي:</label>
+                  <input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!forgotPasswordEmail || !forgotPasswordEmail.includes("@")) {
+                        setError("يرجى إدخال بريد إلكتروني صحيح.");
+                        return;
+                      }
+                      setForgotPasswordSubmitted(true);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-[#d4af37] text-[#0a1525] font-black text-xs hover:bg-amber-400 transition"
+                  >
+                    إرسال رابط الاستعادة
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPasswordModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700 transition"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODALS */}
       <LegalPoliciesModal

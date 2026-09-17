@@ -286,19 +286,20 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </button>
           )}
 
-          {/* Global Refresh Button */}
+          {/* Global Refresh Button (زر إنعاش النظام للجوال) */}
           {onRefreshData && (
             <button
+              id="mobile-system-refresh-btn"
               type="button"
               onClick={onRefreshData}
               disabled={isRefreshing}
-              className={`w-8 h-8 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center justify-center active:scale-95 shadow-sm ${
+              className={`w-8 h-8 rounded-lg bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-600/50 flex items-center justify-center active:scale-95 shadow-sm cursor-pointer ${
                 isRefreshing ? "opacity-70 cursor-wait" : ""
               }`}
-              title="تحديث ومزامنة كافة الوحدات المحاسبية وحل أي تعليقات"
-              aria-label="تحديث الوحدات"
+              title="إنعاش النظام: تحديث ومزامنة كافة الوحدات المحاسبية وحل أي تعليقات"
+              aria-label="إنعاش النظام"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-emerald-200" : ""}`} />
             </button>
           )}
 

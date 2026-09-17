@@ -32,10 +32,13 @@ import {
   Calendar,
   DollarSign,
   Percent,
+  Package,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Invoice,
+  InvoiceItem,
+  InvoicePaymentMethod,
   Customer,
   CurrencyCode,
   CurrencyInfo,
@@ -282,18 +285,124 @@ export const ElectronicInvoicingModule: React.FC<ElectronicInvoicingModuleProps>
   const [showInspectorModal, setShowInspectorModal] = useState<boolean>(false);
   const [inspectingInvoice, setInspectingInvoice] = useState<Invoice | null>(null);
 
-  // Quick issuance state
+  // Quick issuance state with full Customers and Items Integration
   const [showQuickIssueModal, setShowQuickIssueModal] = useState<boolean>(false);
   const [quickInvoiceType, setQuickInvoiceType] = useState<"B2B" | "B2C">("B2B");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [quickCustomerName, setQuickCustomerName] = useState<string>("");
   const [quickBuyerVat, setQuickBuyerVat] = useState<string>("310000000000003");
-  const [quickAmountBeforeVat, setQuickAmountBeforeVat] = useState<number>(1000);
-  const [quickVatRate, setQuickVatRate] = useState<number>(15);
-  const [quickItemDescription, setQuickItemDescription] = useState<string>("خدمات استشارية وتقنية متقدمة");
+  const [quickCurrency, setQuickCurrency] = useState<CurrencyCode>("SAR");
+  const [quickPaymentMethod, setQuickPaymentMethod] = useState<InvoicePaymentMethod>("CASH");
+  const [quickNotes, setQuickNotes] = useState<string>("فاتورة إلكترونية معتمدة مطابقة لمتطلبات هيئة الزكاة والضريبة والجمارك ZATCA Fatoora");
+
+  // Dynamic Item Rows
+  const [quickItems, setQuickItems] = useState<Array<{
+    id: string;
+    itemId?: string;
+    description: string;
+    barcode?: string;
+    unit: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+  }>>([
+    {
+      id: "item-1",
+      itemId: inventoryItems[0]?.id || "",
+      description: inventoryItems[0]?.nameAr || inventoryItems[0]?.name || "صنف تجاري عام",
+      barcode: inventoryItems[0]?.sku || inventoryItems[0]?.barcode || "SKU-1001",
+      unit: inventoryItems[0]?.unit || "قطعة",
+      quantity: 1,
+      unitPrice: inventoryItems[0]?.sellingPrice || 1000,
+      taxRate: 15,
+    },
+  ]);
+
+  // Handle selecting a registered customer
+  const handleSelectCustomer = (custId: string) => {
+    setSelectedCustomerId(custId);
+    if (custId === "CASH" || !custId) {
+      setQuickCustomerName("عميل نقدي عام");
+      setQuickInvoiceType("B2C");
+      return;
+    }
+    const found = customers.find((c) => c.id === custId);
+    if (found) {
+      setQuickCustomerName(found.nameAr || found.name);
+      if (found.taxNumber) {
+        setQuickBuyerVat(found.taxNumber);
+        setQuickInvoiceType("B2B");
+      } else if (found.name?.includes("شركة") || found.nameAr?.includes("شركة") || found.nameAr?.includes("مؤسسة")) {
+        setQuickInvoiceType("B2B");
+      }
+    }
+  };
+
+  // Handle selecting an inventory item for a row
+  const handleSelectInventoryItem = (rowId: string, invItemId: string) => {
+    const foundItem = inventoryItems.find((it) => it.id === invItemId);
+    setQuickItems((prev) =>
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        if (!foundItem) {
+          return { ...row, itemId: "" };
+        }
+        return {
+          ...row,
+          itemId: foundItem.id,
+          description: foundItem.nameAr || foundItem.name,
+          barcode: foundItem.sku || foundItem.barcode || "",
+          unit: foundItem.unit || "قطعة",
+          unitPrice: foundItem.sellingPrice || 100,
+        };
+      })
+    );
+  };
+
+  const handleAddItemRow = () => {
+    const nextItem = inventoryItems[quickItems.length % (inventoryItems.length || 1)];
+    const newRow = {
+      id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      itemId: nextItem?.id || "",
+      description: nextItem ? (nextItem.nameAr || nextItem.name) : "صنف تجاري إضافي",
+      barcode: nextItem?.sku || nextItem?.barcode || "",
+      unit: nextItem?.unit || "قطعة",
+      quantity: 1,
+      unitPrice: nextItem?.sellingPrice || 250,
+      taxRate: 15,
+    };
+    setQuickItems((prev) => [...prev, newRow]);
+  };
+
+  const handleRemoveItemRow = (rowId: string) => {
+    if (quickItems.length <= 1) return;
+    setQuickItems((prev) => prev.filter((r) => r.id !== rowId));
+  };
+
+  const handleUpdateItemRow = (rowId: string, field: string, value: any) => {
+    setQuickItems((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r))
+    );
+  };
+
+  // Calculations for quick e-invoice
+  const quickSubtotal = useMemo(() => {
+    return quickItems.reduce((sum, item) => sum + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0), 0);
+  }, [quickItems]);
+
+  const quickTotalTax = useMemo(() => {
+    return quickItems.reduce((sum, item) => {
+      const lineTotal = (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+      const taxRate = (Number(item.taxRate) || 0) / 100;
+      return sum + lineTotal * taxRate;
+    }, 0);
+  }, [quickItems]);
+
+  const quickGrandTotal = quickSubtotal + quickTotalTax;
 
   // Company info for ZATCA & Fatoora
   const sellerInfo = {
-    name: "مجموعة بن زياد التجارية المتحدة",
+    name: "منظومة SAP/MeDO ERP للحلول السحابية",
     vatNumber: "300000000000003",
     crNumber: "1010123456",
     address: "المملكة العربية السعودية / الجمهورية اليمنية",
@@ -365,55 +474,65 @@ export const ElectronicInvoicingModule: React.FC<ElectronicInvoicingModuleProps>
   };
 
   const handleQuickIssue = () => {
-    const vatAmount = (quickAmountBeforeVat * quickVatRate) / 100;
-    const totalWithVat = quickAmountBeforeVat + vatAmount;
+    const vatAmount = quickTotalTax;
+    const totalWithVat = quickGrandTotal;
+    const subtotal = quickSubtotal;
     const dateNow = new Date().toISOString().split("T")[0];
-    const timeNow = "14:30:00";
+    const timeNow = new Date().toTimeString().split(" ")[0] || "14:30:00";
     const nextInvNum = `INV-${new Date().getFullYear()}-${(invoices.length + 101).toString().padStart(5, "0")}`;
 
     const qrData = generateZatcaQr(
       sellerInfo.name,
       sellerInfo.vatNumber,
       `${dateNow}T${timeNow}Z`,
-      totalWithVat.toString(),
-      vatAmount.toString()
+      totalWithVat.toFixed(2),
+      vatAmount.toFixed(2)
     );
+
+    const invoiceLines: InvoiceItem[] = quickItems.map((item, idx) => {
+      const lineSubtotal = (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+      const lineTax = lineSubtotal * ((Number(item.taxRate) || 0) / 100);
+      return {
+        id: `line-${Date.now()}-${idx}`,
+        itemId: item.itemId,
+        itemName: item.description,
+        description: item.description,
+        quantity: Number(item.quantity) || 1,
+        unitPrice: Number(item.unitPrice) || 0,
+        totalPrice: lineSubtotal,
+        taxPercent: Number(item.taxRate) || 0,
+        taxAmount: lineTax,
+        total: lineSubtotal + lineTax,
+      };
+    });
+
+    const finalCustomerName = quickCustomerName.trim() || (quickInvoiceType === "B2B" ? "شركة الأعمال والخدمات السحابية" : "عميل نقدي - نقطة بيع");
 
     const newInv: Invoice = {
       id: `einv-${Date.now()}`,
       invoiceNumber: nextInvNum,
       type: "SALES",
       date: dateNow,
-      partyName: quickCustomerName || (quickInvoiceType === "B2B" ? "شركة الأعمال المتحدة للتجارة" : "عميل نقدي - معرض التجزئة"),
-      customerName: quickCustomerName || (quickInvoiceType === "B2B" ? "شركة الأعمال المتحدة للتجارة" : "عميل نقدي - معرض التجزئة"),
-      currency: "SAR",
-      exchangeRate: 3.75,
-      subtotal: quickAmountBeforeVat,
-      taxRate: quickVatRate / 100,
+      customerId: selectedCustomerId !== "CASH" ? selectedCustomerId : undefined,
+      partyName: finalCustomerName,
+      customerName: finalCustomerName,
+      currency: quickCurrency,
+      exchangeRate: quickCurrency === "SAR" ? 1 : quickCurrency === "USD" ? 3.75 : 0.007,
+      subtotal: subtotal,
+      taxRate: subtotal > 0 ? vatAmount / subtotal : 0.15,
       taxAmount: vatAmount,
       taxTotal: vatAmount,
       grandTotal: totalWithVat,
       totalAmount: totalWithVat,
-      paidAmount: totalWithVat,
-      remainingAmount: 0,
-      paymentMethod: "CASH",
-      status: "PAID",
+      paidAmount: quickPaymentMethod === "CREDIT" ? 0 : totalWithVat,
+      remainingAmount: quickPaymentMethod === "CREDIT" ? totalWithVat : 0,
+      paymentMethod: quickPaymentMethod,
+      status: quickPaymentMethod === "CREDIT" ? "PENDING" : "PAID",
       qrCodeData: qrData,
-      notes: `فاتورة إلكترونية معتمدة (${quickInvoiceType}) مطابقة لهيئة الزكاة والضريبة والجمارك ZATCA`,
-      items: [
-        {
-          id: `item-${Date.now()}`,
-          itemName: quickItemDescription,
-          description: quickItemDescription,
-          quantity: 1,
-          unitPrice: quickAmountBeforeVat,
-          totalPrice: quickAmountBeforeVat,
-          taxPercent: quickVatRate,
-          taxAmount: vatAmount,
-          total: totalWithVat,
-        },
-      ],
-    };
+      notes: `${quickNotes} (${quickInvoiceType === "B2B" ? "فاتورة ضريبية B2B" : "فاتورة مبسطة B2C"})`,
+      items: invoiceLines,
+      buyerVatNumber: quickInvoiceType === "B2B" ? quickBuyerVat : undefined,
+    } as Invoice;
 
     if (onSaveInvoice) {
       onSaveInvoice(newInv);
@@ -1276,151 +1395,302 @@ export const ElectronicInvoicingModule: React.FC<ElectronicInvoicingModuleProps>
         </div>
       )}
 
-      {/* 10. Modal: Quick Issue Electronic Invoice */}
+      {/* 10. Modal: Quick Issue Electronic Invoice with Customers & Items Integration */}
       {showQuickIssueModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95">
-            <div className="p-4.5 bg-[#0B1329] text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 my-auto">
+            {/* Modal Header */}
+            <div className="p-4 bg-[#0B1329] text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-purple-400" />
-                <h3 className="font-bold text-sm">إصدار فاتورة إلكترونية معتمدة فورية (ZATCA Fatoora)</h3>
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">إصدار فاتورة إلكترونية معتمدة (ZATCA Fatoora)</h3>
+                  <p className="text-[11px] text-slate-400">ربط مباشر مع سجلات العملاء ومخزون الأصناف</p>
+                </div>
               </div>
               <button
                 onClick={() => setShowQuickIssueModal(false)}
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm cursor-pointer transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              {/* Invoice Type Selector */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1.5">نوع الفاتورة الإلكترونية:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setQuickInvoiceType("B2B")}
-                    className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
-                      quickInvoiceType === "B2B"
-                        ? "bg-blue-50 border-blue-500 text-blue-900 font-bold ring-2 ring-blue-500/20"
-                        : "bg-slate-50 border-slate-200 text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold mb-0.5">
-                      <Building2 className="w-4 h-4 text-blue-600" />
-                      <span>فاتورة ضريبية (B2B)</span>
-                    </div>
-                    <div className="text-[10px] text-slate-500">للشركات والمؤسسات مع الرقم الضريبي</div>
-                  </button>
-
-                  <button
-                    onClick={() => setQuickInvoiceType("B2C")}
-                    className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
-                      quickInvoiceType === "B2C"
-                        ? "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold ring-2 ring-emerald-500/20"
-                        : "bg-slate-50 border-slate-200 text-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold mb-0.5">
-                      <UserCheck className="w-4 h-4 text-emerald-600" />
-                      <span>فاتورة مبسطة (B2C)</span>
-                    </div>
-                    <div className="text-[10px] text-slate-500">للأفراد والمبيعات النقدية المباشرة</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Buyer / Customer Name */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  {quickInvoiceType === "B2B" ? "اسم الشركة / المشتري:" : "اسم العميل / المشتري:"}
-                </label>
-                <input
-                  type="text"
-                  value={quickCustomerName}
-                  onChange={(e) => setQuickCustomerName(e.target.value)}
-                  placeholder={quickInvoiceType === "B2B" ? "مثال: شركة الأعمال المتقدمة للتجارة" : "مثال: عميل نقدي - معرض حدة"}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-slate-900 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              {/* Buyer VAT Number for B2B */}
-              {quickInvoiceType === "B2B" && (
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">الرقم الضريبي للمشتري (15 رقماً):</label>
-                  <input
-                    type="text"
-                    value={quickBuyerVat}
-                    onChange={(e) => setQuickBuyerVat(e.target.value)}
-                    placeholder="300000000000003"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-              )}
-
-              {/* Item Description */}
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">بيان الصنف أو الخدمة:</label>
-                <input
-                  type="text"
-                  value={quickItemDescription}
-                  onChange={(e) => setQuickItemDescription(e.target.value)}
-                  placeholder="وصف البضاعة أو الخدمات..."
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-slate-900 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              {/* Amount & VAT Rate */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">المبلغ قبل الضريبة (ر.س):</label>
-                  <input
-                    type="number"
-                    value={quickAmountBeforeVat}
-                    onChange={(e) => setQuickAmountBeforeVat(Number(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-mono font-bold text-slate-900"
-                  />
+            <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              {/* Top Row: Invoice Type & Payment Method & Currency */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Invoice Type */}
+                <div className="sm:col-span-1">
+                  <label className="block font-bold text-slate-700 mb-1">نوع الفاتورة:</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setQuickInvoiceType("B2B")}
+                      className={`py-2 px-2 rounded-xl border text-center font-bold transition-all cursor-pointer ${
+                        quickInvoiceType === "B2B"
+                          ? "bg-blue-50 border-blue-500 text-blue-900 ring-1 ring-blue-500"
+                          : "bg-slate-50 border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      B2B ضريبية
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickInvoiceType("B2C")}
+                      className={`py-2 px-2 rounded-xl border text-center font-bold transition-all cursor-pointer ${
+                        quickInvoiceType === "B2C"
+                          ? "bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-500"
+                          : "bg-slate-50 border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      B2C مبسطة
+                    </button>
+                  </div>
                 </div>
 
+                {/* Currency */}
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">نسبة الضريبة (%):</label>
+                  <label className="block font-bold text-slate-700 mb-1">عملة الفاتورة:</label>
                   <select
-                    value={quickVatRate}
-                    onChange={(e) => setQuickVatRate(Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-slate-900"
+                    value={quickCurrency}
+                    onChange={(e) => setQuickCurrency(e.target.value as CurrencyCode)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-bold text-slate-900"
                   >
-                    <option value={15}>15% (الضريبة القياسية KSA)</option>
-                    <option value={5}>5% (الضريبة المخفضة)</option>
-                    <option value={0}>0% (معفاة ضريبياً)</option>
+                    <option value="SAR">ريال سعودي (SAR)</option>
+                    <option value="YER">ريال يمني (YER)</option>
+                    <option value="USD">دولار أمريكي (USD)</option>
+                    <option value="AED">درهم إماراتي (AED)</option>
+                  </select>
+                </div>
+
+                {/* Payment Method */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">طريقة السداد:</label>
+                  <select
+                    value={quickPaymentMethod}
+                    onChange={(e) => setQuickPaymentMethod(e.target.value as InvoicePaymentMethod)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-bold text-slate-900"
+                  >
+                    <option value="CASH">نقداً (Cash)</option>
+                    <option value="BANK">تحويل بنكي / مدى (Bank)</option>
+                    <option value="CREDIT">آجل / ذمم مدينة (Credit)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Summary Calculation */}
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-100 space-y-1 font-mono">
-                <div className="flex justify-between text-slate-600">
-                  <span>مبلغ الضريبة ({quickVatRate}%):</span>
-                  <span className="font-bold text-purple-700">{((quickAmountBeforeVat * quickVatRate) / 100).toFixed(2)} ر.س</span>
+              {/* Customer Selection Section */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-800 font-bold">
+                    <UserCheck className="w-4 h-4 text-purple-600" />
+                    <span>بيانات العميل / المشتري:</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500">اختر من القائمة أو أدخل يدوياً</span>
                 </div>
-                <div className="flex justify-between text-slate-900 font-black text-sm pt-1 border-t border-purple-200">
-                  <span>المبلغ الإجمالي الشامل:</span>
-                  <span className="text-emerald-700">{(quickAmountBeforeVat + (quickAmountBeforeVat * quickVatRate) / 100).toFixed(2)} ر.س</span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Registered Customer Dropdown */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">اختيار عميل مسجل:</label>
+                    <select
+                      value={selectedCustomerId}
+                      onChange={(e) => handleSelectCustomer(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 font-medium text-slate-900 focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="">-- إدخال مخصص / عميل نقدي --</option>
+                      {customers.map((cust) => (
+                        <option key={cust.id} value={cust.id}>
+                          {cust.nameAr || cust.name} {cust.taxNumber ? `(ضريبي: ${cust.taxNumber})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Customer Name Input */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم العميل المطبوع بالفاتورة:</label>
+                    <input
+                      type="text"
+                      value={quickCustomerName}
+                      onChange={(e) => setQuickCustomerName(e.target.value)}
+                      placeholder="مثال: شركة الأعمال المتحدة للتجارة"
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 font-bold text-slate-900 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Buyer VAT (for B2B or Tax Invoices) */}
+                {quickInvoiceType === "B2B" && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      الرقم الضريبي للمشتري (15 خانة الزكاة والضريبة):
+                    </label>
+                    <input
+                      type="text"
+                      value={quickBuyerVat}
+                      onChange={(e) => setQuickBuyerVat(e.target.value)}
+                      placeholder="300000000000003"
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Items / Products Section */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-800 font-bold">
+                    <Package className="w-4 h-4 text-blue-600" />
+                    <span>بنود الأصناف والخدمات ({quickItems.length}):</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddItemRow}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition-all cursor-pointer shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة صنف آخر</span>
+                  </button>
+                </div>
+
+                {/* Items List */}
+                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                  {quickItems.map((itemRow, index) => {
+                    const rowLineTotal = (Number(itemRow.unitPrice) || 0) * (Number(itemRow.quantity) || 0);
+                    const rowTax = rowLineTotal * ((Number(itemRow.taxRate) || 0) / 100);
+                    return (
+                      <div
+                        key={itemRow.id}
+                        className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                          {/* Item Selector from Inventory */}
+                          <div className="sm:col-span-4">
+                            <label className="block text-[10px] text-slate-500 mb-0.5">اختيار من المخزون:</label>
+                            <select
+                              value={itemRow.itemId || ""}
+                              onChange={(e) => handleSelectInventoryItem(itemRow.id, e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs font-medium text-slate-900"
+                            >
+                              <option value="">-- بند مخصص --</option>
+                              {inventoryItems.map((inv) => (
+                                <option key={inv.id} value={inv.id}>
+                                  {inv.nameAr || inv.name} ({inv.sellingPrice} ر.س)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Item Description */}
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] text-slate-500 mb-0.5">بيان الصنف:</label>
+                            <input
+                              type="text"
+                              value={itemRow.description}
+                              onChange={(e) => handleUpdateItemRow(itemRow.id, "description", e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs font-bold text-slate-900"
+                              placeholder="اسم الصنف أو الخدمة"
+                            />
+                          </div>
+
+                          {/* Quantity */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] text-slate-500 mb-0.5">الكمية:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={itemRow.quantity}
+                              onChange={(e) => handleUpdateItemRow(itemRow.id, "quantity", Number(e.target.value) || 1)}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs font-mono font-bold text-slate-900 text-center"
+                            />
+                          </div>
+
+                          {/* Unit Price */}
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] text-slate-500 mb-0.5">السعر الفردي:</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={itemRow.unitPrice}
+                              onChange={(e) => handleUpdateItemRow(itemRow.id, "unitPrice", Number(e.target.value) || 0)}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs font-mono font-bold text-slate-900 text-center"
+                            />
+                          </div>
+
+                          {/* Delete Action */}
+                          <div className="sm:col-span-1 flex justify-center pt-3 sm:pt-0">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItemRow(itemRow.id)}
+                              disabled={quickItems.length <= 1}
+                              className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 disabled:opacity-30 flex items-center justify-center cursor-pointer transition-colors"
+                              title="حذف البند"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Row Subtotal Calculation details */}
+                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 text-slate-600 font-mono">
+                          <div className="flex items-center gap-2">
+                            <span>نسبة الضريبة:</span>
+                            <select
+                              value={itemRow.taxRate}
+                              onChange={(e) => handleUpdateItemRow(itemRow.id, "taxRate", Number(e.target.value))}
+                              className="bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-[10px] font-bold"
+                            >
+                              <option value={15}>15% (KSA)</option>
+                              <option value={5}>5% (مخفضة)</option>
+                              <option value={0}>0% (معفاة)</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-3 font-semibold">
+                            <span>قبل الضريبة: {rowLineTotal.toLocaleString()} {quickCurrency}</span>
+                            <span className="text-purple-700">الضريبة: {rowTax.toFixed(2)} {quickCurrency}</span>
+                            <span className="text-emerald-700 font-bold">الإجمالي: {(rowLineTotal + rowTax).toFixed(2)} {quickCurrency}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Summary Calculation Card */}
+              <div className="p-4 rounded-xl bg-purple-50/80 border border-purple-100 space-y-1.5 font-mono text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>المجموع قبل الضريبة (Subtotal):</span>
+                  <span className="font-bold text-slate-900">{quickSubtotal.toFixed(2)} {quickCurrency}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>إجمالي ضريبة القيمة المضافة (VAT):</span>
+                  <span className="font-bold text-purple-700">{quickTotalTax.toFixed(2)} {quickCurrency}</span>
+                </div>
+                <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t border-purple-200">
+                  <span>المبلغ الإجمالي النهائي (Grand Total):</span>
+                  <span className="text-emerald-700">{quickGrandTotal.toFixed(2)} {quickCurrency}</span>
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 shrink-0">
                 <button
+                  type="button"
                   onClick={() => setShowQuickIssueModal(false)}
                   className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer"
                 >
                   إلغاء
                 </button>
                 <button
+                  type="button"
                   onClick={handleQuickIssue}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold shadow-md shadow-purple-900/30 transition-all cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:opacity-95 text-white font-bold shadow-md shadow-purple-900/30 transition-all cursor-pointer flex items-center gap-2"
                 >
-                  إصدار وتشفير الفاتورة الآن
+                  <Sparkles className="w-4 h-4" />
+                  <span>إصدار وتشفير الفاتورة في منظومة ZATCA</span>
                 </button>
               </div>
             </div>

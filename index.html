@@ -3,13 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      // Gracefully handle benign Vite HMR websocket disconnection in AI Studio iframe environment
       (function() {
         var isViteHmr = function(msg) {
           if (!msg) return false;
-          var s = String(msg);
-          return s.indexOf('[vite]') !== -1 || s.indexOf('failed to connect to websocket') !== -1 || s.indexOf('WebSocket connection') !== -1;
+          var s = '';
+          if (typeof msg === 'string') s = msg;
+          else if (msg && msg.message) s = String(msg.message);
+          else s = String(msg);
+          return s.indexOf('[vite]') !== -1 ||
+                 s.indexOf('failed to connect to websocket') !== -1 ||
+                 s.indexOf('WebSocket connection') !== -1 ||
+                 s.indexOf('vite-hmr') !== -1 ||
+                 s.indexOf('vite-ping') !== -1;
         };
+
         window.addEventListener('error', function(e) {
           if (isViteHmr(e.message) || (e.error && isViteHmr(e.error.message)) || (e.filename && e.filename.indexOf('@vite/client') !== -1)) {
             e.preventDefault();
@@ -17,12 +24,14 @@
             return true;
           }
         }, true);
+
         window.addEventListener('unhandledrejection', function(e) {
           if (isViteHmr(e.reason) || (e.reason && isViteHmr(e.reason.message))) {
             e.preventDefault();
             e.stopImmediatePropagation();
           }
         }, true);
+
         var _origErr = console.error;
         console.error = function() {
           for (var i = 0; i < arguments.length; i++) {
@@ -32,21 +41,34 @@
           }
           _origErr.apply(console, arguments);
         };
+
+        var _origWarn = console.warn;
+        console.warn = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            if (isViteHmr(arguments[i]) || (arguments[i] && typeof arguments[i] === 'object' && isViteHmr(arguments[i].message))) {
+              return;
+            }
+          }
+          _origWarn.apply(console, arguments);
+        };
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <title>نظام MeDo ERP المؤسسي - الهوية الكحلية والبيضاء الملكية (Deep Navy & Pure White Edition)</title>
-    <meta name="description" content="منصة MeDo ERP المحاسبية والإدارية السحابية الهجينة وفق معايير SAP Business One (الهوية الكحلية والبيضاء الرسمية الفاخرة - مجموعة بن زياد التجارية وميدو تك)" />
-    <meta property="og:title" content="نظام MeDo ERP المؤسسي - الهوية الكحلية والبيضاء الملكية (Deep Navy & Pure White Edition)" />
-    <meta property="og:description" content="منصة MeDo ERP المحاسبية والإدارية السحابية الهجينة وفق معايير SAP Business One (الهوية الكحلية والبيضاء الرسمية الفاخرة - مجموعة بن زياد التجارية وميدو تك)" />
+    <title>نظام SAP/MeDO ERP المؤسسي</title>
+    <meta name="description" content="منظومة SAP/MeDO ERP السحابية المتكاملة لإدارة المؤسسات والمحاسبة والمالية والمخازن والفوترة الإلكترونية بأمان بمستوى بنكي." />
+    <meta property="og:title" content="نظام SAP/MeDO ERP المؤسسي" />
+    <meta property="og:description" content="منظومة SAP/MeDO ERP السحابية المتكاملة لإدارة المؤسسات والمحاسبة والمالية والمخازن والفوترة الإلكترونية بأمان بمستوى بنكي." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0B192C" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MeDo ERP" />
+    <meta name="apple-mobile-web-app-title" content="SAP/MeDO ERP" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />

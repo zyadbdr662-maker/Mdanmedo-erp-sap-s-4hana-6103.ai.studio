@@ -41,6 +41,7 @@ import {
 import { convertCurrency, formatMoney, formatNumberOnly } from "../services/erpStorage";
 import { InventoryMovementsTab } from "./InventoryMovementsTab";
 import { InventoryStocktakeTab } from "./InventoryStocktakeTab";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface InventoryViewProps {
   inventoryItems: InventoryItem[];
@@ -75,6 +76,20 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const stockMovements = Array.isArray(rawStockMovements) ? rawStockMovements.filter(Boolean) : [];
 
   const [activeTab, setActiveTab] = useState<"ITEMS" | "MOVEMENTS" | "STOCKTAKE">("ITEMS");
+  
+  const INVENTORY_COLUMNS: ColumnDef[] = [
+    { id: "code", label: "كود الصنف / SKU", locked: true },
+    { id: "nameAr", label: "بيانات الصنف والباركود" },
+    { id: "category", label: "الفئة والمستودع" },
+    { id: "quantity", label: "الكمية المتوفرة / الحد الأدنى" },
+    { id: "status", label: "حالة المخزون" },
+    { id: "costPrice", label: "سعر التكلفة" },
+    { id: "sellingPrice", label: "سعر البيع / الهامش" },
+    { id: "salesReturns", label: "المبيعات / المرتجعات" },
+    { id: "actions", label: "الإجراءات", locked: true },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("inventory_items", INVENTORY_COLUMNS);
+
   // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
@@ -885,6 +900,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               </option>
             ))}
           </select>
+
+          <ColumnCustomizer
+            tableKey="inventory_items"
+            columns={INVENTORY_COLUMNS}
+            visibleColumns={visibleColumns}
+            onChange={updateVisibility}
+          />
         </div>
       </div>
 
@@ -941,21 +963,21 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     title="تحديد كل الأصناف المعروضة"
                   />
                 </th>
-                <th className="px-4 py-3.5">كود الصنف / SKU</th>
-                <th className="px-4 py-3.5">بيانات الصنف والباركود</th>
-                <th className="px-4 py-3.5">الفئة والمستودع</th>
-                <th className="px-4 py-3.5">الكمية المتوفرة / الحد الأدنى</th>
-                <th className="px-4 py-3.5">حالة المخزون</th>
-                <th className="px-4 py-3.5">سعر التكلفة</th>
-                <th className="px-4 py-3.5">سعر البيع / الهامش</th>
-                <th className="px-4 py-3.5">المبيعات / المرتجعات</th>
-                <th className="px-4 py-3.5 text-center">الإجراءات</th>
+                {isVisible("code") && <th className="px-4 py-3.5">كود الصنف / SKU</th>}
+                {isVisible("nameAr") && <th className="px-4 py-3.5">بيانات الصنف والباركود</th>}
+                {isVisible("category") && <th className="px-4 py-3.5">الفئة والمستودع</th>}
+                {isVisible("quantity") && <th className="px-4 py-3.5">الكمية المتوفرة / الحد الأدنى</th>}
+                {isVisible("status") && <th className="px-4 py-3.5">حالة المخزون</th>}
+                {isVisible("costPrice") && <th className="px-4 py-3.5">سعر التكلفة</th>}
+                {isVisible("sellingPrice") && <th className="px-4 py-3.5">سعر البيع / الهامش</th>}
+                {isVisible("salesReturns") && <th className="px-4 py-3.5">المبيعات / المرتجعات</th>}
+                {isVisible("actions") && <th className="px-4 py-3.5 text-center">الإجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-200">
               {paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-12 text-slate-500">
+                  <td colSpan={1 + INVENTORY_COLUMNS.filter((c) => isVisible(c.id)).length} className="text-center py-12 text-slate-500">
                     <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <div>لا توجد أصناف مخزنية تطابق معايير البحث والفلترة.</div>
                   </td>
@@ -994,119 +1016,137 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </td>
 
                       {/* Code */}
-                      <td className="px-4 py-3.5 font-mono font-bold text-slate-300">
-                        {item.code}
-                      </td>
+                      {isVisible("code") && (
+                        <td className="px-4 py-3.5 font-mono font-bold text-slate-300">
+                          {item.code}
+                        </td>
+                      )}
 
                       {/* Name & Barcode */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-bold text-white text-sm">{item.nameAr}</div>
-                        {item.nameEn && <div className="text-[10px] text-slate-400 font-mono">{item.nameEn}</div>}
-                        {item.barcode && (
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
-                            <Barcode className="w-3 h-3 text-slate-500" />
-                            <span className="font-mono">{item.barcode}</span>
-                          </div>
-                        )}
-                      </td>
+                      {isVisible("nameAr") && (
+                        <td className="px-4 py-3.5">
+                          <div className="font-bold text-white text-sm">{item.nameAr}</div>
+                          {item.nameEn && <div className="text-[10px] text-slate-400 font-mono">{item.nameEn}</div>}
+                          {item.barcode && (
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                              <Barcode className="w-3 h-3 text-slate-500" />
+                              <span className="font-mono">{item.barcode}</span>
+                            </div>
+                          )}
+                        </td>
+                      )}
 
                       {/* Category & Warehouse */}
-                      <td className="px-4 py-3.5">
-                        <span className="inline-block px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold mb-1">
-                          {item.category}
-                        </span>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                          <Building className="w-3 h-3 text-slate-500" />
-                          <span>{item.warehouseLocation}</span>
-                        </div>
-                      </td>
+                      {isVisible("category") && (
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold mb-1">
+                            {item.category}
+                          </span>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                            <Building className="w-3 h-3 text-slate-500" />
+                            <span>{item.warehouseLocation}</span>
+                          </div>
+                        </td>
+                      )}
 
                       {/* Quantity & Threshold */}
-                      <td className="px-4 py-3.5 font-bold">
-                        <div className="text-sm">
-                          {formatNumberOnly(item.quantityOnHand)}{" "}
-                          <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-normal mt-0.5">
-                          الحد الأدنى: {item.minStockThreshold} {item.unit}
-                        </div>
-                      </td>
+                      {isVisible("quantity") && (
+                        <td className="px-4 py-3.5 font-bold">
+                          <div className="text-sm">
+                            {formatNumberOnly(item.quantityOnHand)}{" "}
+                            <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                            الحد الأدنى: {item.minStockThreshold} {item.unit}
+                          </div>
+                        </td>
+                      )}
 
                       {/* Stock Status Badge */}
-                      <td className="px-4 py-3.5">
-                        {isOut ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-[11px] animate-pulse">
-                            <AlertOctagon className="w-3.5 h-3.5" />
-                            <span>منتهية (0) 🚨</span>
-                          </span>
-                        ) : isLow ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[11px]">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span>حد الخطر ⚠️</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>متوفر 🟢</span>
-                          </span>
-                        )}
-                      </td>
+                      {isVisible("status") && (
+                        <td className="px-4 py-3.5">
+                          {isOut ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-[11px] animate-pulse">
+                              <AlertOctagon className="w-3.5 h-3.5" />
+                              <span>منتهية (0) 🚨</span>
+                            </span>
+                          ) : isLow ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[11px]">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              <span>حد الخطر ⚠️</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>متوفر 🟢</span>
+                            </span>
+                          )}
+                        </td>
+                      )}
 
                       {/* Cost Price */}
-                      <td className="px-4 py-3.5 font-mono text-slate-300">
-                        {costFormatted}
-                      </td>
+                      {isVisible("costPrice") && (
+                        <td className="px-4 py-3.5 font-mono text-slate-300">
+                          {costFormatted}
+                        </td>
+                      )}
 
                       {/* Selling Price & Margin */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-mono font-bold text-emerald-400">{sellFormatted}</div>
-                        <div className="text-[10px] text-teal-400 font-mono">
-                          هامش الربح: +{marginPercent}%
-                        </div>
-                      </td>
+                      {isVisible("sellingPrice") && (
+                        <td className="px-4 py-3.5">
+                          <div className="font-mono font-bold text-emerald-400">{sellFormatted}</div>
+                          <div className="text-[10px] text-teal-400 font-mono">
+                            هامش الربح: +{marginPercent}%
+                          </div>
+                        </td>
+                      )}
 
                       {/* Sales & Returns */}
-                      <td className="px-4 py-3.5">
-                        <div className="text-[11px] text-slate-300">
-                          مبيعات: <span className="font-bold text-blue-400">{item.totalSalesQty || 0}</span>
-                        </div>
-                        <div className="text-[11px] text-purple-400 font-semibold mt-0.5">
-                          عائد/مرتجع: <span className="font-bold">{item.totalReturnsQty || 0}</span>
-                        </div>
-                      </td>
+                      {isVisible("salesReturns") && (
+                        <td className="px-4 py-3.5">
+                          <div className="text-[11px] text-slate-300">
+                            مبيعات: <span className="font-bold text-blue-400">{item.totalSalesQty || 0}</span>
+                          </div>
+                          <div className="text-[11px] text-purple-400 font-semibold mt-0.5">
+                            عائد/مرتجع: <span className="font-bold">{item.totalReturnsQty || 0}</span>
+                          </div>
+                        </td>
+                      )}
 
                       {/* Actions */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* Stock Ledger History Button */}
-                          <button
-                            onClick={() => handleOpenMovementModal(item)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-950/90 text-teal-300 hover:bg-teal-900 border border-teal-700/50 text-[11px] font-bold transition"
-                            title="عرض كشف حركة الصنف والعائد"
-                          >
-                            <History className="w-3.5 h-3.5" />
-                            <span>كشف الحركة</span>
-                          </button>
+                      {isVisible("actions") && (
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {/* Stock Ledger History Button */}
+                            <button
+                              onClick={() => handleOpenMovementModal(item)}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-950/90 text-teal-300 hover:bg-teal-900 border border-teal-700/50 text-[11px] font-bold transition"
+                              title="عرض كشف حركة الصنف والعائد"
+                            >
+                              <History className="w-3.5 h-3.5" />
+                              <span>كشف الحركة</span>
+                            </button>
 
-                          {/* Edit Item */}
-                          <button
-                            onClick={() => handleOpenEditItem(item)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-                            title="تعديل بيانات الصنف"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Edit Item */}
+                            <button
+                              onClick={() => handleOpenEditItem(item)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                              title="تعديل بيانات الصنف"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Delete Item */}
-                          <button
-                            onClick={() => setItemToDelete(item)}
-                            className="p-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-800/40 transition"
-                            title="مسح الصنف"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                            {/* Delete Item */}
+                            <button
+                              onClick={() => setItemToDelete(item)}
+                              className="p-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-800/40 transition"
+                              title="مسح الصنف"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

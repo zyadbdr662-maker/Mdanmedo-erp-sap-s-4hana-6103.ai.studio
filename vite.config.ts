@@ -15,8 +15,8 @@ export default defineConfig(() => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
-          name: 'MeDo ERP - نظام المحاسبة والمالية الهجين',
-          short_name: 'MeDo ERP',
+          name: 'SAP/MeDO ERP - نظام إدارة المؤسسات والفوترة الإلكترونية',
+          short_name: 'SAP/MeDO ERP',
           description: 'نظام إدارة مؤسسية وتخطيط موارد المحاسبة والمالية يعمل بكفاءة دون اتصال (Offline-First) مع مزامنة سحابية وقاعدة بيانات محلية',
           theme_color: '#0f172a',
           background_color: '#020617',
@@ -80,7 +80,7 @@ export default defineConfig(() => {
           ],
         },
         devOptions: {
-          enabled: true,
+          enabled: false,
           type: 'module',
         },
       }),
@@ -94,8 +94,8 @@ export default defineConfig(() => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
-      sourcemap: true,
-      chunkSizeWarningLimit: 2000,
+      sourcemap: false,
+      chunkSizeWarningLimit: 3000,
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -118,11 +118,8 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâ€”file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // HMR is disabled in AI Studio to prevent broken intermediate states and websocket disconnects
+      hmr: false,
     },
   };
 });

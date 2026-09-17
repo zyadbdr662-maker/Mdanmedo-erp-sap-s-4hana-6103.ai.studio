@@ -382,7 +382,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       {
         name: "المنظومة والتراخيص السحابية (SaaS Multi-Tenant)",
         keywords: ["ترخيص", "تراخيص", "saas", "سحابية", "اشتراك", "سحابة"],
-        tab: "SAAS_PLATFORM",
+        tab: "EXECUTIVE_MASTER_SUITE",
         badge: "تراخيص سحابية",
         details: "إدارة المؤسسات المستأجرة، وتراخيص الفروع والمستخدمين السحابية",
       },

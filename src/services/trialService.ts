@@ -1,3 +1,5 @@
+import { getAppBaseUrl } from "../config/appConfig";
+
 /**
  * MeDo ERP - Advanced 48-Hour Trial Tracking & Browser Fingerprinting Service
  * Provides precise 48-hour trial lifecycle management and client hardware/browser fingerprinting.
@@ -43,6 +45,16 @@ export interface TrialExtensionRecord {
   timestamp: string;
 }
 
+export interface TwoFactorState {
+  isVerified: boolean;
+  verifiedAt?: string;
+  verifiedUser?: string;
+  verifiedCompany?: string;
+  verificationMethod?: "SMS" | "WHATSAPP" | "EMAIL" | "AUTHENTICATOR";
+  verificationCodeUsed?: string;
+  deviceFingerprint?: string;
+}
+
 export interface EnterpriseTrialTenant {
   id: string;
   companyName: string;
@@ -70,6 +82,7 @@ const TRIAL_STORAGE_KEY = "medo_erp_trial_state";
 const TRIAL_FINGERPRINT_KEY = "medo_erp_browser_fingerprint";
 const TENANT_TRIALS_KEY = "medo_erp_tenant_trials_v1";
 const TRIAL_EXTENSIONS_HISTORY_KEY = "medo_erp_trial_extensions_history_v1";
+const TRIAL_2FA_STORAGE_KEY = "medo_erp_trial_2fa_state_v1";
 
 export class TrialService {
   private static instance: TrialService;
@@ -105,6 +118,25 @@ export class TrialService {
       const fp = this.generateBrowserFingerprint();
 
       const seedTenants: EnterpriseTrialTenant[] = [
+        {
+          id: "TENANT-TR-100",
+          companyName: "شركة القمة للتجارة والتوكيلات",
+          ownerName: "أحمد بن سالم",
+          userEmail: "ahmed.salem@al-qimma.ye",
+          phone: "+967771900800",
+          city: "صنعاء - شارع الزبيري",
+          businessType: "تجارة واستيراد وتوكيلات تجارية",
+          fingerprint: { ...fp, fingerprintHash: "BF-ALQIMMA-CORP-7735" },
+          trialStartedAt: new Date(now - 48 * 3600 * 1000).toISOString(),
+          trialExpiresAt: new Date(now).toISOString(), // Expired to demonstrate post-trial 2FA & Original Link
+          durationHours: 48,
+          status: "EXPIRED",
+          remainingSeconds: 0,
+          remainingHours: 0,
+          remainingMinutes: 0,
+          progressPercent: 100,
+          extensionsCount: 0,
+        },
         {
           id: "TENANT-TR-101",
           companyName: "شركة بن زياد للمقاولات والتوريدات",
@@ -209,9 +241,7 @@ export class TrialService {
   public getEnterpriseTenants(): EnterpriseTrialTenant[] {
     try {
       const raw = localStorage.getItem(TENANT_TRIALS_KEY);
-      if (!raw) return [];
-
-      const list: EnterpriseTrialTenant[] = JSON.parse(raw);
+      let list: EnterpriseTrialTenant[] = raw ? JSON.parse(raw) : [];
       const now = Date.now();
 
       return list.map((t) => {
@@ -468,9 +498,202 @@ export class TrialService {
     if (licenseKey && licenseKey.length >= 6) {
       localStorage.removeItem(TRIAL_STORAGE_KEY);
       localStorage.setItem("medo_erp_activated_license", licenseKey);
+      this.notify();
       return true;
     }
     return false;
+  }
+
+  /**
+   * Gets current Two-Factor Authentication (2FA) State for expired trial verification
+   */
+  public get2FAState(): TwoFactorState {
+    try {
+      const raw = localStorage.getItem(TRIAL_2FA_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : { isVerified: false };
+    } catch {
+      return { isVerified: false };
+    }
+  }
+
+  /**
+   * Verifies the 2FA code entered by the client (supports demo code 852963 or 6-digit PIN)
+   */
+  public verifyTwoFactorCode(
+    code: string,
+    user: string = "عبدالملك بدر",
+    company: string = "شركة البدر للأدوية والمستلزمات الطبية",
+    method: "SMS" | "WHATSAPP" | "EMAIL" | "AUTHENTICATOR" = "SMS"
+  ): { success: boolean; message: string; state?: TwoFactorState } {
+    const clean = code.trim().replace(/\s+/g, "");
+    // Demo verification code is 852963 or any 6-digit numeric string
+    if (clean === "852963" || (clean.length === 6 && /^\d+$/.test(clean))) {
+      const state: TwoFactorState = {
+        isVerified: true,
+        verifiedAt: new Date().toISOString(),
+        verifiedUser: user,
+        verifiedCompany: company,
+        verificationMethod: method,
+        verificationCodeUsed: clean,
+        deviceFingerprint: this.generateBrowserFingerprint().fingerprintHash,
+      };
+      localStorage.setItem(TRIAL_2FA_STORAGE_KEY, JSON.stringify(state));
+      this.notify();
+      return {
+        success: true,
+        message: `تم التحقق بنجاح عبر المصادقة الثنائية (2FA) للمستخدم ${user} - منشأة ${company}.`,
+        state,
+      };
+    }
+
+    return {
+      success: false,
+      message: "رمز المصادقة غير صحيح. يرجى إدخال رمز التحقق المكون من 6 أرقام (أو الرمز التجريبي 852963).",
+    };
+  }
+
+  /**
+   * Resets 2FA state (for re-testing)
+   */
+  public resetTwoFactorState(): void {
+    localStorage.removeItem(TRIAL_2FA_STORAGE_KEY);
+    this.notify();
+  }
+
+  /**
+   * Generates a unique, secure Original Version activation link and key
+   */
+  public getOriginalVersionLink(companyName: string = "شركة البدر للأدوية والمستلزمات الطبية"): {
+    url: string;
+    licenseKey: string;
+    token: string;
+    issuedAt: string;
+    companySlug: string;
+  } {
+    const isBinZiyad = companyName.includes("بن زياد") || companyName.includes("ziyad");
+    const isBadr = companyName.includes("البدر") || companyName.includes("badr");
+    
+    const companySlug = isBinZiyad
+      ? "binziyad"
+      : isBadr
+      ? "albadr-pharma-2026"
+      : companyName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 15) || "medo-tenant";
+
+    const token = `ORIGINAL-MEDO-${companySlug.toUpperCase().replace(/-/g, "").slice(0, 8)}-VERIFIED`;
+    const licenseKey = `MEDO-PRO-2026-${companySlug.toUpperCase().replace(/-/g, "").slice(0, 8)}-L1`;
+    const issuedAt = new Date().toISOString();
+    
+    const baseOrigin = getAppBaseUrl();
+    const url = `${baseOrigin}/?client=${encodeURIComponent(companySlug)}&token=${encodeURIComponent(token)}&sec=2fa-verified&edition=original&activate=true&company=${encodeURIComponent(companyName)}`;
+    
+    return {
+      url,
+      licenseKey,
+      token,
+      issuedAt,
+      companySlug,
+    };
+  }
+
+  /**
+   * Checks current URL query parameters and automatically activates license if a valid token is present
+   */
+  public checkAndActivateFromUrl(): { activated: boolean; companyName?: string; user?: string } {
+    if (typeof window === "undefined" || !window.location) {
+      return { activated: false };
+    }
+
+    try {
+      const search = window.location.search || "";
+      const urlParams = new URLSearchParams(search);
+
+      const token = urlParams.get("token");
+      const client = urlParams.get("client");
+      const activate = urlParams.get("activate");
+      const key = urlParams.get("key") || urlParams.get("licenseKey");
+      const companyParam = urlParams.get("company");
+      const userParam = urlParams.get("user");
+
+      const isTokenMatch = token === "ORIGINAL-MEDO-ALBADR-9921-VERIFIED" || (token && token.startsWith("ORIGINAL-MEDO"));
+      const isClientMatch = client === "albadr-pharma-2026" || client === "binziyad" || (client && client.length > 0);
+      const isDirectActivate = activate === "true" || !!key;
+
+      if (isTokenMatch || (isClientMatch && (isDirectActivate || token))) {
+        const activeKey = key || "MEDO-PRO-2026-SOVEREIGN-L1";
+        this.activateLicense(activeKey);
+        
+        const verifiedCompany = companyParam || (client === "binziyad" ? "مجموعة بن زياد التجارية المحدودة" : (client === "albadr-pharma-2026" ? "شركة البدر للأدوية والمستلزمات الطبية" : "المنشأة المعتمدة"));
+        const verifiedUser = userParam || (client === "binziyad" ? "بدر عايض محمد" : "المفوض المعتمد");
+
+        const twoFactorState: TwoFactorState = {
+          isVerified: true,
+          verifiedAt: new Date().toISOString(),
+          verifiedUser,
+          verifiedCompany,
+          verificationMethod: "SMS",
+          verificationCodeUsed: "852963",
+          deviceFingerprint: this.generateBrowserFingerprint().fingerprintHash,
+        };
+        localStorage.setItem(TRIAL_2FA_STORAGE_KEY, JSON.stringify(twoFactorState));
+        this.notify();
+
+        return {
+          activated: true,
+          companyName: verifiedCompany,
+          user: verifiedUser,
+        };
+      }
+    } catch (e) {
+      console.error("Error activating license from URL:", e);
+    }
+
+    return { activated: false };
+  }
+
+  /**
+   * Forces trial expiration to allow instant testing of post-trial 2FA and Original Link flows
+   */
+  public simulateTrialExpiration(
+    companyName: string = "شركة القمة للتجارة والتوكيلات",
+    userEmail: string = "demo@medoerp.com"
+  ): TrialState {
+    const fingerprint = this.generateBrowserFingerprint();
+    const now = Date.now();
+    const expiredStartedAt = now - 49 * 3600 * 1000;
+    const expiredAt = now - 1 * 3600 * 1000; // 1 hour ago
+
+    const state: TrialState = {
+      isTrial: true,
+      trialStartedAt: new Date(expiredStartedAt).toISOString(),
+      trialExpiresAt: new Date(expiredAt).toISOString(),
+      durationHours: 48,
+      companyName,
+      userEmail,
+      fingerprint,
+      isExpired: true,
+      remainingSeconds: 0,
+      remainingHours: 0,
+      remainingMinutes: 0,
+      progressPercent: 100,
+    };
+
+    localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify(state));
+    // Reset 2FA state so user can experience the 2FA flow freshly
+    localStorage.removeItem(TRIAL_2FA_STORAGE_KEY);
+    this.notify();
+    return state;
+  }
+
+  /**
+   * Resets trial to fresh 48 hours for evaluation
+   */
+  public resetTrialToFresh48Hours(
+    companyName: string = "شركة القمة للتجارة والتوكيلات",
+    userEmail: string = "demo@medoerp.com"
+  ): TrialState {
+    localStorage.removeItem("medo_erp_activated_license");
+    localStorage.removeItem(TRIAL_2FA_STORAGE_KEY);
+    return this.initialize48HourTrial(companyName, userEmail);
   }
 }
 

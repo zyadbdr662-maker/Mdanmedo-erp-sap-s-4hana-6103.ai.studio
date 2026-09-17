@@ -115,8 +115,6 @@ export const AiFinancialAdvisorModal: React.FC<AiFinancialAdvisorModalProps> = (
   onOpenQuickAction,
   onApplyGeneratedJournal,
 }) => {
-  if (!isOpen) return null;
-
   // View Controls
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(initialCurrency || "SAR");
@@ -435,6 +433,8 @@ export const AiFinancialAdvisorModal: React.FC<AiFinancialAdvisorModalProps> = (
     if (activeBankTab === "VAULTS") return vaultItems;
     return [...bankItems, ...vaultItems];
   }, [bankAccounts, cashVaults, activeBankTab, selectedCurrency, currencies]);
+
+  if (!isOpen) return null;
 
   return (
     <div

@@ -10,6 +10,28 @@ export interface CurrencyInfo {
   lastUpdated?: string;
 }
 
+export interface BranchPrintConfig {
+  logoType?: "DEFAULT_CREST" | "CUSTOM_IMAGE" | "TEXT_BADGE";
+  logoImage?: string;
+  headerTitleAr?: string;
+  headerTitleEn?: string;
+  headerSubtitleAr?: string;
+  headerSubtitleEn?: string;
+  addressAr?: string;
+  addressEn?: string;
+  phone?: string;
+  email?: string;
+  taxNumber?: string;
+  commercialRegister?: string;
+  footerTextAr?: string;
+  footerTextEn?: string;
+  showWatermark?: boolean;
+  watermarkText?: string;
+  showQrCode?: boolean;
+  primaryColor?: string;
+  paperSize?: "A4" | "THERMAL_80MM" | "LETTER";
+}
+
 export interface Branch {
   id: string; // e.g. "BR-SANAA-MAIN", "BR-ADEN-PORT"
   code: string; // e.g. "BR-01", "BR-02"
@@ -26,6 +48,7 @@ export interface Branch {
   costCenterId?: string;
   warehouseLocation?: string;
   createdAt?: string;
+  printConfig?: BranchPrintConfig;
 }
 
 export type AccountCategory = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
@@ -406,6 +429,8 @@ export interface ERPUser {
 export interface InventoryItem {
   id: string;
   code: string; // SKU e.g. "INV-1001"
+  sku?: string; // Optional SKU alias
+  valuationMethod?: "FIFO" | "WEIGHTED_AVERAGE" | "LIFO" | string;
   nameAr: string;
   nameEn?: string;
   name?: string; // Friendly alias
@@ -423,8 +448,9 @@ export interface InventoryItem {
   currency: CurrencyCode;
   warehouseLocation: string;
   branchId?: string;
-  totalSalesQty: number;
-  totalReturnsQty: number; // مردودات الاصناف والعائد
+  totalSalesQty?: number;
+  totalReturnsQty?: number; // مردودات الاصناف والعائد
+  status?: "ACTIVE" | "INACTIVE" | "DISCONTINUED";
   barcode?: string;
   description?: string;
   createdAt?: string;
@@ -591,6 +617,14 @@ export interface SystemSettings {
   phone: string;
   address: string;
   email: string;
+  country?: string;
+  dualCurrencyEnabled?: boolean;
+  sanaaRate?: number;
+  adenRate?: number;
+  sarRate?: number;
+  taxRate?: number;
+  roundDecimals?: number;
+  systemVersion?: string;
   baseCurrency: CurrencyCode;
   defaultBranchId?: string;
   fiscalYearStart: string;
@@ -608,6 +642,7 @@ export interface SystemSettings {
   signatureType?: "NONE" | "TEXT" | "IMAGE";
   signatureText?: string;
   signatureImage?: string;
+  printConfig?: BranchPrintConfig;
   licenseType?: "LIFETIME" | "ENTERPRISE_UNLIMITED";
   licenseDuration?: string;
   licenseStatus?: "ACTIVE_LIFETIME";

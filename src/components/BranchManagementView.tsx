@@ -1141,6 +1141,110 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
                   />
                 </div>
 
+                <div className="sm:col-span-2 border-t border-slate-800/80 pt-4 mt-2">
+                  <h4 className="text-xs font-extrabold text-amber-400 flex items-center gap-2 mb-3">
+                    <span>🖨️</span>
+                    <span>تخصيص ترويسة وشعار طباعة مستندات الفرع (Dynamic Header & Footer)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">اسم المنشأة/الفرع في الهيدر (عربي)</label>
+                      <input
+                        type="text"
+                        value={editingBranch.printConfig?.headerTitleAr || ""}
+                        onChange={(e) =>
+                          setEditingBranch({
+                            ...editingBranch,
+                            printConfig: {
+                              ...editingBranch.printConfig,
+                              headerTitleAr: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-amber-500 text-xs"
+                        placeholder="مثال: شركة الأمل - فرع صنعاء"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">اسم المنشأة/الفرع (بالإنجليزية)</label>
+                      <input
+                        type="text"
+                        value={editingBranch.printConfig?.headerTitleEn || ""}
+                        onChange={(e) =>
+                          setEditingBranch({
+                            ...editingBranch,
+                            printConfig: {
+                              ...editingBranch.printConfig,
+                              headerTitleEn: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-amber-500 text-xs font-sans"
+                        placeholder="e.g. Al-Amal Trading - Sanaa Branch"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">الرقم الضريبي / السجل التجاري للفرع</label>
+                      <input
+                        type="text"
+                        value={editingBranch.printConfig?.taxNumber || ""}
+                        onChange={(e) =>
+                          setEditingBranch({
+                            ...editingBranch,
+                            printConfig: {
+                              ...editingBranch.printConfig,
+                              taxNumber: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-amber-500 text-xs font-mono"
+                        placeholder="س.ت: 7102030 | ضريبي: 300010020"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">صورة شعار الفرع (Logo Image Base64/URL)</label>
+                      <input
+                        type="text"
+                        value={editingBranch.printConfig?.logoImage || ""}
+                        onChange={(e) =>
+                          setEditingBranch({
+                            ...editingBranch,
+                            printConfig: {
+                              ...editingBranch.printConfig,
+                              logoImage: e.target.value,
+                              logoType: e.target.value ? "CUSTOM_IMAGE" : "DEFAULT_CREST",
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-amber-500 text-xs font-mono"
+                        placeholder="https://... أو Base64"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">شروط وملاحظات الفوتر للفرع (Footer Notes/Terms)</label>
+                      <input
+                        type="text"
+                        value={editingBranch.printConfig?.footerTextAr || ""}
+                        onChange={(e) =>
+                          setEditingBranch({
+                            ...editingBranch,
+                            printConfig: {
+                              ...editingBranch.printConfig,
+                              footerTextAr: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-amber-500 text-xs"
+                        placeholder="مثال: البضاعة المباعة لا ترد ولا تستبدل إلا بالفاتورة الرسمية"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="sm:col-span-2 flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"

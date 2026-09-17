@@ -3,32 +3,36 @@ import { Link, Outlet } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { AnalyticsTracker } from './AnalyticsTracker';
 import { Phone, Mail, MessageSquare, MapPin } from 'lucide-react';
+import { BzmtLogo } from '../BzmtLogo';
 
 export const MarketingLayout = () => {
   const { lang, toggleLang } = useLanguage();
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Alexandria','Cairo',sans-serif]">
+    <div className="min-h-screen bg-[#f4f7fc] flex flex-col font-['Alexandria','Cairo',sans-serif]">
       <AnalyticsTracker />
-      <header className="bg-[#050B14]/95 text-white p-4 shadow-lg border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
+      <header className="bg-[#0a2540] text-white p-4 shadow-xl border-b border-[#d4af37]/30 sticky top-0 z-50 backdrop-blur-md">
         <nav className="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
-          <Link to="/" className="text-2xl font-black text-white flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#d4af37] to-[#f39c12] border border-[#d4af37]/30 flex items-center justify-center text-white shadow-md font-black text-lg">
-              M
+          <Link to="/" className="text-2xl font-black text-white flex items-center gap-3">
+            <BzmtLogo size="md" variant="monogram" />
+            <div className="flex flex-col text-right">
+              <div className="flex items-center gap-2">
+                <span className="tracking-tight text-white font-black text-xl">MeDo ERP</span>
+                <span className="text-[10px] bg-[#d4af37]/20 text-[#d4af37] font-bold px-2 py-0.5 rounded-full border border-[#d4af37]/40">v4.5</span>
+              </div>
+              <span className="text-[10px] text-slate-300 font-medium -mt-0.5">ميدو تك للحلول البرمجية</span>
             </div>
-            <span className="tracking-tight text-white">MeDo ERP</span>
-            <span className="text-xs bg-[#d4af37]/10 text-[#d4af37] font-bold px-3 py-1 rounded-full border border-[#d4af37]/30">v4.5</span>
           </Link>
           <div className="flex items-center gap-3 sm:gap-6 flex-wrap text-sm font-bold">
-            <Link to="/" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
-            <Link to="/about" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'عن الشركة' : 'About'}</Link>
-            <Link to="/system" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'النظام' : 'System'}</Link>
-            <Link to="/pricing" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'الأسعار' : 'Pricing'}</Link>
-            <Link to="/blog" className="text-blue-300 hover:text-white font-extrabold transition py-1">{lang === 'ar' ? 'المدونة' : 'Blog'}</Link>
-            <Link to="/contact" className="text-slate-200 hover:text-white transition py-1">{lang === 'ar' ? 'اتصل بنا' : 'Contact'}</Link>
-            <button onClick={toggleLang} className="text-blue-300 font-bold border border-blue-400/40 px-3 py-1 rounded-lg text-xs hover:bg-blue-600 hover:text-white transition">
+            <Link to="/" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+            <Link to="/about" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'عن الشركة' : 'About'}</Link>
+            <Link to="/system" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'النظام' : 'System'}</Link>
+            <Link to="/pricing" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'الأسعار' : 'Pricing'}</Link>
+            <Link to="/blog" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'المدونة' : 'Blog'}</Link>
+            <Link to="/contact" className="text-slate-200 hover:text-[#d4af37] transition py-1">{lang === 'ar' ? 'اتصل بنا' : 'Contact'}</Link>
+            <button onClick={toggleLang} className="text-amber-300 font-bold border border-[#d4af37]/40 px-3 py-1 rounded-lg text-xs hover:bg-[#d4af37] hover:text-[#0a2540] transition">
               {lang === 'ar' ? 'EN' : 'عربي'}
             </button>
-            <Link to="/erp" className="bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a1525] px-6 py-2.5 rounded-xl font-black hover:from-[#f39c12] hover:to-[#d4af37] transition text-sm shadow-md shadow-[0_5px_15px_rgba(212,175,55,0.3)] border border-[#b8860b]">
+            <Link to="/erp" className="bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] text-[#0a2540] px-6 py-2.5 rounded-xl font-black hover:brightness-110 transition text-sm shadow-md shadow-[0_4px_14px_rgba(212,175,55,0.35)] border border-[#b8860b] transform hover:scale-[1.03]">
               {lang === 'ar' ? 'الدخول للنظام' : 'Login'}
             </Link>
           </div>
@@ -48,7 +52,7 @@ export const MarketingLayout = () => {
                 ميدو تك للحلول البرمجية
               </h4>
               <p className="text-slate-300 leading-relaxed mb-3 font-medium">
-                بالشراكة الاستراتيجية مع بن زياد المتحدة. أنظمة ERP سحابية متطورة لتحويل العمليات التشغيلية والمالية إلى أصول ذكية موثوقة.
+                أنظمة ERP سحابية ومكتبية متطورة لتحويل العمليات التشغيلية والمالية إلى أصول ذكية موثوقة بمعايير محاسبية دولية.
               </p>
               <div className="flex items-center gap-2 text-xs text-slate-400">
                 <MapPin className="w-3.5 h-3.5 text-blue-400" />
@@ -93,11 +97,19 @@ export const MarketingLayout = () => {
             </div>
           </div>
 
-          <div className="pt-6 text-center text-xs text-slate-400 font-medium">
-            <p>
+          <div className="pt-6 text-center text-xs text-slate-400 font-medium flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-200 text-sm tracking-wide">
+                جميع الحقوق محفوظة ©
+              </span>
+              <span className="font-bold text-amber-300 text-sm tracking-wide font-sans">
+                Bin Ziyad Group & MeDo Tech (BZMT)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
               {lang === 'ar'
-                ? '© 2026 ميدو تك للحلول البرمجية بالشراكة الاستراتيجية مع بن زياد المتحدة - جميع الحقوق محفوظة.'
-                : '© 2026 MeDo Tech Solutions in strategic partnership with Bin Ziad United - All Rights Reserved.'}
+                ? 'منظومة SAP/MeDO ERP السحابية المؤسسية المتكاملة'
+                : 'SAP/MeDO ERP Enterprise Sovereign Cloud Platform'}
             </p>
           </div>
         </div>

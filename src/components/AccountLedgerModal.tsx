@@ -16,6 +16,8 @@ import {
 import { Account, CurrencyCode, CurrencyInfo, JournalEntry } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "../services/erpStorage";
 import { formatDate, formatDualDate } from "../utils/formatters";
+import { ExportPdfButton } from "./ExportPdfButton";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface AccountLedgerModalProps {
   account: Account;
@@ -39,6 +41,17 @@ export const AccountLedgerModal: React.FC<AccountLedgerModalProps> = ({
   const [startDate, setStartDate] = useState("2026-01-01");
   const [endDate, setEndDate] = useState("2026-12-31");
   const [searchFilter, setSearchFilter] = useState("");
+
+  const LEDGER_MODAL_COLUMNS: ColumnDef[] = [
+    { id: "date", label: "التاريخ" },
+    { id: "entryNumber", label: "رقم السند / القيد", locked: true },
+    { id: "reference", label: "المرجع" },
+    { id: "description", label: "البيان والشرح المحاسبي" },
+    { id: "debit", label: "مدين (Debit)" },
+    { id: "credit", label: "دائن (Credit)" },
+    { id: "runningBalance", label: "الرصيد التراكمي" },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("account_ledger_modal", LEDGER_MODAL_COLUMNS);
 
   const nonHeaders = accounts.filter((a) => !a.isHeader);
 
@@ -190,6 +203,21 @@ export const AccountLedgerModal: React.FC<AccountLedgerModalProps> = ({
               ))}
             </select>
 
+            <ExportPdfButton
+              targetId="account-ledger-modal-table-container"
+              reportTitle={`كشف حساب الأستاذ العام - [${account.code}] ${account.nameAr}`}
+              filename={`كشف_حساب_${account.code}.pdf`}
+              variant="badge"
+              label="تصدير PDF"
+            />
+
+            <ColumnCustomizer
+              tableKey="account_ledger_modal"
+              columns={LEDGER_MODAL_COLUMNS}
+              visibleColumns={visibleColumns}
+              onChange={updateVisibility}
+            />
+
             <button
               onClick={handleExportCSV}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
@@ -289,69 +317,89 @@ export const AccountLedgerModal: React.FC<AccountLedgerModalProps> = ({
         </div>
 
         {/* Movements Table */}
-        <div className="border border-slate-800 rounded-xl overflow-hidden shadow-inner">
+        <div id="account-ledger-modal-table-container" className="border border-slate-800 rounded-xl overflow-hidden shadow-inner">
           <div className="overflow-x-auto max-h-[380px]">
             <table className="w-full text-right text-xs">
               <thead className="sticky top-0 z-10 bg-slate-950 text-slate-400 border-b border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-3 font-semibold">التاريخ</th>
-                  <th className="py-2.5 px-3 font-semibold">رقم السند / القيد</th>
-                  <th className="py-2.5 px-3 font-semibold">المرجع</th>
-                  <th className="py-2.5 px-3 font-semibold min-w-[240px]">البيان والشرح المحاسبي</th>
-                  <th className="py-2.5 px-3 font-semibold text-left">مدين (Debit)</th>
-                  <th className="py-2.5 px-3 font-semibold text-left">دائن (Credit)</th>
-                  <th className="py-2.5 px-3 font-semibold text-left">الرصيد التراكمي</th>
+                  {isVisible("date") && <th className="py-2.5 px-3 font-semibold">التاريخ</th>}
+                  {isVisible("entryNumber") && <th className="py-2.5 px-3 font-semibold">رقم السند / القيد</th>}
+                  {isVisible("reference") && <th className="py-2.5 px-3 font-semibold">المرجع</th>}
+                  {isVisible("description") && <th className="py-2.5 px-3 font-semibold min-w-[240px]">البيان والشرح المحاسبي</th>}
+                  {isVisible("debit") && <th className="py-2.5 px-3 font-semibold text-left">مدين (Debit)</th>}
+                  {isVisible("credit") && <th className="py-2.5 px-3 font-semibold text-left">دائن (Credit)</th>}
+                  {isVisible("runningBalance") && <th className="py-2.5 px-3 font-semibold text-left">الرصيد التراكمي</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 bg-slate-900/40">
                 {filteredMovements.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                    <td colSpan={LEDGER_MODAL_COLUMNS.filter((c) => isVisible(c.id)).length} className="py-8 text-center text-slate-400">
                       لا توجد حركات محاسبية مسجلة لهذا الحساب خلال الفترة المحددة
                     </td>
                   </tr>
                 ) : (
                   filteredMovements.map((m) => (
                     <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2.5 px-3 text-slate-300 whitespace-nowrap font-mono" title={formatDualDate(m.date)}>
-                        {formatDate(m.date)}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-emerald-400 whitespace-nowrap">
-                        {m.entryNumber}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                        {m.reference || "-"}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-200 font-medium">
-                        <div>{m.description}</div>
-                      </td>
-                      <td className="py-2.5 px-3 text-left font-mono font-bold text-emerald-400 whitespace-nowrap">
-                        {m.debit > 0 ? formatNumberOnly(m.debit) : "-"}
-                      </td>
-                      <td className="py-2.5 px-3 text-left font-mono font-bold text-blue-400 whitespace-nowrap">
-                        {m.credit > 0 ? formatNumberOnly(m.credit) : "-"}
-                      </td>
-                      <td className="py-2.5 px-3 text-left font-mono font-bold text-slate-100 whitespace-nowrap">
-                        {formatNumberOnly(m.runningBalance)}
-                      </td>
+                      {isVisible("date") && (
+                        <td className="py-2.5 px-3 text-slate-300 whitespace-nowrap font-mono" title={formatDualDate(m.date)}>
+                          {formatDate(m.date)}
+                        </td>
+                      )}
+                      {isVisible("entryNumber") && (
+                        <td className="py-2.5 px-3 font-mono font-bold text-emerald-400 whitespace-nowrap">
+                          {m.entryNumber}
+                        </td>
+                      )}
+                      {isVisible("reference") && (
+                        <td className="py-2.5 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                          {m.reference || "-"}
+                        </td>
+                      )}
+                      {isVisible("description") && (
+                        <td className="py-2.5 px-3 text-slate-200 font-medium">
+                          <div>{m.description}</div>
+                        </td>
+                      )}
+                      {isVisible("debit") && (
+                        <td className="py-2.5 px-3 text-left font-mono font-bold text-emerald-400 whitespace-nowrap">
+                          {m.debit > 0 ? formatNumberOnly(m.debit) : "-"}
+                        </td>
+                      )}
+                      {isVisible("credit") && (
+                        <td className="py-2.5 px-3 text-left font-mono font-bold text-blue-400 whitespace-nowrap">
+                          {m.credit > 0 ? formatNumberOnly(m.credit) : "-"}
+                        </td>
+                      )}
+                      {isVisible("runningBalance") && (
+                        <td className="py-2.5 px-3 text-left font-mono font-bold text-slate-100 whitespace-nowrap">
+                          {formatNumberOnly(m.runningBalance)}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
               </tbody>
               <tfoot className="bg-slate-950 font-bold border-t border-slate-800">
                 <tr>
-                  <td colSpan={4} className="py-2.5 px-3 text-slate-300 text-left">
+                  <td colSpan={["date", "entryNumber", "reference", "description"].filter((c) => isVisible(c)).length} className="py-2.5 px-3 text-slate-300 text-left">
                     مجموع حركات الفترة:
                   </td>
-                  <td className="py-2.5 px-3 text-left font-mono text-emerald-400">
-                    {formatNumberOnly(totalPeriodDebit)}
-                  </td>
-                  <td className="py-2.5 px-3 text-left font-mono text-blue-400">
-                    {formatNumberOnly(totalPeriodCredit)}
-                  </td>
-                  <td className="py-2.5 px-3 text-left font-mono text-slate-100">
-                    {formatNumberOnly(account.currentBalance)}
-                  </td>
+                  {isVisible("debit") && (
+                    <td className="py-2.5 px-3 text-left font-mono text-emerald-400">
+                      {formatNumberOnly(totalPeriodDebit)}
+                    </td>
+                  )}
+                  {isVisible("credit") && (
+                    <td className="py-2.5 px-3 text-left font-mono text-blue-400">
+                      {formatNumberOnly(totalPeriodCredit)}
+                    </td>
+                  )}
+                  {isVisible("runningBalance") && (
+                    <td className="py-2.5 px-3 text-left font-mono text-slate-100">
+                      {formatNumberOnly(account.currentBalance)}
+                    </td>
+                  )}
                 </tr>
               </tfoot>
             </table>

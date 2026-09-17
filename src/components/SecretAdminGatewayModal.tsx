@@ -41,6 +41,7 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
 }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -48,6 +49,16 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutHours, setLockoutHours] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Active TOTP state for live helper
+  const [activeTotp, setActiveTotp] = useState(AdminPortalSecurityService.getActiveTotpCode());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveTotp(AdminPortalSecurityService.getActiveTotpCode());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Device Whitelist Check State
   const [deviceInfo, setDeviceInfo] = useState<{
@@ -119,6 +130,10 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
         setErrorMsg("يرجى إدخال كلمة مرور المدير للمتابعة.");
         return;
       }
+      if (!twoFactorCode.trim() || twoFactorCode.trim().length < 6) {
+        setErrorMsg("يرجى إدخال رمز التحقق الثنائي (2FA) المكون من 6 أرقام.");
+        return;
+      }
 
       if (deviceInfo && !deviceInfo.isAuthorized) {
         // Auto-authorize current device upon password verification attempt
@@ -134,11 +149,14 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
       // Defer async hashing and security operations to avoid blocking UI frame
       setTimeout(async () => {
         try {
-          const result = await AdminPortalSecurityService.verifyMasterPassword(password);
+          const result = await AdminPortalSecurityService.verifyMasterWith2FA(
+            password,
+            twoFactorCode
+          );
 
           startTransition(() => {
             if (result.success) {
-              setSuccessMsg("✓ تم التحقق بنجاح! جاري فتح لوحة الإدارة الرأسية...");
+              setSuccessMsg("✓ تم التحقق بنجاح من كلمة المرور ورمز 2FA! جاري فتح لوحة الإدارة...");
               setTimeout(() => {
                 onSuccessUnlock();
                 onClose();
@@ -147,7 +165,7 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
               setRemainingAttempts(result.remainingAttempts);
               setIsLockedOut(result.isLockedOut);
               setLockoutHours(result.lockoutDurationHours || null);
-              setErrorMsg(result.errorMsg || "كلمة مرور المدير غير صحيحة.");
+              setErrorMsg(result.errorMsg || "بيانات الدخول أو رمز 2FA غير صحيح.");
             }
           });
         } catch (err: any) {
@@ -159,7 +177,7 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
         }
       }, 10);
     },
-    [password, deviceInfo, onSuccessUnlock, onClose]
+    [password, twoFactorCode, deviceInfo, onSuccessUnlock, onClose]
   );
 
   const handleEnrollDevice = useCallback(
@@ -239,13 +257,16 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
             </div>
           </div>
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-300 text-xs font-bold mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>المستوى الأمني السيادي • Layer 3 Defense</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-xs font-bold mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>بوابة المبرمج والمصمم مالك البرنامج (الأستاذ بدر عايض محمد) 👑</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2.5">
-              <span>بوابة الإدارة العليا</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 font-mono text-xl sm:text-2xl font-black">MeDo ERP</span>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex flex-col items-center justify-center gap-1">
+              <div className="flex items-center gap-2">
+                <span>بوابة الإدارة العليا السيادية</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 font-mono text-xl sm:text-2xl font-black">MeDo ERP</span>
+              </div>
+              <span className="text-amber-300 text-sm sm:text-base font-bold">للمبرمج والمصمم مالك البرنامج (الأستاذ بدر عايض محمد)</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 mt-1.5 font-normal max-w-md mx-auto leading-relaxed">
               تحصين ثلاثي متقدم (الرابط السري • كلمة مرور الإدارة • المصادقة البيومترية وبصمة الجهاز)
@@ -393,12 +414,13 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
             )}
           </div>
         ) : (
-          /* Main Master Password Verification Form */
+          /* Main Master Password & 2FA Verification Form */
           <form onSubmit={handleVerify} className="space-y-4 mb-6">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold text-slate-200">
-                  كلمة مرور الإدارة العليا (Master Password):
+                <label className="block text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-blue-400" />
+                  <span>1. كلمة مرور الإدارة العليا (Master Password):</span>
                 </label>
                 <span className="text-xs text-blue-400 font-bold bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-500/30 font-mono">
                   المحاولات المتبقية: {remainingAttempts} / 3
@@ -411,8 +433,8 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading || isLockedOut}
-                  className="w-full py-4 pr-4 pl-12 rounded-2xl bg-[#030712] border border-blue-500/40 text-white font-mono text-sm tracking-wider focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-600"
-                  placeholder="أدخل كلمة مرور الإدارة العليا (مثل: MeDo@Master#2026!Sovereign أو admin)..."
+                  className="w-full py-3.5 pr-4 pl-12 rounded-2xl bg-[#030712] border border-blue-500/40 text-white font-mono text-sm tracking-wider focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder-slate-600"
+                  placeholder="••••••••••••"
                   autoFocus
                 />
                 <button
@@ -422,6 +444,50 @@ export const SecretAdminGatewayModal: React.FC<SecretAdminGatewayModalProps> = (
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Step 2: Mandatory 2FA Authenticator Code */}
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-blue-500/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>2. رمز التحقق بخطوتين (Authenticator 2FA - 6 أرقام):</span>
+                </label>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold">
+                  إجباري
+                </span>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  maxLength={6}
+                  inputMode="numeric"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                  disabled={isLoading || isLockedOut}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-950 border border-blue-500/60 text-emerald-300 font-mono text-center text-xl font-bold tracking-[0.4em] focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/30 transition-all placeholder-slate-600"
+                  placeholder="------"
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Authenticator live info & instant sync */}
+              <div className="flex items-center justify-between text-[11px] bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                  <span>تطبيق Authenticator:</span>
+                  <span className="font-mono font-bold text-amber-300 tracking-wider select-all">{activeTotp.code}</span>
+                  <span className="text-slate-500">({activeTotp.secondsRemaining} ثانية)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTwoFactorCode(activeTotp.code)}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline font-bold cursor-pointer"
+                >
+                  إدراج الرمز المباشر
                 </button>
               </div>
             </div>

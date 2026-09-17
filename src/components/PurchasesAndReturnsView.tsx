@@ -47,6 +47,7 @@ import { formatMoney, formatNumberOnly } from "../services/erpStorage";
 import { formatDate, formatDualDate } from "../utils/formatters";
 import { generateZatcaQr } from "../utils/zatca";
 import { QuickAddVendorModal, QuickAddItemModal } from "./QuickAddModals";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface PurchasesAndReturnsViewProps {
   invoices: Invoice[];
@@ -80,6 +81,21 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
   onShareDocument,
 }) => {
   const [activeTab, setActiveTab] = useState<"ALL" | "PURCHASES" | "RETURNS" | "EXPENSES">("ALL");
+
+  const PURCHASES_COLUMNS: ColumnDef[] = [
+    { id: "invoiceNumber", label: "رقم الفاتورة / المستند", locked: true },
+    { id: "type", label: "النوع" },
+    { id: "vendorName", label: "المورد" },
+    { id: "date", label: "التاريخ" },
+    { id: "totalAmount", label: "إجمالي الفاتورة" },
+    { id: "purchaseExpenseAmount", label: "مصاريف الشحن والتوريد" },
+    { id: "paidAmount", label: "المسدد للمورد" },
+    { id: "remainingAmount", label: "المتبقي (الذمة)" },
+    { id: "paymentMethod", label: "وسيلة الدفع" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "إجراءات", locked: true },
+  ];
+  const { visibleColumns: purVis, updateVisibility: updatePurVis, isVisible: isPurVis } = useColumnVisibility("purchases_and_returns_list", PURCHASES_COLUMNS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendorFilter, setSelectedVendorFilter] = useState("ALL");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("ALL");
@@ -671,7 +687,13 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
             </button>
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            <ColumnCustomizer
+              tableKey="purchases_and_returns_list"
+              columns={PURCHASES_COLUMNS}
+              visibleColumns={purVis}
+              onChange={updatePurVis}
+            />
             <span className="text-xs text-slate-400">النتائج: {filteredPurchases.length}</span>
           </div>
         </div>
@@ -890,23 +912,23 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
           <table className="w-full text-right text-xs">
             <thead>
               <tr className="bg-slate-950/80 text-slate-400 border-b border-slate-800">
-                <th className="p-3.5 font-semibold">رقم الفاتورة / المستند</th>
-                <th className="p-3.5 font-semibold">النوع</th>
-                <th className="p-3.5 font-semibold">المورد</th>
-                <th className="p-3.5 font-semibold">التاريخ</th>
-                <th className="p-3.5 font-semibold text-left">إجمالي الفاتورة</th>
-                <th className="p-3.5 font-semibold text-left">مصاريف الشحن والتوريد</th>
-                <th className="p-3.5 font-semibold text-left">المسدد للمورد</th>
-                <th className="p-3.5 font-semibold text-left">المتبقي (الذمة)</th>
-                <th className="p-3.5 font-semibold">وسيلة الدفع</th>
-                <th className="p-3.5 font-semibold">الحالة</th>
-                <th className="p-3.5 font-semibold text-center">إجراءات</th>
+                {isPurVis("invoiceNumber") && <th className="p-3.5 font-semibold">رقم الفاتورة / المستند</th>}
+                {isPurVis("type") && <th className="p-3.5 font-semibold">النوع</th>}
+                {isPurVis("vendorName") && <th className="p-3.5 font-semibold">المورد</th>}
+                {isPurVis("date") && <th className="p-3.5 font-semibold">التاريخ</th>}
+                {isPurVis("totalAmount") && <th className="p-3.5 font-semibold text-left">إجمالي الفاتورة</th>}
+                {isPurVis("purchaseExpenseAmount") && <th className="p-3.5 font-semibold text-left">مصاريف الشحن والتوريد</th>}
+                {isPurVis("paidAmount") && <th className="p-3.5 font-semibold text-left">المسدد للمورد</th>}
+                {isPurVis("remainingAmount") && <th className="p-3.5 font-semibold text-left">المتبقي (الذمة)</th>}
+                {isPurVis("paymentMethod") && <th className="p-3.5 font-semibold">وسيلة الدفع</th>}
+                {isPurVis("status") && <th className="p-3.5 font-semibold">الحالة</th>}
+                {isPurVis("actions") && <th className="p-3.5 font-semibold text-center">إجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {filteredPurchases.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="p-8 text-center text-slate-500">
+                  <td colSpan={PURCHASES_COLUMNS.filter((c) => isPurVis(c.id)).length} className="p-8 text-center text-slate-500">
                     <Truck className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     لا توجد فواتير مشتريات أو مرتجعات مطابقة لمعايير البحث الحالية
                   </td>
@@ -919,136 +941,158 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
 
                   return (
                     <tr key={inv.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3.5 font-mono font-bold text-slate-200">
-                        <div className="flex items-center gap-1.5">
-                          <span>{inv.invoiceNumber}</span>
-                          {inv.originalInvoiceNumber && (
-                            <span className="text-[10px] text-slate-400 font-sans">
-                              (أصل: {inv.originalInvoiceNumber})
+                      {isPurVis("invoiceNumber") && (
+                        <td className="p-3.5 font-mono font-bold text-slate-200">
+                          <div className="flex items-center gap-1.5">
+                            <span>{inv.invoiceNumber}</span>
+                            {inv.originalInvoiceNumber && (
+                              <span className="text-[10px] text-slate-400 font-sans">
+                                (أصل: {inv.originalInvoiceNumber})
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {isPurVis("type") && (
+                        <td className="p-3.5">
+                          {isReturn ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800/60">
+                              <RotateCcw className="w-3 h-3" />
+                              مرتجع مشتريات
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60">
+                              <Truck className="w-3 h-3" />
+                              فاتورة مشتريات
                             </span>
                           )}
-                        </div>
-                      </td>
+                        </td>
+                      )}
 
-                      <td className="p-3.5">
-                        {isReturn ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800/60">
-                            <RotateCcw className="w-3 h-3" />
-                            مرتجع مشتريات
+                      {isPurVis("vendorName") && (
+                        <td className="p-3.5 font-medium text-slate-200">
+                          {inv.vendorName || inv.partyName || "مورد عام"}
+                        </td>
+                      )}
+
+                      {isPurVis("date") && (
+                        <td className="p-3.5 text-slate-400 font-mono" title={formatDualDate(inv.date)}>
+                          {formatDate(inv.date)}
+                        </td>
+                      )}
+
+                      {isPurVis("totalAmount") && (
+                        <td className="p-3.5 text-left font-mono font-bold">
+                          <span className={isReturn ? "text-amber-400" : "text-blue-400"}>
+                            {isReturn ? "-" : "+"}
+                            {formatMoney(inv.totalAmount, inv.currency, currencies)}
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60">
-                            <Truck className="w-3 h-3" />
-                            فاتورة مشتريات
-                          </span>
-                        )}
-                      </td>
+                        </td>
+                      )}
 
-                      <td className="p-3.5 font-medium text-slate-200">
-                        {inv.vendorName || inv.partyName || "مورد عام"}
-                      </td>
-
-                      <td className="p-3.5 text-slate-400 font-mono" title={formatDualDate(inv.date)}>
-                        {formatDate(inv.date)}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono font-bold">
-                        <span className={isReturn ? "text-amber-400" : "text-blue-400"}>
-                          {isReturn ? "-" : "+"}
-                          {formatMoney(inv.totalAmount, inv.currency, currencies)}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono">
-                        {(inv.purchaseExpenseAmount || 0) > 0 ? (
-                          <span className="text-purple-400 font-medium">
-                            {formatMoney(inv.purchaseExpenseAmount || 0, inv.currency, currencies)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono text-emerald-400">
-                        {formatMoney(inv.paidAmount || (inv.status === "PAID" ? inv.totalAmount : 0), inv.currency, currencies)}
-                      </td>
-
-                      <td className="p-3.5 text-left font-mono">
-                        {(inv.remainingAmount || 0) > 0 ? (
-                          <span className="text-rose-400 font-bold">
-                            {formatMoney(inv.remainingAmount || 0, inv.currency, currencies)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-500">0.00</span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${pMethod.color}`}
-                        >
-                          <PMIcon className="w-3 h-3" />
-                          <span>{pMethod.label}</span>
-                        </span>
-                      </td>
-
-                      <td className="p-3.5">
-                        {inv.status === "PAID" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">
-                            مسددة بالكامل
-                          </span>
-                        )}
-                        {inv.status === "PARTIALLY_PAID" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-950 text-amber-400 border border-amber-800">
-                            سداد جزئي
-                          </span>
-                        )}
-                        {inv.status === "PENDING" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-950 text-rose-400 border border-rose-800">
-                            مستحقة السداد
-                          </span>
-                        )}
-                        {inv.status === "RETURNED" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-950 text-purple-400 border border-purple-800">
-                            مرتجع مرحل
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {onShareDocument && (
-                            <button
-                              onClick={() =>
-                                onShareDocument({
-                                  type: "INVOICE",
-                                  data: inv,
-                                  recipientName: inv.vendorName,
-                                  recipientPhone: inv.vendorPhone,
-                                })
-                              }
-                              className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
-                              title="مشاركة عبر واتساب / SMS"
-                            >
-                              <Share2 className="w-4 h-4" />
-                            </button>
+                      {isPurVis("purchaseExpenseAmount") && (
+                        <td className="p-3.5 text-left font-mono">
+                          {(inv.purchaseExpenseAmount || 0) > 0 ? (
+                            <span className="text-purple-400 font-medium">
+                              {formatMoney(inv.purchaseExpenseAmount || 0, inv.currency, currencies)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">-</span>
                           )}
-                          <button
-                            onClick={() => onPrintDocument("INVOICE", inv)}
-                            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                            title="معاينة وطباعة الفاتورة"
+                        </td>
+                      )}
+
+                      {isPurVis("paidAmount") && (
+                        <td className="p-3.5 text-left font-mono text-emerald-400">
+                          {formatMoney(inv.paidAmount || (inv.status === "PAID" ? inv.totalAmount : 0), inv.currency, currencies)}
+                        </td>
+                      )}
+
+                      {isPurVis("remainingAmount") && (
+                        <td className="p-3.5 text-left font-mono">
+                          {(inv.remainingAmount || 0) > 0 ? (
+                            <span className="text-rose-400 font-bold">
+                              {formatMoney(inv.remainingAmount || 0, inv.currency, currencies)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">0.00</span>
+                          )}
+                        </td>
+                      )}
+
+                      {isPurVis("paymentMethod") && (
+                        <td className="p-3.5">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${pMethod.color}`}
                           >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setSelectedPurchaseDetails(inv)}
-                            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                            title="تفاصيل البنود والمصروفات"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                            <PMIcon className="w-3 h-3" />
+                            <span>{pMethod.label}</span>
+                          </span>
+                        </td>
+                      )}
+
+                      {isPurVis("status") && (
+                        <td className="p-3.5">
+                          {inv.status === "PAID" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">
+                              مسددة بالكامل
+                            </span>
+                          )}
+                          {inv.status === "PARTIALLY_PAID" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-950 text-amber-400 border border-amber-800">
+                              سداد جزئي
+                            </span>
+                          )}
+                          {inv.status === "PENDING" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-950 text-rose-400 border border-rose-800">
+                              مستحقة السداد
+                            </span>
+                          )}
+                          {inv.status === "RETURNED" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-950 text-purple-400 border border-purple-800">
+                              مرتجع مرحل
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {isPurVis("actions") && (
+                        <td className="p-3.5 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {onShareDocument && (
+                              <button
+                                onClick={() =>
+                                  onShareDocument({
+                                    type: "INVOICE",
+                                    data: inv,
+                                    recipientName: inv.vendorName,
+                                    recipientPhone: inv.vendorPhone,
+                                  })
+                                }
+                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-800 hover:text-white transition-colors"
+                                title="مشاركة عبر واتساب / SMS"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onPrintDocument("INVOICE", inv)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                              title="معاينة وطباعة الفاتورة"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedPurchaseDetails(inv)}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                              title="تفاصيل البنود والمصروفات"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })

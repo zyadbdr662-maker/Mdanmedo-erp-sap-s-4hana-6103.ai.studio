@@ -20,12 +20,19 @@ const CONFLICT_STRATEGY_KEY = "medo_erp_conflict_strategy_v1";
 const AES256_ENABLED_KEY = "medo_erp_aes256_enabled_v1";
 const AES256_PASSPHRASE_KEY = "medo_erp_aes256_passphrase_v1";
 const LAST_SYNC_TIME_KEY = "medo_erp_last_sync_time_v1";
+const SYNC_CHARGING_ONLY_KEY = "medo_erp_sync_charging_only_v1";
+const SIMULATED_CHARGING_KEY = "medo_erp_simulated_charging_v1";
 
 export class LocalSyncEngine {
   private static instance: LocalSyncEngine;
   private networkMode: NetworkConnectionMode = "ONLINE";
   private conflictStrategy: ConflictResolutionStrategy = "TIMESTAMP_LATEST";
   private isSyncInProgress: boolean = false;
+  private syncChargingOnly: boolean = false;
+  private isCharging: boolean = true;
+  private batteryLevel: number = 92;
+  private hasBatteryApi: boolean = false;
+  private simulatedCharging: boolean | null = null;
   private listeners: Array<() => void> = [];
 
   private constructor() {
@@ -40,6 +47,45 @@ export class LocalSyncEngine {
       // Seed initial recent sync timestamp (e.g., 2 minutes ago)
       const initialTime = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       localStorage.setItem(LAST_SYNC_TIME_KEY, initialTime);
+    }
+
+    const savedChargingOnly = localStorage.getItem(SYNC_CHARGING_ONLY_KEY);
+    if (savedChargingOnly !== null) {
+      this.syncChargingOnly = savedChargingOnly === "true";
+    }
+
+    const savedSimulatedCharging = localStorage.getItem(SIMULATED_CHARGING_KEY);
+    if (savedSimulatedCharging !== null) {
+      this.simulatedCharging = savedSimulatedCharging === "true";
+    }
+
+    // Initialize Battery API Listener
+    if (typeof window !== "undefined" && typeof navigator !== "undefined" && "getBattery" in (navigator as any)) {
+      try {
+        (navigator as any)
+          .getBattery()
+          .then((battery: any) => {
+            this.hasBatteryApi = true;
+            this.isCharging = !!battery.charging;
+            this.batteryLevel = Math.round((battery.level ?? 1) * 100);
+            this.notify();
+
+            battery.addEventListener("chargingchange", () => {
+              this.isCharging = !!battery.charging;
+              this.notify();
+            });
+
+            battery.addEventListener("levelchange", () => {
+              this.batteryLevel = Math.round((battery.level ?? 1) * 100);
+              this.notify();
+            });
+          })
+          .catch(() => {
+            this.hasBatteryApi = false;
+          });
+      } catch {
+        this.hasBatteryApi = false;
+      }
     }
 
     // Listen to real browser network changes
@@ -226,6 +272,74 @@ export class LocalSyncEngine {
     this.conflictStrategy = strat;
     localStorage.setItem(CONFLICT_STRATEGY_KEY, strat);
     this.notify();
+  }
+
+  // --- Battery & Power-Saving Sync Settings ---
+  public isSyncOnlyWhileCharging(): boolean {
+    return this.syncChargingOnly;
+  }
+
+  public setSyncOnlyWhileCharging(enabled: boolean): void {
+    this.syncChargingOnly = enabled;
+    localStorage.setItem(SYNC_CHARGING_ONLY_KEY, enabled ? "true" : "false");
+    
+    // Record audit log for power setting changes
+    try {
+      SecurityAuditService.getInstance().recordAuditLog({
+        action: "SETTINGS_MODIFIED",
+        username: "مدير النظام (SYSTEM_ADMIN)",
+        email: "admin@medoerp.com",
+        deviceInfo: "محرك المزامنة وموفر طاقة البطارية",
+        riskLevel: "LOW",
+        details: enabled
+          ? "تم تفعيل وضع (المزامنة عند الشحن فقط) للحفاظ على طاقة البطارية ومنع استهلاك الشبكة أثناء العمل بالبطارية."
+          : "تم إلغاء تفعيل وضع (المزامنة عند الشحن فقط)؛ المزامنة التلقائية ستعمل في أي وقت.",
+        status: "SUCCESS",
+      });
+    } catch {
+      // Ignored if audit service not initialized
+    }
+
+    this.notify();
+  }
+
+  public isDeviceCharging(): boolean {
+    if (this.simulatedCharging !== null) {
+      return this.simulatedCharging;
+    }
+    return this.isCharging;
+  }
+
+  public getBatteryLevel(): number {
+    return this.batteryLevel;
+  }
+
+  public isBatteryApiSupported(): boolean {
+    return this.hasBatteryApi;
+  }
+
+  public getSimulatedCharging(): boolean | null {
+    return this.simulatedCharging;
+  }
+
+  public setSimulatedCharging(val: boolean | null): void {
+    this.simulatedCharging = val;
+    if (val === null) {
+      localStorage.removeItem(SIMULATED_CHARGING_KEY);
+    } else {
+      localStorage.setItem(SIMULATED_CHARGING_KEY, val ? "true" : "false");
+    }
+    this.notify();
+  }
+
+  public canSyncUnderBatteryPolicy(): { allowed: boolean; reason?: string } {
+    if (this.syncChargingOnly && !this.isDeviceCharging()) {
+      return {
+        allowed: false,
+        reason: "المزامنة التلقائية معلقة مؤقتاً لتوفير الطاقة (مفعل وضع المزامنة عند الشحن فقط والجهاز يعمل على البطارية).",
+      };
+    }
+    return { allowed: true };
   }
 
   // --- AES-256 Data Encryption Layer ---
@@ -441,6 +555,7 @@ export class LocalSyncEngine {
   public async triggerSync(options?: {
     branchFilter?: string;
     moduleFilter?: SyncEntity | "ALL";
+    bypassBatteryCheck?: boolean;
     onProgress?: (progress: number, message: string) => void;
   }): Promise<{
     success: boolean;
@@ -452,6 +567,17 @@ export class LocalSyncEngine {
     this.notify();
 
     try {
+      // Power & Battery Policy Check
+      if (this.syncChargingOnly && !this.isDeviceCharging() && !options?.bypassBatteryCheck) {
+        this.isSyncInProgress = false;
+        this.notify();
+        return {
+          success: false,
+          syncedCount: 0,
+          conflictsResolved: 0,
+          message: "⚠️ تم تعليق المزامنة مؤقتاً للحفاظ على البطارية: الجهاز يعمل على طاقة البطارية ووضع (المزامنة عند الشحن فقط) مفعل. يرجى توصيل الشاحن أو المزامنة المباشرة بالتجاوز.",
+        };
+      }
       if (this.networkMode === "OFFLINE") {
         // Auto-switch to ONLINE when user initiates sync
         this.setNetworkMode("ONLINE");

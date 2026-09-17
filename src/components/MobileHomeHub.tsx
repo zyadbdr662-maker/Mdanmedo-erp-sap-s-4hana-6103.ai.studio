@@ -477,12 +477,13 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
       </div>
 
       {/* Enterprise Compliance Notice Footer */}
-      <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-right">
+        <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
           <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>نظام مشفر ومحمي - معايير المحاسبة الدولية IFRS</span>
+          <span className="font-medium text-slate-300">جميع الحقوق محفوظة ©</span>
+          <span className="text-amber-300 font-mono font-bold">Bin Ziyad Group & MeDo Tech (BZMT)</span>
         </div>
-        <span className="font-mono text-[10px] text-slate-500">v4.5 Mobile</span>
+        <span className="font-mono text-[10px] text-slate-500">SAP/MeDO ERP Mobile Suite</span>
       </div>
     </div>
   );

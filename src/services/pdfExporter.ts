@@ -1,6 +1,7 @@
 import html2pdf from "html2pdf.js";
 import { CurrencyCode, CurrencyInfo } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "./erpStorage";
+import { TenantIsolationService } from "./tenantIsolationService";
 import {
   formatCalendarDate,
   getActiveCalendarType,
@@ -40,6 +41,59 @@ export async function exportElementToPdf(elementId: string, filename: string): P
     pagebreak: { mode: ["avoid-all", "css", "legacy"] },
   };
 
+  // --- STYLE SANITIZATION WORKAROUND FOR TAILWIND V4 OKLCH/OKLAB html2canvas BUG ---
+  const styleElements = Array.from(document.querySelectorAll("style"));
+  const originalStyleContents = styleElements.map(style => style.innerHTML);
+  const modifiedRules: { sheet: CSSStyleSheet; index: number; ruleText: string }[] = [];
+
+  try {
+    // 1. Sanitize <style> tags (common in Vite development)
+    styleElements.forEach(style => {
+      let text = style.innerHTML;
+      if (text.includes("oklab") || text.includes("oklch")) {
+        // Replace oklab(...) with generic gray
+        text = text.replace(/oklab\([^)]+\)/g, "rgb(128, 128, 128)");
+        // Replace oklch(...) with equivalent fallback rgb colors depending on lightness
+        text = text.replace(/oklch\(([^)]+)\)/g, (match, p1) => {
+          const parts = p1.trim().split(/[\s/]+/);
+          const lightness = parseFloat(parts[0]);
+          if (!isNaN(lightness)) {
+            if (lightness > 0.8) return "rgb(248, 250, 252)"; // very light gray
+            if (lightness > 0.6) return "rgb(203, 213, 225)"; // light gray
+            if (lightness > 0.4) return "rgb(100, 116, 139)"; // medium slate
+            if (lightness > 0.2) return "rgb(30, 41, 59)";    // dark slate
+            return "rgb(15, 23, 42)";                         // very dark slate
+          }
+          return "rgb(100, 116, 139)";
+        });
+        style.innerHTML = text;
+      }
+    });
+
+    // 2. Remove remaining oklab/oklch rules from CSSStyleSheets directly (common in production bundles)
+    for (let i = 0; i < document.styleSheets.length; i++) {
+      const sheet = document.styleSheets[i] as CSSStyleSheet;
+      try {
+        if (!sheet.cssRules) continue;
+        for (let j = sheet.cssRules.length - 1; j >= 0; j--) {
+          const rule = sheet.cssRules[j];
+          if (rule.cssText.includes("oklab") || rule.cssText.includes("oklch")) {
+            modifiedRules.push({
+              sheet,
+              index: j,
+              ruleText: rule.cssText
+            });
+            sheet.deleteRule(j);
+          }
+        }
+      } catch (e) {
+        // Ignore CORS errors on external stylesheets
+      }
+    }
+  } catch (err) {
+    console.warn("Style sanitization failed", err);
+  }
+
   try {
     // @ts-ignore
     await html2pdf().set(opt).from(element).save();
@@ -49,6 +103,26 @@ export async function exportElementToPdf(elementId: string, filename: string): P
     // Fallback to native print
     window.print();
     return false;
+  } finally {
+    // --- RESTORE ORIGINAL STYLES ---
+    try {
+      // 1. Restore <style> elements content
+      styleElements.forEach((style, index) => {
+        style.innerHTML = originalStyleContents[index];
+      });
+
+      // 2. Restore deleted stylesheet rules in ascending index order
+      modifiedRules.sort((a, b) => a.index - b.index);
+      for (const item of modifiedRules) {
+        try {
+          item.sheet.insertRule(item.ruleText, item.index);
+        } catch (err) {
+          console.warn("Failed to restore stylesheet rule during cleanup", err);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to clean up style sanitization", err);
+    }
   }
 }
 
@@ -97,6 +171,7 @@ export async function exportInvoiceToPdf(
   container.style.direction = "rtl";
 
   const todayDate = getTodayFormattedDate();
+  const companyMeta = TenantIsolationService.getActiveTenantDetails();
 
   let docTitle = "سند قيد محاسبي عام (Journal)";
   if (documentType === "JOURNAL") docTitle = "سند قيد محاسبي عام (Journal)";
@@ -202,24 +277,24 @@ export async function exportInvoiceToPdf(
     <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #D4AF37; padding-bottom:14px; margin-bottom:16px;">
       <!-- Right Side: Arabic -->
       <div style="text-align:right;">
-        <h1 style="margin:0; font-size:18px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">🏢 مجموعة بن زياد التجارية المتحدة</h1>
-        <div style="font-size:13px; font-weight:bold; color:#4A5B6F; margin-top:4px; font-family:'Cairo', sans-serif;">مواد بناء ومواد زراعية - العنوان: الكندوي، حمر، عمران</div>
-        <div style="font-size:12px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">للتواصل: 0967773586047 + 715779976</div>
+        <h1 style="margin:0; font-size:18px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">🏢 ${companyMeta.nameAr}</h1>
+        <div style="font-size:13px; font-weight:bold; color:#4A5B6F; margin-top:4px; font-family:'Cairo', sans-serif;">{companyMeta.industry} - العنوان: ${companyMeta.address}</div>
+        <div style="font-size:12px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">للتواصل: ${companyMeta.phone}</div>
       </div>
       
       <!-- Middle: Logo -->
       <div style="text-align:center; flex-shrink:0;">
         <div style="background-color:#0A2540; color:#D4AF37; width:62px; height:62px; border-radius:12px; font-weight:900; font-size:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto; border:2px solid #D4AF37;">
-          <span style="font-size:12px; font-family:monospace;">MDOtkBZ</span>
-          <span style="font-size:8px; color:rgba(212, 175, 55, 0.9);">بن زياد</span>
+          <span style="font-size:12px; font-family:monospace;">${companyMeta.logoText}</span>
+          <span style="font-size:8px; color:rgba(212, 175, 55, 0.9);">MeDo ERP</span>
         </div>
       </div>
 
       <!-- Left Side: English -->
       <div style="text-align:left; direction:ltr;">
-        <h2 style="margin:0; font-size:14px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">Bin Ziad United Commercial Group</h2>
-        <div style="font-size:11px; color:#4A5B6F; margin-top:3px; font-family:'Cairo', sans-serif;">Building & Agricultural Materials</div>
-        <div style="font-size:11px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">Tel: +967 773586047 | 715779976</div>
+        <h2 style="margin:0; font-size:14px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">${companyMeta.nameEn}</h2>
+        <div style="font-size:11px; color:#4A5B6F; margin-top:3px; font-family:'Cairo', sans-serif;">${companyMeta.nameEn.split(" ").slice(0, 3).join(" ")} Support</div>
+        <div style="font-size:11px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">Tel: ${companyMeta.phone}</div>
       </div>
     </div>
 
@@ -256,13 +331,13 @@ export async function exportInvoiceToPdf(
       </div>
       <div>
         <div style="font-weight:700; color:#0A2540;">الختم الرسمي للمؤسسة</div>
-        <div style="margin-top:30px; font-weight:700; font-size:13px; color:#D4AF37;">مجموعة بن زياد التجارية المتحدة</div>
+        <div style="margin-top:30px; font-weight:700; font-size:13px; color:#D4AF37;">${companyMeta.nameAr}</div>
       </div>
     </div>
     
     <!-- Footer -->
     <div style="margin-top:28px; text-align:center; font-size:12px; font-weight:600; color:#6B7A8F; border-top:1px solid #E0E6ED; padding-top:10px; line-height:1.6;">
-      <div>© 2026 ميدو تك وبن زياد المتحدة | MeDo ERP</div>
+      <div>© 2026 ميدو تك و ${companyMeta.nameAr} | MeDo ERP</div>
       <div>نظام المحاسبة والإدارة المتكامل</div>
     </div>
   `;
@@ -300,6 +375,7 @@ export async function exportFinancialReportToPdf(
   displayCurrency: CurrencyCode
 ): Promise<boolean> {
   const todayDate = getTodayFormattedDate();
+  const companyMeta = TenantIsolationService.getActiveTenantDetails();
 
   let reportTitle = "التقرير المالي الختامي";
   if (reportType === "BALANCE_SHEET") reportTitle = "قائمة المركز المالي - الميزانية العمومية (Balance Sheet)";
@@ -488,22 +564,22 @@ export async function exportFinancialReportToPdf(
     <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #D4AF37; padding-bottom:14px; margin-bottom:16px;">
       <!-- Right Side: Arabic -->
       <div style="text-align:right;">
-        <h1 style="margin:0; font-size:18px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">🏢 مجموعة بن زياد التجارية المتحدة</h1>
-        <div style="font-size:13px; font-weight:bold; color:#4A5B6F; margin-top:4px; font-family:'Cairo', sans-serif;">مواد بناء ومواد زراعية - العنوان: الكندوي، حمر، عمران</div>
-        <div style="font-size:12px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">للتواصل: 0967773586047 + 715779976</div>
+        <h1 style="margin:0; font-size:18px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">🏢 ${companyMeta.nameAr}</h1>
+        <div style="font-size:13px; font-weight:bold; color:#4A5B6F; margin-top:4px; font-family:'Cairo', sans-serif;">${companyMeta.industry} - العنوان: ${companyMeta.address}</div>
+        <div style="font-size:12px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">للتواصل: ${companyMeta.phone}</div>
       </div>
       
       <!-- Middle: Logo -->
       <div style="text-align:center; flex-shrink:0;">
         <div style="background-color:#0A2540; color:#D4AF37; width:62px; height:62px; border-radius:12px; font-weight:900; font-size:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto; border:2px solid #D4AF37;">
-          <span style="font-size:12px; font-family:monospace;">MDOtkBZ</span>
-          <span style="font-size:8px; color:rgba(212, 175, 55, 0.9);">بن زياد</span>
+          <span style="font-size:12px; font-family:monospace;">${companyMeta.logoText}</span>
+          <span style="font-size:8px; color:rgba(212, 175, 55, 0.9);">MeDo ERP</span>
         </div>
       </div>
 
       <!-- Left Side: English -->
       <div style="text-align:left; direction:ltr;">
-        <h2 style="margin:0; font-size:14px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">Bin Ziad United Commercial Group</h2>
+        <h2 style="margin:0; font-size:14px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">${companyMeta.nameEn}</h2>
         <div style="font-size:11px; color:#4A5B6F; margin-top:3px; font-family:'Cairo', sans-serif;"><b>Reference No:</b> ${reportType}-${fiscalYear}</div>
         <div style="font-size:11px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;"><b>Date:</b> ${todayDate.split(" ")[0]}</div>
       </div>
@@ -535,19 +611,126 @@ export async function exportFinancialReportToPdf(
       </div>
       <div>
         <div style="font-weight:600; color:#0A2540;">الختم الرسمي للمؤسسة</div>
-        <div style="margin-top:30px; font-weight:bold; font-size:13px; color:#D4AF37;">مجموعة بن زياد التجارية المتحدة</div>
+        <div style="margin-top:30px; font-weight:bold; font-size:13px; color:#D4AF37;">${companyMeta.nameAr}</div>
       </div>
     </div>
     
     <!-- Footer (11-12px Light) -->
     <div style="margin-top:28px; text-align:center; font-size:11.5px; font-weight:300; color:#6B7A8F; border-top:1px solid #E0E6ED; padding-top:10px; line-height:1.6;">
-      <div>© 2026 ميدو تك وبن زياد المتحدة | MeDo ERP</div>
+      <div>© 2026 ميدو تك و {companyMeta.nameAr} | MeDo ERP</div>
       <div>نظام المحاسبة والإدارة المتكامل</div>
     </div>
   `;
 
   document.body.appendChild(container);
   const success = await exportElementToPdf("temp-report-pdf-container", filename);
+  document.body.removeChild(container);
+
+  return success;
+}
+
+/**
+ * Export any active open table or container directly to PDF file using html2pdf.js
+ */
+export async function exportActiveTableToPdf(
+  elementIdOrElement: string | HTMLElement,
+  reportTitle: string = "تقرير مالي وجدول بيانات",
+  filenameOverride?: string
+): Promise<boolean> {
+  const targetElement = typeof elementIdOrElement === "string" 
+    ? document.getElementById(elementIdOrElement) 
+    : elementIdOrElement;
+
+  if (!targetElement) {
+    console.warn(`Target element not found for PDF export`);
+    window.print();
+    return false;
+  }
+
+  const filename = filenameOverride || `تقرير_جدول_${reportTitle.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+  const todayDate = getTodayFormattedDate();
+  const companyMeta = TenantIsolationService.getActiveTenantDetails();
+
+  // Create clean formatted DOM wrapper container
+  const container = document.createElement("div");
+  container.id = "temp-active-table-pdf-container";
+  container.style.position = "absolute";
+  container.style.left = "-9999px";
+  container.style.top = "-9999px";
+  container.style.width = "790px";
+  container.style.backgroundColor = "#ffffff";
+  container.style.color = "#1A2B4C";
+  container.style.padding = "24px";
+  container.style.fontFamily = "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif";
+  container.style.direction = "rtl";
+
+  // Clone node so original UI isn't altered
+  const clonedContent = targetElement.cloneNode(true) as HTMLElement;
+
+  container.innerHTML = `
+    <!-- Enterprise Header -->
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #D4AF37; padding-bottom:14px; margin-bottom:16px;">
+      <div style="text-align:right;">
+        <h1 style="margin:0; font-size:18px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">🏢 ${companyMeta.nameAr}</h1>
+        <div style="font-size:13px; font-weight:bold; color:#4A5B6F; margin-top:4px; font-family:'Cairo', sans-serif;">نظام المحاسبة والإدارة الإلكتروني - التوثيق المؤسسي الرسمي</div>
+        <div style="font-size:12px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">للتواصل: ${companyMeta.phone}</div>
+      </div>
+      
+      <div style="text-align:center; flex-shrink:0;">
+        <div style="background-color:#0A2540; color:#D4AF37; width:62px; height:62px; border-radius:12px; font-weight:900; font-size:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto; border:2px solid #D4AF37;">
+          <span style="font-size:12px; font-family:monospace;">${companyMeta.logoText}</span>
+          <span style="font-size:8px; color:rgba(212, 175, 55, 0.9);">MeDo ERP</span>
+        </div>
+      </div>
+
+      <div style="text-align:left; direction:ltr;">
+        <h2 style="margin:0; font-size:14px; font-weight:900; color:#0A2540; font-family:'Cairo', sans-serif;">${companyMeta.nameEn}</h2>
+        <div style="font-size:11px; color:#4A5B6F; margin-top:3px; font-family:'Cairo', sans-serif;">Institutional PDF Export (html2pdf.js)</div>
+        <div style="font-size:11px; color:#4A5B6F; margin-top:2px; font-family:'Cairo', sans-serif;">Date: ${todayDate}</div>
+      </div>
+    </div>
+
+    <!-- Title Bar -->
+    <div style="background-color:#0A2540; color:#FFFFFF; border-radius:10px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div>
+        <div style="font-size:12px; color:#B0C4DE;">عنوان التقرير / الجدول المفتوح:</div>
+        <div style="font-size:20px; font-weight:700; color:#FFFFFF; margin-top:2px; font-family:'Cairo', sans-serif;">📄 ${reportTitle}</div>
+      </div>
+      <div style="text-align:left;" dir="ltr">
+        <div style="font-size:12px; color:#D4AF37;" dir="rtl">تاريخ التصدير: <b>${todayDate}</b></div>
+      </div>
+    </div>
+
+    <!-- Active Table/Content -->
+    <div style="overflow-x:auto;">
+      ${clonedContent.outerHTML}
+    </div>
+
+    <!-- Signatures Footer -->
+    <div style="margin-top:36px; border-top:2px solid #E0E6ED; padding-top:20px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; text-align:center; font-size:14px;">
+      <div>
+        <div style="font-weight:700; color:#0A2540;">إعداد وتوثيق</div>
+        <div style="margin-top:30px; border-bottom:1px dashed #94A3B8; padding-bottom:4px; color:#4A5B6F;">___________________</div>
+      </div>
+      <div>
+        <div style="font-weight:700; color:#0A2540;">الاعتماد المالي والرقابي</div>
+        <div style="margin-top:30px; border-bottom:1px dashed #94A3B8; padding-bottom:4px; color:#4A5B6F;">___________________</div>
+      </div>
+      <div>
+        <div style="font-weight:700; color:#0A2540;">الختم الرسمي للمؤسسة</div>
+        <div style="margin-top:30px; font-weight:700; font-size:13px; color:#D4AF37;">${companyMeta.nameAr}</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:28px; text-align:center; font-size:12px; font-weight:600; color:#6B7A8F; border-top:1px solid #E0E6ED; padding-top:10px;">
+      <div>© 2026 ميدو تك و ${companyMeta.nameAr} | MeDo ERP</div>
+      <div>تم التصدير الآلي بصيغة PDF بواسطة html2pdf.js لتعزيز التوثيق المؤسسي</div>
+    </div>
+  `;
+
+  document.body.appendChild(container);
+  const success = await exportElementToPdf("temp-active-table-pdf-container", filename);
   document.body.removeChild(container);
 
   return success;

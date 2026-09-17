@@ -37,12 +37,16 @@ import {
   RotateCcw,
   RefreshCw,
   Lock,
+  BookMarked,
+  Archive,
 } from "lucide-react";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { BzmtLogo } from "./BzmtLogo";
 import { IS_ADMIN_ENV } from "../config/env";
 
 export type NavTab =
   | "DASHBOARD"
+  | "USER_MANUAL"
   | "INTEGRATED_ERP"
   | "MEDO_BROCHURE"
   | "COLLABORATION"
@@ -73,6 +77,7 @@ export type NavTab =
   | "CLOUD_SYNC"
   | "TRUST_CENTER"
   | "SAAS_PLATFORM"
+  | "CENTRAL_ARCHIVE"
   | "AI_ASSISTANT";
 
 interface SidebarProps {
@@ -92,6 +97,8 @@ interface SidebarProps {
   isAdminUnlocked?: boolean;
   onOpenAdminGateway?: () => void;
   onLockAdmin?: () => void;
+  appVersion?: string;
+  onVersionClick?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -111,6 +118,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAdminUnlocked = false,
   onOpenAdminGateway,
   onLockAdmin,
+  appVersion = "V1.2.4",
+  onVersionClick,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = React.useState(false);
   const isCollapsed = externalSetCollapsed !== undefined ? Boolean(externalCollapsed) : internalCollapsed;
@@ -147,6 +156,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       labelAr: "لوحة التحكم التنفيذية",
       labelEn: "Executive Dashboard",
       icon: LayoutDashboard,
+      section: "الرئيسية",
+    },
+    {
+      id: "USER_MANUAL",
+      labelAr: "دليل الاستخدام المحاسبي الشامل",
+      labelEn: "Accounting User Manual",
+      icon: BookMarked,
+      badge: "دليل الوحدات",
+      badgeColor: "bg-emerald-500 text-slate-950 font-black shadow-sm",
       section: "الرئيسية",
     },
     {
@@ -330,21 +348,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: "EXECUTIVE_MASTER_SUITE",
-      labelAr: "إدارة النظام والمنصة السحابية المشفرة",
-      labelEn: "Vertical Admin & Encrypted Cloud Platform",
+      labelAr: "لوحة التحكم السيادية والمشفرة",
+      labelEn: "Sovereign Executive Suite",
       icon: ShieldCheck,
-      badge: "مشفر AES-256 🔒",
+      badge: "أ. بدر عايض 👑",
       badgeColor: "bg-blue-950 text-blue-300 border border-blue-500/50 font-black shadow",
-      section: "منظومة الإدارة الرأسية",
+      section: "بوابة الإدارة العليا — الإجراءات السيادية للمبرمج والمصمم مالك البرنامج (الأستاذ بدر عايض محمد)",
     },
     {
-      id: "SAAS_PLATFORM",
-      labelAr: "المنظومة والتراخيص السحابية",
-      labelEn: "Cloud SaaS Platform",
-      icon: Cloud,
-      badge: "SaaS Multi-Tenant",
-      badgeColor: "bg-indigo-950 text-indigo-300 border border-indigo-500/50 font-bold",
-      section: "منظومة الإدارة الرأسية",
+      id: "CENTRAL_ARCHIVE",
+      labelAr: "منظومة الأرشيف المركزي والوثائق السيادية",
+      labelEn: "Central Sovereign Archive",
+      icon: Archive,
+      badge: "أرشيف رسمي وختم",
+      badgeColor: "bg-purple-950 text-purple-300 border border-purple-500/50 font-bold",
+      section: "بوابة الإدارة العليا — الإجراءات السيادية للمبرمج والمصمم مالك البرنامج (الأستاذ بدر عايض محمد)",
+    },
+    {
+      id: "SETTINGS",
+      labelAr: "إعدادات المنشأة والحسابات العامة",
+      labelEn: "Company & System Settings",
+      icon: Settings,
+      badge: "بيانات المنشأة",
+      badgeColor: "bg-blue-950 text-blue-300 border border-blue-700/50 font-bold",
+      section: "الإعدادات والنظام",
     },
     {
       id: "CURRENCY_SETTINGS",
@@ -408,12 +435,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const adminOnlyTabs = [
       "EXECUTIVE_MASTER_SUITE",
       "SAAS_PLATFORM",
-      "MEDO_BROCHURE",
+      "CENTRAL_ARCHIVE",
     ];
     
     if (adminOnlyTabs.includes(item.id)) {
       if (!isMasterUnlocked) return false;
-      // Strictly show "إدارة النظام الرأسية" only to SYSTEM_ADMIN or SUPER_ADMIN
+      // Strictly show Sovereign items only to SYSTEM_ADMIN or SUPER_ADMIN
       if (!isSuperOrSystemAdmin) return false;
     }
 
@@ -440,14 +467,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Mobile Header with Brand & Close Button */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-[#1E3A8A]/40 bg-[#0B192C]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B192C] via-[#1E3A8A] to-[#2563EB] border border-blue-400/50 flex items-center justify-center shadow-lg shadow-blue-900/40 text-white font-black text-xl tracking-wider">
-                  M
-                </div>
+                <BzmtLogo size="md" variant="monogram" />
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-white text-base tracking-tight">MeDo ERP</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">
-                      SAP FI
+                    <span className="font-extrabold text-white text-base tracking-tight">SAP/MeDO ERP</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
+                      BZMT
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 font-medium truncate">قائمة التنقل الرئيسية</p>
@@ -476,8 +501,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <React.Fragment key={`mob-${item.id}`}>
                     {isNewSection && item.section && (
-                      <div className="px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        {item.section}
+                      <div className={`px-3 pt-3 pb-1 text-[11px] font-black uppercase tracking-wider ${
+                        item.section.includes("السيادية")
+                          ? "text-amber-300 flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-blue-950/80 to-indigo-950/80 border border-blue-500/30 my-1"
+                          : "text-slate-400"
+                      }`}>
+                        {item.section.includes("السيادية") && <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                        <span>{item.section}</span>
                       </div>
                     )}
                     <button
@@ -586,7 +616,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
                   قاعدة البيانات متصلة
                 </span>
-                <span className="font-mono text-slate-400">v4.5 Royal Edition</span>
+                <button
+                  type="button"
+                  onClick={onVersionClick}
+                  className={`font-mono text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm transition-all flex items-center gap-1 ${
+                    onVersionClick ? "cursor-pointer" : ""
+                  }`}
+                  title="الإصدار المعتمد للنظام - انقر للاطلاع على التحديثات"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>{appVersion}</span>
+                </button>
+              </div>
+              <div className="pt-2 border-t border-slate-800/80 text-center text-[10px] text-slate-400 font-semibold leading-tight">
+                <div>جميع الحقوق محفوظة ©</div>
+                <div className="text-amber-300 font-mono mt-0.5">Bin Ziyad Group & MeDo Tech (BZMT)</div>
               </div>
             </div>
           </div>
@@ -605,14 +649,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between px-4 py-4 border-b border-[#1E3A8A]/40 bg-[#0B192C]">
           {!isCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B192C] via-[#1E3A8A] to-[#2563EB] border border-blue-400/50 flex items-center justify-center shadow-lg shadow-blue-900/40 text-white font-black text-xl tracking-wider">
-                M
-              </div>
+              <BzmtLogo size="md" variant="monogram" />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-white text-base tracking-tight">MeDo ERP</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">
-                    SAP FI/CO
+                  <span className="font-extrabold text-white text-base tracking-tight">SAP/MeDO ERP</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
+                    BZMT
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 font-medium truncate">نظام المحاسبة والمالية الذكي</p>
@@ -620,8 +662,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           {isCollapsed && (
-            <div className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-[#0B192C] via-[#1E3A8A] to-[#2563EB] border border-blue-400/50 flex items-center justify-center text-white font-black text-xl shadow-md">
-              M
+            <div className="mx-auto">
+              <BzmtLogo size="md" variant="monogram" />
             </div>
           )}
           <button
@@ -648,8 +690,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <React.Fragment key={item.id}>
                 {!isCollapsed && isNewSection && item.section && (
-                  <div className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {item.section}
+                  <div className={`px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider ${
+                    item.section.includes("السيادية")
+                      ? "text-amber-300 flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-gradient-to-r from-blue-950/80 to-indigo-950/80 border border-blue-500/30 my-1"
+                      : "text-slate-400"
+                  }`}>
+                    {item.section.includes("السيادية") && <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                    <span>{item.section}</span>
                   </div>
                 )}
                 <button
@@ -846,16 +893,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 قاعدة البيانات متصلة
               </span>
-              <span className="text-[10px] font-mono text-slate-400">v4.5 SAP-Edition</span>
+              <button
+                type="button"
+                onClick={onVersionClick}
+                className={`font-mono text-emerald-400 bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-500/30 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm transition-all flex items-center gap-1 ${
+                  onVersionClick ? "cursor-pointer" : ""
+                }`}
+                title="إصدار النظام المعتمد - انقر للتحقق من التحديثات"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>{appVersion}</span>
+              </button>
             </div>
-            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span className="truncate">معايير التدقيق المحاسبي IFRS مفعلة</span>
+            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span className="truncate">معايير التدقيق المحاسبي IFRS</span>
+              </div>
+              <span className="text-[10px] text-emerald-400/90 font-mono font-bold bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">نشط</span>
+            </div>
+            <div className="pt-2 text-center text-[10px] text-slate-400 font-medium">
+              <div>جميع الحقوق محفوظة ©</div>
+              <div className="text-amber-300 font-mono mt-0.5">Bin Ziyad Group & MeDo Tech (BZMT)</div>
             </div>
           </div>
         ) : (
-          <div className="p-3 border-t border-slate-800 flex justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="النظام متصل وجاهز"></span>
+          <div 
+            onClick={onVersionClick}
+            className={`p-2.5 border-t border-slate-800 flex flex-col items-center gap-1 ${onVersionClick ? "cursor-pointer hover:bg-slate-900/50" : ""}`}
+            title={`النظام متصل وجاهز - الإصدار ${appVersion}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[8px] font-mono font-bold text-emerald-400/90 tracking-tighter">{appVersion}</span>
           </div>
         )}
       </aside>
@@ -880,7 +949,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setShowDesignerModal(false);
                   setDesignerPin("");
                   setDesignerPinError(false);
-                  setActiveTab("SAAS_PLATFORM");
+                  setActiveTab("EXECUTIVE_MASTER_SUITE");
                   if (onCloseMobile) onCloseMobile();
                 } else {
                   setDesignerPinError(true);

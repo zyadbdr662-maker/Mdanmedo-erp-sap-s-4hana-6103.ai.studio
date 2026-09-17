@@ -19,6 +19,8 @@ import {
 import { Account, CurrencyCode, CurrencyInfo, JournalEntry } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "../services/erpStorage";
 import { formatDate, formatDualDate } from "../utils/formatters";
+import { ExportPdfButton } from "./ExportPdfButton";
+import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
 
 interface GeneralLedgerViewProps {
   accounts: Account[];
@@ -46,6 +48,19 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<"ALL" | "POSTED" | "DRAFT">("POSTED");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [selectedEntryModal, setSelectedEntryModal] = useState<JournalEntry | null>(null);
+
+  const GL_COLUMNS: ColumnDef[] = [
+    { id: "entryNumber", label: "رقم القيد", locked: true },
+    { id: "date", label: "التاريخ" },
+    { id: "reference", label: "المرجع" },
+    { id: "description", label: "البيان والشرح" },
+    { id: "debit", label: "مدين (Debit)" },
+    { id: "credit", label: "دائن (Credit)" },
+    { id: "runningBalance", label: "الرصيد الجاري" },
+    { id: "status", label: "الحالة" },
+    { id: "actions", label: "إجراءات", locked: true },
+  ];
+  const { visibleColumns, updateVisibility, isVisible } = useColumnVisibility("general_ledger", GL_COLUMNS);
 
   const currentAccount = accounts.find((a) => a.id === selectedAccountId) || defaultAcc;
 
@@ -172,6 +187,12 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          <ExportPdfButton
+            targetId="general-ledger-table-container"
+            reportTitle={`كشف حساب دفتر الأستاذ العام - ${currentAccount?.code || ''} ${currentAccount?.nameAr || ''}`}
+            filename={`دفتر_الأستاذ_${currentAccount?.code || 'GL'}.pdf`}
+            label="تصدير كشف الحساب PDF"
+          />
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all"
@@ -181,10 +202,10 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-all"
           >
-            <Printer className="w-4 h-4" />
-            طباعة الكشف الرسمي
+            <Printer className="w-4 h-4 text-slate-400" />
+            طباعة الكشف
           </button>
         </div>
       </div>
@@ -347,7 +368,7 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
       )}
 
       {/* Movements Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl doc-canvas">
+      <div id="general-ledger-table-container" className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl doc-canvas">
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-400" />
@@ -356,72 +377,96 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
               {filteredMovements.length} حركة
             </span>
           </div>
+          <ColumnCustomizer
+            tableKey="general_ledger"
+            columns={GL_COLUMNS}
+            visibleColumns={visibleColumns}
+            onChange={updateVisibility}
+          />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs">
             <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">رقم القيد</th>
-                <th className="py-3 px-4">التاريخ</th>
-                <th className="py-3 px-4">المرجع</th>
-                <th className="py-3 px-4">البيان والشرح</th>
-                <th className="py-3 px-4 text-left">مدين (Debit)</th>
-                <th className="py-3 px-4 text-left">دائن (Credit)</th>
-                <th className="py-3 px-4 text-left">الرصيد الجاري</th>
-                <th className="py-3 px-4 text-center">الحالة</th>
-                <th className="py-3 px-4 text-center">إجراءات</th>
+                {isVisible("entryNumber") && <th className="py-3 px-4">رقم القيد</th>}
+                {isVisible("date") && <th className="py-3 px-4">التاريخ</th>}
+                {isVisible("reference") && <th className="py-3 px-4">المرجع</th>}
+                {isVisible("description") && <th className="py-3 px-4">البيان والشرح</th>}
+                {isVisible("debit") && <th className="py-3 px-4 text-left">مدين (Debit)</th>}
+                {isVisible("credit") && <th className="py-3 px-4 text-left">دائن (Credit)</th>}
+                {isVisible("runningBalance") && <th className="py-3 px-4 text-left">الرصيد الجاري</th>}
+                {isVisible("status") && <th className="py-3 px-4 text-center">الحالة</th>}
+                {isVisible("actions") && <th className="py-3 px-4 text-center">إجراءات</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium text-slate-200">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-500">
+                  <td colSpan={GL_COLUMNS.filter((c) => isVisible(c.id)).length} className="py-12 text-center text-slate-500">
                     لا توجد حركات محاسبية مسجلة لهذا الحساب خلال الفترة المحددة
                   </td>
                 </tr>
               ) : (
                 filteredMovements.map((mov) => (
                   <tr key={mov.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-black text-emerald-400 dir-ltr text-right">
-                      {mov.entryNumber}
-                    </td>
-                    <td className="py-3 px-4 text-slate-300" title={formatDualDate(mov.date)}>
-                      {formatDate(mov.date)}
-                    </td>
-                    <td className="py-3 px-4 text-slate-400 font-mono">{mov.reference || "-"}</td>
-                    <td className="py-3 px-4 text-slate-100 max-w-xs truncate" title={mov.description}>
-                      {mov.description}
-                    </td>
-                    <td className="py-3 px-4 text-left font-bold text-emerald-400 dir-ltr">
-                      {mov.debit > 0 ? formatNumberOnly(mov.debit) : "-"}
-                    </td>
-                    <td className="py-3 px-4 text-left font-bold text-rose-400 dir-ltr">
-                      {mov.credit > 0 ? formatNumberOnly(mov.credit) : "-"}
-                    </td>
-                    <td className="py-3 px-4 text-left font-black text-cyan-300 dir-ltr">
-                      {formatNumberOnly(mov.runningBalance)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          mov.status === "POSTED"
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                        }`}
-                      >
-                        {mov.status === "POSTED" ? "مرحّل" : "مسودة"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => setSelectedEntryModal(mov.entry)}
-                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                        title="عرض تفاصيل القيد"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
+                    {isVisible("entryNumber") && (
+                      <td className="py-3 px-4 font-black text-emerald-400 dir-ltr text-right">
+                        {mov.entryNumber}
+                      </td>
+                    )}
+                    {isVisible("date") && (
+                      <td className="py-3 px-4 text-slate-300" title={formatDualDate(mov.date)}>
+                        {formatDate(mov.date)}
+                      </td>
+                    )}
+                    {isVisible("reference") && (
+                      <td className="py-3 px-4 text-slate-400 font-mono">{mov.reference || "-"}</td>
+                    )}
+                    {isVisible("description") && (
+                      <td className="py-3 px-4 text-slate-100 max-w-xs truncate" title={mov.description}>
+                        {mov.description}
+                      </td>
+                    )}
+                    {isVisible("debit") && (
+                      <td className="py-3 px-4 text-left font-bold text-emerald-400 dir-ltr">
+                        {mov.debit > 0 ? formatNumberOnly(mov.debit) : "-"}
+                      </td>
+                    )}
+                    {isVisible("credit") && (
+                      <td className="py-3 px-4 text-left font-bold text-rose-400 dir-ltr">
+                        {mov.credit > 0 ? formatNumberOnly(mov.credit) : "-"}
+                      </td>
+                    )}
+                    {isVisible("runningBalance") && (
+                      <td className="py-3 px-4 text-left font-black text-cyan-300 dir-ltr">
+                        {formatNumberOnly(mov.runningBalance)}
+                      </td>
+                    )}
+                    {isVisible("status") && (
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            mov.status === "POSTED"
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                              : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          }`}
+                        >
+                          {mov.status === "POSTED" ? "مرحّل" : "مسودة"}
+                        </span>
+                      </td>
+                    )}
+                    {isVisible("actions") && (
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => setSelectedEntryModal(mov.entry)}
+                          className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                          title="عرض تفاصيل القيد"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -429,19 +474,27 @@ export const GeneralLedgerView: React.FC<GeneralLedgerViewProps> = ({
             {filteredMovements.length > 0 && (
               <tfoot className="bg-slate-950 font-black border-t-2 border-slate-700 text-slate-100">
                 <tr>
-                  <td colSpan={4} className="py-3.5 px-4 text-slate-300">
+                  <td colSpan={["entryNumber", "date", "reference", "description"].filter((c) => isVisible(c)).length} className="py-3.5 px-4 text-slate-300">
                     الإجمالي للفترة المحددة:
                   </td>
-                  <td className="py-3.5 px-4 text-left text-emerald-400 dir-ltr">
-                    {formatNumberOnly(totalDebit)}
-                  </td>
-                  <td className="py-3.5 px-4 text-left text-rose-400 dir-ltr">
-                    {formatNumberOnly(totalCredit)}
-                  </td>
-                  <td className="py-3.5 px-4 text-left text-cyan-400 dir-ltr">
-                    صافي الحركة: {formatNumberOnly(netMovement)}
-                  </td>
-                  <td colSpan={2}></td>
+                  {isVisible("debit") && (
+                    <td className="py-3.5 px-4 text-left text-emerald-400 dir-ltr">
+                      {formatNumberOnly(totalDebit)}
+                    </td>
+                  )}
+                  {isVisible("credit") && (
+                    <td className="py-3.5 px-4 text-left text-rose-400 dir-ltr">
+                      {formatNumberOnly(totalCredit)}
+                    </td>
+                  )}
+                  {isVisible("runningBalance") && (
+                    <td className="py-3.5 px-4 text-left text-cyan-400 dir-ltr">
+                      صافي الحركة: {formatNumberOnly(netMovement)}
+                    </td>
+                  )}
+                  {["status", "actions"].filter((c) => isVisible(c)).length > 0 && (
+                    <td colSpan={["status", "actions"].filter((c) => isVisible(c)).length}></td>
+                  )}
                 </tr>
               </tfoot>
             )}

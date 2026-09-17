@@ -53,7 +53,10 @@ import {
   Mail,
   AlertTriangle,
   Key,
+  Archive,
+  ExternalLink,
 } from "lucide-react";
+import { CentralArchiveSection } from "./CentralArchiveSection";
 import {
   Account,
   BankAccountItem,
@@ -332,7 +335,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Upgrade & License CTAs */}
             <button
-              onClick={() => onOpenTrialLockModal ? onOpenTrialLockModal() : setActiveTab("SAAS_PLATFORM")}
+              onClick={() => onOpenTrialLockModal ? onOpenTrialLockModal() : setActiveTab("EXECUTIVE_MASTER_SUITE")}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-sap-primary hover:bg-[#14532D] border border-sap-secondary/60 text-sap-secondary font-bold text-xs shadow-lg shadow-sap-primary/30 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <Key className="w-4 h-4 text-sap-secondary" />
@@ -636,28 +639,82 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* 📚 MeDo ERP Interactive Brochure Highlight Banner */}
-        <div className="rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-[#0A2540] border border-sap-secondary/35 p-4 mb-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sap-secondary/20 text-sap-secondary border border-sap-secondary/30 flex items-center justify-center font-bold shrink-0">
-              📖
+        {/* 📚 MeDo ERP Interactive Guides & Central Archival Protocol */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="rounded-2xl bg-gradient-to-r from-emerald-950/50 via-slate-900 to-slate-950 border border-emerald-500/40 p-4 flex flex-col justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shrink-0">
+                📘
+              </div>
+              <div className="text-right">
+                <h4 className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                  <span>دليل الاستخدام المحاسبي</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-extrabold">20 وحدة</span>
+                </h4>
+                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  شرح تفصيلي خطوة بخطوة لكافة الوحدات المحاسبية مع القيود النموذجية.
+                </p>
+              </div>
             </div>
-            <div className="text-right">
-              <h4 className="text-xs font-black text-[#D4AF37] flex items-center gap-1.5">
-                <span>الكتيب التفاعلي والتعريف الفني الشامل بنظام MeDo ERP</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-sap-secondary border border-sap-secondary/30 font-extrabold animate-pulse">S/4HANA</span>
-              </h4>
-              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                استعرض مواصفات النظام، معايير التكامل، ومحاكاة ميزات الذكاء الاصطناعي والمزامنة دون إنترنت المستوحاة بالكامل من <strong>SAP Business One</strong>.
-              </p>
-            </div>
+            <button
+              onClick={() => setActiveTab("USER_MANUAL")}
+              className="w-full px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer text-center"
+            >
+              فتح دليل الاستخدام 👈
+            </button>
           </div>
-          <button
-            onClick={() => setActiveTab("MEDO_BROCHURE")}
-            className="w-full md:w-auto px-4 py-2 bg-sap-secondary hover:bg-[#c29f2e] text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer whitespace-nowrap"
-          >
-            تصفح الكتيب التعريفي الآن 👈
-          </button>
+
+          <div className="rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-[#0A2540] border border-purple-500/40 p-4 flex flex-col justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center font-bold shrink-0">
+                📋
+              </div>
+              <div className="text-right">
+                <h4 className="text-xs font-black text-purple-300 flex items-center gap-1.5">
+                  <span>وثيقة التسليم الفني والأرشيف</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-extrabold">رسمي</span>
+                </h4>
+                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  محضر تسليم البيئة، مستودع GitHub، الروابط السحابية، ومصفوفة الصلاحيات.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // Scroll smoothly to central archive section
+                const el = document.querySelector("#central-archive-anchor");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="w-full px-3 py-1.5 bg-purple-500 hover:bg-purple-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer text-center"
+            >
+              عرض وثيقة التسليم والأرشيف 👈
+            </button>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-[#0A2540] border border-sap-secondary/35 p-4 flex flex-col justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-sap-secondary/20 text-sap-secondary border border-sap-secondary/30 flex items-center justify-center font-bold shrink-0">
+                📖
+              </div>
+              <div className="text-right">
+                <h4 className="text-xs font-black text-[#D4AF37] flex items-center gap-1.5">
+                  <span>الكتيب الفني الشامل</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-sap-secondary border border-sap-secondary/30 font-extrabold animate-pulse">S/4HANA</span>
+                </h4>
+                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  استعرض مواصفات النظام، معايير التكامل، ومحاكاة الذكاء الاصطناعي والمزامنة.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("MEDO_BROCHURE")}
+              className="w-full px-3 py-1.5 bg-sap-secondary hover:bg-[#c29f2e] text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer text-center"
+            >
+              تصفح الكتيب 👈
+            </button>
+          </div>
         </div>
 
         {/* 4 Primary KPI Cards matching exact ASCII wireframe */}
@@ -932,6 +989,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
+      {/* 3. منظومة عملاء النظام المحاسبي ميدو إرب (المنظومة الرأسية - الإدارة العليا - النقاط الست المركزية) */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-[#0A2540] border-2 border-emerald-500/40 p-5 shadow-2xl transition-all hover:border-emerald-400 group">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 flex-shrink-0 border border-emerald-400/40 group-hover:scale-105 transition-transform duration-300">
+              <ShieldCheck className="w-7 h-7 text-emerald-300 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                  <span>منظومة عملاء النظام المحاسبي ميدو إرب</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black">
+                    المنظومة الرأسية - الإدارة العليا
+                  </span>
+                </h2>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-950 text-sap-secondary border border-sap-secondary/40 font-mono font-bold">
+                  النقاط الـ 6 الشاملة
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
+                المركز التنفيذي المخصص للمنظومة الرأسية والإدارة العليا لإدارة وتفعيل المشتركين، توليد قواعد البيانات المستقلة، ترحيل OneX Pro، دورة حياة النسخ التجريبية 30 يوماً، التنبيهات الأمنية اللحظية، والمرشد الإداري الشامل.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-3 text-[11px] font-bold">
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-emerald-300 text-center">1. إدارة المشتركين</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-purple-300 text-center">2. قواعد بيانات محلية</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-blue-300 text-center">3. ترحيل OneX Pro</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-amber-300 text-center">4. تجربة 30 يوماً والقفل</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-teal-300 text-center">5. إشعارات الدخول</span>
+                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-sap-secondary text-center">6. المرشد الإداري</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 self-end md:self-center">
+            <button
+              onClick={() => setActiveTab("EXECUTIVE_MASTER_SUITE")}
+              className="w-full md:w-auto px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-lg shadow-emerald-950/40 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>فتح منظومة العملاء (النقاط الست)</span>
+              <ExternalLink className="w-4 h-4 text-emerald-200" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Primary KPI Cards Grid (Deep Blue & Gold Identity - Total Assets, Liquidity, Revenues, Expenses) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Total Assets (إجمالي الأصول) */}
@@ -1076,6 +1178,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 📁 منظومة الأرشيف المركزي والتوثيق الرقمي & وثيقة التسليم والإقرار الفني الشامل */}
+      <div id="central-archive-anchor">
+        <CentralArchiveSection
+          companyName="مجموعة بن زياد التجارية المحدودة"
+          currencies={currencies}
+          displayCurrency={displayCurrency}
+        />
       </div>
 
       {/* Operational Modules & Workflows */}
@@ -1368,6 +1479,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <li>متوافق مع الهيكل المحاسبي SAP S/4HANA (FI/CO)</li>
             </ul>
           </div>
+        </div>
+
+        {/* 🗄️ منظومة الأرشيف المركزي ووثائق التسليم والإقرار الفني الشامل */}
+        <div id="central-archive-anchor" className="mt-8 pt-6 border-t border-slate-800/80">
+          <CentralArchiveSection
+            companyName="شركة البدر للأدوية والمستلزمات الطبية"
+            isDarkMode={true}
+            currencies={currencies}
+            displayCurrency={displayCurrency}
+          />
         </div>
       </div>
     </div>

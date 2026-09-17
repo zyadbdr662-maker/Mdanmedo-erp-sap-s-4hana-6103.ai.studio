@@ -37,15 +37,15 @@ export const ContactPage = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200/80 text-[#B8860B] px-4 py-1.5 rounded-full text-xs font-bold mb-4 shadow-2xs">
             <Building2 className="w-3.5 h-3.5" />
-            <span>{lang === 'ar' ? 'ميدو تك للحلول البرمجية & بن زياد المتحدة' : 'MeDo Tech & Bin Ziad United'}</span>
+            <span>{lang === 'ar' ? 'ميدو تك للحلول البرمجية المتطورة' : 'MeDo Tech Enterprise Solutions'}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0A0A0A] tracking-tight mb-4">
             {lang === 'ar' ? 'اتصل بنا للاستفسارات والدعم الفني' : 'Contact Us & Technical Support'}
           </h1>
           <p className="text-base sm:text-lg text-[#1A2B4C] max-w-2xl mx-auto leading-relaxed">
             {lang === 'ar'
-              ? 'نحن هنا لمساعدتكم في أي استفسار حول نظام MeDo ERP وتوفير الدعم الفني والاستشارات المحاسبية المتخصصة.'
-              : 'We are here to assist you with any inquiries about MeDo ERP and provide specialized technical support.'}
+              ? 'نحن هنا لمساعدتكم في أي استفسار حول نظام SAP/MeDO ERP وتوفير الدعم الفني والاستشارات المحاسبية المتخصصة.'
+              : 'We are here to assist you with any inquiries about SAP/MeDO ERP and provide specialized technical support.'}
           </p>
         </div>
 

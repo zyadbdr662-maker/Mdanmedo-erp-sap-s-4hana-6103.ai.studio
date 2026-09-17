@@ -46,6 +46,7 @@ import { Branch } from "../types/erp";
 import { blogData, BlogArticle } from "../data/blogData";
 import { TrustCenterView } from "./TrustCenterView";
 import { soundService } from "../services/notificationSoundService";
+import { BzmtLogo } from "./BzmtLogo";
 
 interface CorporateWebsiteProps {
   availableBranches?: { id: string; nameAr: string; city: string; code: string }[];
@@ -242,21 +243,19 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
   return (
     <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col justify-between" dir="rtl" style={{ fontFamily: "'Alexandria', 'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
       {/* Navigation */}
-      <nav id="corporate-navbar" className="sticky top-0 z-40 bg-[#0B192C]/95 backdrop-blur-xl border-b border-[#1E3A8A]/50 shadow-lg">
+      <nav id="corporate-navbar" className="sticky top-0 z-40 bg-[#0a2540] backdrop-blur-xl border-b border-[#d4af37]/30 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => { setActiveTab("HOME"); setSelectedArticle(null); }}>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#0B192C] text-white border border-blue-400/50 flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-950/40">
-                M
-              </div>
+              <BzmtLogo size="md" variant="monogram" />
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-black text-white tracking-tight">MeDo ERP</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">v4.5</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#d4af37]/20 text-[#d4af37] font-bold border border-[#d4af37]/40">v4.5</span>
                 </div>
                 <span className="text-xs font-bold text-slate-300 block tracking-wide">
-                  ميدو تك وبن زياد المتحدة
+                  ميدو تك للحلول التقنية والبرمجية
                 </span>
               </div>
             </div>
@@ -271,14 +270,14 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
               <button 
                 id="header-login-btn"
                 onClick={() => { setDefaultShowSaaSOnboarding(false); setShowLogin(true); }}
-                className="px-5 py-2.5 rounded-xl text-white hover:text-white font-bold text-sm bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] border border-blue-400/40 transition-all cursor-pointer shadow-md"
+                className="px-6 py-2.5 rounded-xl text-[#0a2540] font-black text-sm bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 border border-[#b8860b] transition-all cursor-pointer shadow-md shadow-[0_4px_14px_rgba(212,175,55,0.3)] transform hover:scale-[1.02]"
               >
-                تسجيل الدخول
+                تسجيل الدخول للنظام
               </button>
               <button 
                 id="header-trial-btn"
                 onClick={() => { setDefaultShowSaaSOnboarding(true); setShowLogin(true); }}
-                className="marketing-cta-btn px-6 py-2.5 rounded-xl font-black text-sm shadow-md cursor-pointer transition-all hover:brightness-110 bg-white text-[#0B192C] hover:bg-slate-100 border border-slate-200"
+                className="marketing-cta-btn px-6 py-2.5 rounded-xl font-bold text-sm shadow-md cursor-pointer transition-all hover:brightness-110 bg-[#0a2540]/60 text-white hover:bg-[#0a2540] border-2 border-[#d4af37]"
               >
                 جرب الآن مجاناً
               </button>
@@ -289,7 +288,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
               <button 
                 id="mobile-menu-toggle-btn"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-                className="p-2 rounded-xl bg-[#081220] border border-[#1E3A8A]/40 text-slate-200 hover:text-white"
+                className="p-2 rounded-xl bg-[#06182a] border border-blue-900/60 text-slate-200 hover:text-white"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -337,10 +336,10 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
                 <div className="flex-1 text-center lg:text-right space-y-6">
                   
-                  {/* Strategic Partnership Badge */}
+                  {/* Top Product Badge */}
                   <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-sap-secondary/10 text-sap-secondary border border-sap-secondary/30 text-xs sm:text-sm font-bold shadow-sm">
                     <Building2 className="w-4 h-4 text-sap-secondary" />
-                    <span>ميدو تك للحلول البرمجية بالشراكة الاستراتيجية مع بن زياد المتحدة</span>
+                    <span>ميدو تك للحلول البرمجية — منظومة MeDo ERP السحابية المتكاملة</span>
                   </div>
 
                   {/* Main Hero Heading */}
@@ -356,27 +355,61 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                     منظومة تخطيط موارد المؤسسات الهجينة (Offline-First Hybrid ERP) المتطورة. حل جذري لفوارق العملة اليمنية (صنعاء/عدن)، قائمة تدفقات نقدية آلية (IAS 7)، ربط شامل لجميع الفروع، ونقاط بيع تعمل دون انقطاع حتى بدون إنترنت.
                   </p>
 
+                  {/* Official Welcome & Feature Card */}
+                  <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0B1E36] via-[#091526] to-[#040A14] border-2 border-sap-secondary/50 shadow-2xl space-y-4 max-w-xl mx-auto lg:mx-0 text-right">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-6 h-6 text-sap-secondary" />
+                        <span className="text-lg font-black text-white">MeDo ERP</span>
+                      </div>
+                      <span className="text-xs px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/40">
+                        نسخة تجريبية معتمدة
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="text-base sm:text-lg font-black text-white">مرحباً بك في نظام MeDo ERP</h3>
+                      <p className="text-xs sm:text-sm text-slate-300">النظام المحاسبي السحابي المتكامل لإدارة الأعمال والمؤسسات</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-200 font-semibold pt-1">
+                      <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-sap-secondary shrink-0" />
+                        <span>تجربة مجانية 30 يوماً</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>200 عملية متاحة</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>دعم فني عبر واتساب</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Call to Action Container */}
                   <div className="space-y-4 pt-2">
                     <div className="flex flex-col sm:flex-row items-center gap-3.5 justify-center lg:justify-start">
                       {/* Primary Golden CTA Button */}
                       <button 
                         id="hero-cta-trial-btn"
-                        onClick={() => { setDefaultShowSaaSOnboarding(true); setShowLogin(true); }} 
-                        className="marketing-cta-btn w-full sm:w-auto px-8 py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 cursor-pointer group"
-                        style={{ backgroundColor: "#D4AF37", color: "#0A2540", fontWeight: 800 }}
+                        onClick={() => { setShowLogin(true); }} 
+                        className="marketing-cta-btn w-full sm:w-auto px-8 py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 cursor-pointer group bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:from-[#f39c12] hover:to-[#d4af37] text-[#0A2540] font-black"
                       >
-                        <span className="text-base sm:text-lg font-bold">ابدأ تجربتك المجانية (30 يوماً)</span>
+                        <Sparkles className="w-5 h-5 text-[#0A2540]" />
+                        <span className="text-base sm:text-lg font-black">ابدأ رحلة النجاح الآن</span>
                         <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                       </button>
 
-                      {/* Demo Request Button */}
+                      {/* Login to System Button */}
                       <button 
                         id="hero-demo-btn"
-                        onClick={() => setActiveTab("CONTACT")} 
-                        className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-white font-bold text-sm sm:text-base border border-slate-700 transition-all text-center flex items-center justify-center gap-2"
+                        onClick={() => { setShowLogin(true); }} 
+                        className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-white font-bold text-sm sm:text-base border border-slate-700 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <span>طلب عرض توضيحي (Demo)</span>
+                        <Building2 className="w-4 h-4 text-sap-secondary" />
+                        <span>تسجيل الدخول للنظام</span>
                       </button>
 
                       {/* WhatsApp Quick CTA */}
@@ -503,7 +536,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
               </span>
               <h2 className="text-3xl sm:text-5xl font-black text-white">ميدو تك للحلول البرمجية</h2>
               <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-                بالشراكة الاستراتيجية مع <strong className="text-sap-secondary">مجموعة بن زياد المتحدة</strong>. نقود التحول الرقمي المالي في اليمن والمنطقة عبر حلول ذكية تجمع بين قوة السحابة وحرية العمل المكتبي ودون اتصال.
+                منظومة <strong className="text-sap-secondary">MeDo ERP</strong> السحابية المتكاملة. نقود التحول الرقمي المالي في اليمن والمنطقة عبر حلول ذكية تجمع بين قوة السحابة وحرية العمل المكتبي ودون اتصال بالإنترنت.
               </p>
             </div>
 
@@ -548,8 +581,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                     desc: "بنية هجينة متطورة (Offline-First) تضمن استمرارية الأعمال في مختلف الظروف وانقطاع الإنترنت."
                   },
                   {
-                    title: "الشراكة الاستراتيجية",
-                    desc: "علاقة وثيقة ومستدامة مع عملائنا وشركائنا، ودعم فني واستشاري متواصل على مدار الساعة."
+                    title: "خدمة العملاء والشراكة",
+                    desc: "علاقة وثيقة ومستدامة مع عملائنا، ودعم فني واستشاري متواصل على مدار الساعة عبر واتساب والاتصال."
                   }
                 ].map((val, i) => (
                   <div key={i} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2.5">
@@ -566,8 +599,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
             {/* Management Signature */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-right">
               <div>
-                <h4 className="text-xl font-black text-white">إدارة النظام والتحول الرقمي</h4>
-                <p className="text-slate-400 text-sm mt-1">بدر عايض محمد — مدير النظام والشراكة الاستراتيجية</p>
+                <h4 className="text-xl font-black text-white">إدارة وتطوير منظومة MeDo ERP</h4>
+                <p className="text-slate-400 text-sm mt-1">بدر عايض محمد — المدير العام ومسؤول الأنظمة</p>
               </div>
               <button 
                 onClick={() => setActiveTab("CONTACT")} 
@@ -1294,11 +1327,13 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
         <div className="max-w-4xl mx-auto space-y-4">
           
           {/* 1. Copyright Line */}
-          <div className="marketing-footer-text text-slate-400 font-light flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+          <div className="marketing-footer-text text-slate-200 font-bold flex items-center justify-center gap-2 text-sm sm:text-base tracking-wide flex-wrap">
             <span>🇾🇪</span>
-            <span className="text-slate-300 font-bold">MeDo ERP © 2026</span>
-            <span>—</span>
-            <span className="text-slate-400">ميدو تك للحلول البرمجية بالشراكة مع بن زياد المتحدة</span>
+            <span className="text-slate-100">جميع الحقوق محفوظة ©</span>
+            <span className="text-amber-300 font-sans font-extrabold">Bin Ziyad Group & MeDo Tech (BZMT)</span>
+          </div>
+          <div className="text-xs text-slate-400 font-medium">
+            منظومة SAP/MeDO ERP السحابية المتكاملة | حلول المؤسسات الذكية
           </div>
 
           {/* Quick Page Links */}

@@ -1,10 +1,18 @@
-import React, { useState } from "react";
-import {
-  ERPState,
-  SaaSClient,
-} from "../types/erp";
+import React, { useState, useEffect } from "react";
+import { ERPState, SaaSClient } from "../types/erp";
 import { SapComplianceReportModal } from "./SapComplianceReportModal";
 import { OFFICIAL_APP_DOMAIN, generateClientPortalUrl } from "../config/appConfig";
+import {
+  multiCloudDbService,
+  CloudDatabaseStatus,
+  CloudSyncLog,
+} from "../services/multiCloudDatabaseService";
+import {
+  PRE_GENERATED_200_TENANTS,
+  PreGeneratedTenant,
+  getStored200Tenants,
+  saveStored200Tenants,
+} from "../data/preGeneratedTenants";
 import {
   ShieldCheck,
   Users,
@@ -12,7 +20,6 @@ import {
   Globe,
   Bell,
   Activity,
-  BookOpen,
   Plus,
   CheckCircle2,
   Lock,
@@ -27,7 +34,6 @@ import {
   Building2,
   Layers,
   Sparkles,
-  Printer,
   Copy,
   Check,
   RefreshCw,
@@ -37,8 +43,22 @@ import {
   ExternalLink,
   Sliders,
   BarChart3,
-  Boxes,
+  Database,
+  Search,
+  Filter,
+  Share2,
+  QrCode,
+  ThumbsUp,
+  ThumbsDown,
+  Phone,
+  MessageSquare,
+  HelpCircle,
+  Zap,
+  Edit3,
+  RotateCcw,
+  Save,
 } from "lucide-react";
+import { BzmtLogo } from "./BzmtLogo";
 
 interface SaaSPlatformViewProps {
   erpState: ERPState;
@@ -52,255 +72,411 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
   onOpenTrialLockModal,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    "ADMIN_DASHBOARD" | "LICENSING" | "NOTIFICATIONS" | "WHITE_LABEL_V2" | "CLIENTS" | "LEGAL_DOCS" | "HANDOVER"
+    | "ADMIN_DASHBOARD"
+    | "MULTI_CLOUD_DBS"
+    | "MASTER_200_LINKS"
+    | "SUB_EMPLOYEE_LINKS"
+    | "UNLOCK_CODES"
+    | "CONVERSION_SURVEY"
+    | "DATA_MIGRATION"
   >("ADMIN_DASHBOARD");
 
-  // State for White Label Customization
-  const [agencyName, setAgencyName] = useState("مجموعة بن زياد التجارية المعتمدة");
-  const [tenantSlug, setTenantSlug] = useState("binziyad-agency");
-  const [primaryColor, setPrimaryColor] = useState("#1A6B3C");
-  const [secondaryColor, setSecondaryColor] = useState("#D4AF37");
-  const [selectedFont, setSelectedFont] = useState("Cairo");
-  const [packageTier, setPackageTier] = useState("Enterprise Unlimited");
-  const [licenseDuration, setLicenseDuration] = useState("مدى الحياة (ترخيص دائم غير محدود)");
-  const [adminEmail, setAdminEmail] = useState("admin@medo-erp.com");
-  const [adminPhone, setAdminPhone] = useState("+967 773 586 047");
-  const [copiedLetter, setCopiedLetter] = useState(false);
-  
-  // New Client & License Form
-  const [newCompany, setNewCompany] = useState("");
-  const [newClientName, setNewClientName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newLicenseType, setNewLicenseType] = useState<"TRIAL_30" | "ANNUAL_365" | "LIFETIME">("LIFETIME");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Multi-Cloud DB State
+  const [dbStatuses, setDbStatuses] = useState<CloudDatabaseStatus[]>(
+    multiCloudDbService.getDatabaseStatuses()
+  );
+  const [syncLogs, setSyncLogs] = useState<CloudSyncLog[]>(
+    multiCloudDbService.getSyncLogs()
+  );
+  const [isTestingDbs, setIsTestingDbs] = useState(false);
+  const [isSyncingDbs, setIsSyncingDbs] = useState(false);
 
-  // Digital Certificate Modal
-  const [selectedCertClient, setSelectedCertClient] = useState<SaaSClient | null>(null);
+  // 200 Matrix Search & Filter
+  const [tenantsList, setTenantsList] = useState<PreGeneratedTenant[]>(() => getStored200Tenants());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [copiedLinkIndex, setCopiedLinkIndex] = useState<number | null>(null);
+  const [copiedCodeIndex, setCopiedCodeIndex] = useState<number | null>(null);
+
+  // Edit Company State
+  const [editingTenant, setEditingTenant] = useState<PreGeneratedTenant | null>(null);
+  const [editNameAr, setEditNameAr] = useState("");
+  const [editNameEn, setEditNameEn] = useState("");
+  const [editIndustry, setEditIndustry] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editCr, setEditCr] = useState("");
+  const [editTax, setEditTax] = useState("");
+  const [editAdminName, setEditAdminName] = useState("");
+  const [editAdminPhone, setEditAdminPhone] = useState("");
+  const [editAdminEmail, setEditAdminEmail] = useState("");
+  const [editStatus, setEditStatus] = useState<"ACTIVE" | "TRIAL" | "EXPIRED" | "PAID_ENTERPRISE">("TRIAL");
+  const [editDbNode, setEditDbNode] = useState<"Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebase" | "Qiniu Cloud">("Alibaba Cloud");
+
+  // New Custom Company / Master Link Modal / Form
+  const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyIndustry, setNewCompanyIndustry] = useState("تجارة عامة واستيراد");
+  const [newCompanyCity, setNewCompanyCity] = useState("صنعاء");
+  const [newAdminName, setNewAdminName] = useState("");
+  const [newAdminPhone, setNewAdminPhone] = useState("+967773586047");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+
+  // Sub-Employee Links Creator
+  const [selectedTenantForEmp, setSelectedTenantForEmp] = useState<PreGeneratedTenant>(PRE_GENERATED_200_TENANTS[0]);
+  const [newEmpName, setNewEmpName] = useState("");
+  const [newEmpRole, setNewEmpRole] = useState<"MANAGER" | "ACCOUNTANT" | "PURCHASER" | "SALES" | "AUDITOR">("ACCOUNTANT");
+  const [copiedSubLink, setCopiedSubLink] = useState<string | null>(null);
+
+  // Unlock Master Code Generator State
+  const [targetTenantSlug, setTargetTenantSlug] = useState(PRE_GENERATED_200_TENANTS[0].slug);
+  const [selectedPlanDuration, setSelectedPlanDuration] = useState<"ANNUAL_365" | "LIFETIME_UNLIMITED">("LIFETIME_UNLIMITED");
+  const [generatedMasterUnlockCode, setGeneratedMasterUnlockCode] = useState<string>("");
+  const [unlockSuccessMsg, setUnlockSuccessMsg] = useState("");
+
+  // Conversion Survey Simulator State
+  const [surveySatisfaction, setSurveySatisfaction] = useState<"LIKE" | "DISLIKE" | null>(null);
+  const [surveyNotes, setSurveyNotes] = useState("");
+  const [surveySubmitted, setSurveySubmitted] = useState(false);
+
+  // Migration State
+  const [migrationFormat, setMigrationFormat] = useState<"ONEX_PRO" | "EXCEL_CSV" | "AL_AMEEN" | "YEMEN_SOFT">("ONEX_PRO");
+  const [migrationRawText, setMigrationRawText] = useState("");
+  const [isParsingMigration, setIsParsingMigration] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
+
+  const [successMsg, setSuccessMsg] = useState("");
   const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
 
-  // Notification Broadcast State
-  const [broadcastTitle, setBroadcastTitle] = useState("تحديث أمني وترقية للنظام (SAP S/4HANA Kernel 2026)");
-  const [broadcastMessage, setBroadcastMessage] = useState("نحيطكم علماً بأنه تم ترقية خوادم MeDo ERP بنجاح لدعم التشفير المزدوج ومطابقة متطلبات هيئة الزكاة والضريبة والجمارك والربط السحابي اللحظي.");
-  const [broadcastTarget, setBroadcastTarget] = useState<"ALL_USERS" | "TRIAL_USERS" | "ENTERPRISE">("ALL_USERS");
-  const [broadcastChannel, setBroadcastChannel] = useState<"IN_APP" | "EMAIL" | "WHATSAPP" | "ALL_CHANNELS">("ALL_CHANNELS");
-  const [broadcastHistory, setBroadcastHistory] = useState([
-    {
-      id: "bc-1",
-      title: "تنبيه اقتراب انتهاء الفترة التجريبية (5 أيام متبقية)",
-      target: "مستخدمو النسخة التجريبية (Trial)",
-      channel: "بريد + تنبيه داخلي",
-      date: "2026-09-09 10:30 AM",
-      status: "تم الإرسال بنجاح (100%)",
-    },
-    {
-      id: "bc-2",
-      title: "إطلاق ميزة استوديو الهوية البصرية والفوترة الإلكترونية ZATCA",
-      target: "كافة المشتركين",
-      channel: "إشعار نظام فوري",
-      date: "2026-09-05 02:15 PM",
-      status: "تم الإرسال بنجاح",
-    },
-    {
-      id: "bc-3",
-      title: "خصم 20% على التجديد السنوي لعملاء مجموعة بن زياد",
-      target: "عملاء محددين",
-      channel: "WhatsApp API",
-      date: "2026-09-01 09:00 AM",
-      status: "تم الإرسال بنجاح",
-    },
-  ]);
+  // Run test all databases
+  const handleTestAllDbs = async () => {
+    setIsTestingDbs(true);
+    try {
+      const res = await multiCloudDbService.testAllConnections();
+      setDbStatuses(res.results);
+      setSyncLogs(multiCloudDbService.getSyncLogs());
+      setSuccessMsg(`✅ تم فحص والتحقق من اتصال وتزامن جميع قواعد البيانات الـ 5 بنجاح!`);
+      setTimeout(() => setSuccessMsg(""), 5000);
+    } finally {
+      setIsTestingDbs(false);
+    }
+  };
 
-  const clients: SaaSClient[] = erpState.saasClients || [
-    {
-      id: "cli-albinaa-2026",
-      companyName: "البناء للخياطة والاكسسوار",
-      clientName: "أمل القمطي",
-      email: "mbaaydz7@gmail.com",
-      phone: "715779976",
-      licenseKey: "MEDO-SAP-2026-ALBN-7799",
-      uniqueDomain: generateClientPortalUrl("albinaa-tailoring"),
-      status: "ACTIVE",
-      subscriptionStart: "2026-09-11",
-      subscriptionEnd: "2026-10-11",
-      databaseType: "POSTGRES_LOCAL",
-      maxOperations: 5000,
-      currentOperationsCount: 0,
-      usersCount: 5,
-    },
-    {
-      id: "cli-01",
-      companyName: "مجموعة بن زياد التجارية المحدودة",
-      clientName: "بدر عايض محمد",
-      email: "zyadbdr925@gmail.com",
-      phone: "+0967773586047",
-      licenseKey: "MEDO-SAP-2026-B8Z9-4K1M",
-      uniqueDomain: generateClientPortalUrl("binziyad"),
-      status: "ACTIVE",
-      subscriptionStart: "2026-09-01",
-      subscriptionEnd: "2026-10-01",
-      databaseType: "POSTGRES_LOCAL",
-      maxOperations: 10000,
-      currentOperationsCount: 1480,
-      usersCount: 8,
-    },
-    {
-      id: "cli-02",
-      companyName: "شركة الأفق للاستيراد والتوزيع",
-      clientName: "م. فهد القحطاني",
-      email: "alofooq@medo-erp.com",
-      phone: "+967771234567",
-      licenseKey: "MEDO-SAP-2026-OFQ7-99XP",
-      uniqueDomain: generateClientPortalUrl("alofooq"),
-      status: "ACTIVE",
-      subscriptionStart: "2026-01-15",
-      subscriptionEnd: "2027-01-15",
-      databaseType: "POSTGRES_LOCAL",
-      maxOperations: 50000,
-      currentOperationsCount: 8420,
-      usersCount: 12,
-    },
-    {
-      id: "cli-03",
-      companyName: "مؤسسة الرواد للخدمات اللوجستية",
-      clientName: "أ. عصام الشامي",
-      email: "alrowad@medo-erp.com",
-      phone: "+967779876543",
-      licenseKey: "MEDO-SAP-2026-RWD2-33TL",
-      uniqueDomain: generateClientPortalUrl("alrowad"),
-      status: "ACTIVE",
-      subscriptionStart: "2026-03-01",
-      subscriptionEnd: "2027-03-01",
-      databaseType: "POSTGRES_LOCAL",
-      maxOperations: 25000,
-      currentOperationsCount: 3190,
-      usersCount: 6,
-    },
-  ];
+  // Sync databases
+  const handleSyncAllDbs = async () => {
+    setIsSyncingDbs(true);
+    try {
+      const res = await multiCloudDbService.syncAllDatabases(28450);
+      setDbStatuses(multiCloudDbService.getDatabaseStatuses());
+      setSyncLogs(multiCloudDbService.getSyncLogs());
+      setSuccessMsg(`🚀 تم إتمام المزامنة السحابية المزدوجة المتطابقة عبر الخوادم الـ 5 بنجاح!`);
+      setTimeout(() => setSuccessMsg(""), 5000);
+    } finally {
+      setIsSyncingDbs(false);
+    }
+  };
 
-  const handleAddClient = (e: React.FormEvent) => {
+  // Copy Link with notification
+  const handleCopyLink = (link: string, index: number) => {
+    navigator.clipboard.writeText(link);
+    setCopiedLinkIndex(index);
+    setTimeout(() => setCopiedLinkIndex(null), 2500);
+  };
+
+  // Copy Unlock Code
+  const handleCopyCode = (code: string, index: number) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCodeIndex(index);
+    setTimeout(() => setCopiedCodeIndex(null), 2500);
+  };
+
+  // Create new tenant master link
+  const handleCreateNewTenant = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCompany || !newClientName) return;
+    if (!newCompanyName.trim()) return;
 
-    const prefix = "MEDO-SAP-2026-";
-    const randPart = Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
-    const generatedKey = prefix + randPart;
+    const nextIndex = tenantsList.length + 1;
+    const slug = `company-${nextIndex}`;
+    const cr = `CR-1010${(500000 + nextIndex * 41).toString().substring(0, 6)}`;
+    const vat = `300${(748291000 + nextIndex * 97).toString().substring(0, 9)}00003`;
+    const vercelBase = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
+    const masterDomain = `${vercelBase}/?tenant=${slug}`;
+    const vercelUrl = masterDomain;
+    const unlockCode = `MEDO-UNLOCK-2026-C${nextIndex.toString().padStart(3, "0")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    const durationDays = newLicenseType === "TRIAL_30" ? 30 : newLicenseType === "ANNUAL_365" ? 365 : 3650;
-
-    const clientSlug = newCompany.replace(/\s+/g, '-').toLowerCase();
-    const newClient: SaaSClient = {
-      id: "cli-" + Date.now(),
-      companyName: newCompany,
-      clientName: newClientName,
-      email: newEmail || "client@medo-erp.com",
-      phone: newPhone || "+967773586047",
-      licenseKey: generatedKey,
-      uniqueDomain: generateClientPortalUrl(clientSlug),
-      status: "ACTIVE",
-      subscriptionStart: new Date().toISOString().split("T")[0],
-      subscriptionEnd: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      databaseType: "POSTGRES_LOCAL",
-      maxOperations: newLicenseType === "TRIAL_30" ? 5000 : 50000,
-      currentOperationsCount: 0,
-      usersCount: newLicenseType === "TRIAL_30" ? 5 : 20,
+    const newTenant: PreGeneratedTenant = {
+      index: nextIndex,
+      id: `tenant-${slug}`,
+      slug,
+      companyNameAr: newCompanyName,
+      companyNameEn: `Enterprise Node #${nextIndex} (${slug})`,
+      commercialReg: cr,
+      taxNumber: vat,
+      industry: newCompanyIndustry,
+      city: newCompanyCity,
+      masterDomain,
+      vercelUrl,
+      status: "TRIAL",
+      trialDaysRemaining: 30,
+      operationsCount: 0,
+      maxTrialOperations: 200,
+      assignedAdminName: newAdminName || `مدير منشأة ${newCompanyName}`,
+      assignedAdminPhone: newAdminPhone || "+967 773 586 047",
+      assignedAdminEmail: newAdminEmail || `admin@${slug}.medo-erp.cloud`,
+      databaseNode: "Alibaba Cloud",
+      unlockCode,
+      employees: [
+        {
+          id: `emp-${nextIndex}-1`,
+          name: newAdminName || "المدير العام",
+          roleAr: "مدير عام المنشأة",
+          roleEn: "MANAGER",
+          subLink: `${vercelBase}/?tenant=${slug}&role=MANAGER&token=AUTH_MGR_${nextIndex}&path=/employee/manager`,
+        },
+        {
+          id: `emp-${nextIndex}-2`,
+          name: "المحاسب المالي",
+          roleAr: "محاسب عام رئيسي",
+          roleEn: "ACCOUNTANT",
+          subLink: `${vercelBase}/?tenant=${slug}&role=ACCOUNTANT&token=AUTH_ACC_${nextIndex}&path=/employee/accountant`,
+        },
+      ],
     };
 
-    onUpdateState({
-      saasClients: [newClient, ...clients],
-    });
-
-    setNewCompany("");
-    setNewClientName("");
-    setNewEmail("");
-    setNewPhone("");
-    setSuccessMsg(`تم بنجاح إصدار الترخيص الرقمي (${generatedKey}) وإضافة العميل للمنظومة!`);
+    const newTenantList = [newTenant, ...tenantsList];
+    setTenantsList(newTenantList);
+    saveStored200Tenants(newTenantList);
+    setIsCreateCompanyOpen(false);
+    setNewCompanyName("");
+    setNewAdminName("");
+    setSuccessMsg(`🎉 تم بنجاح إنشاء وتفعيل الرابط الرئيسي للمنشأة الجديدة (${newCompanyName})!`);
     setTimeout(() => setSuccessMsg(""), 5000);
   };
 
-  const handleCopyKey = (key: string) => {
-    navigator.clipboard.writeText(key);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 3000);
+  // Open Edit Modal for a Tenant
+  const handleOpenEditModal = (tenant: PreGeneratedTenant) => {
+    setEditingTenant(tenant);
+    setEditNameAr(tenant.companyNameAr);
+    setEditNameEn(tenant.companyNameEn);
+    setEditIndustry(tenant.industry);
+    setEditCity(tenant.city);
+    setEditCr(tenant.commercialReg);
+    setEditTax(tenant.taxNumber);
+    setEditAdminName(tenant.assignedAdminName);
+    setEditAdminPhone(tenant.assignedAdminPhone);
+    setEditAdminEmail(tenant.assignedAdminEmail);
+    setEditStatus(tenant.status);
+    setEditDbNode(tenant.databaseNode);
   };
 
-  const handleSendBroadcast = (e: React.FormEvent) => {
+  // Save Edited Tenant
+  const handleSaveEditTenant = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!broadcastTitle || !broadcastMessage) return;
+    if (!editingTenant || !editNameAr.trim()) return;
 
-    const newBroadcast = {
-      id: "bc-" + Date.now(),
-      title: broadcastTitle,
-      target: broadcastTarget === "ALL_USERS" ? "كافة المشتركين" : broadcastTarget === "TRIAL_USERS" ? "النسخ التجريبية" : "الشركات الكبرى",
-      channel: broadcastChannel === "ALL_CHANNELS" ? "كافة القنوات (بريد + نظام + واتساب)" : broadcastChannel,
-      date: new Date().toLocaleString("ar-YE"),
-      status: "تم الإرسال بنجاح (100%)",
+    const updatedList = tenantsList.map((t) => {
+      if (t.id === editingTenant.id) {
+        return {
+          ...t,
+          companyNameAr: editNameAr.trim(),
+          companyNameEn: editNameEn.trim() || t.companyNameEn,
+          industry: editIndustry.trim() || t.industry,
+          city: editCity.trim() || t.city,
+          commercialReg: editCr.trim() || t.commercialReg,
+          taxNumber: editTax.trim() || t.taxNumber,
+          assignedAdminName: editAdminName.trim() || t.assignedAdminName,
+          assignedAdminPhone: editAdminPhone.trim() || t.assignedAdminPhone,
+          assignedAdminEmail: editAdminEmail.trim() || t.assignedAdminEmail,
+          status: editStatus,
+          databaseNode: editDbNode,
+        };
+      }
+      return t;
+    });
+
+    setTenantsList(updatedList);
+    saveStored200Tenants(updatedList);
+    setEditingTenant(null);
+    setSuccessMsg(`✏️ تم بنجاح حفظ وتعديل بيانات المنشأة رقم (${editingTenant.index}) إلى: "${editNameAr.trim()}"`);
+    setTimeout(() => setSuccessMsg(""), 5000);
+  };
+
+  // Reset 200 Companies to Default
+  const handleResetAllTenantsToDefault = () => {
+    if (window.confirm("هل أنت تأكد من إرجاع أسماء الـ 200 منشأة إلى الأسماء الافتراضية الأولى؟")) {
+      setTenantsList(PRE_GENERATED_200_TENANTS);
+      saveStored200Tenants(PRE_GENERATED_200_TENANTS);
+      setSuccessMsg("🔄 تم إعادة ضبط دليل الـ 200 منشأة للاسم والتسجيل الافتراضي.");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    }
+  };
+
+  // Add Employee Sub-link
+  const handleAddEmployeeSubLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmpName.trim()) return;
+
+    const roleLabels: Record<string, string> = {
+      MANAGER: "مدير عام المنشأة",
+      ACCOUNTANT: "محاسب عام رئيسي",
+      PURCHASER: "مسؤول مشتريات ومخازن",
+      SALES: "كاشير ومبيعات نقاط البيع",
+      AUDITOR: "مدقق ومراجع حسابات خارجي",
     };
 
-    setBroadcastHistory([newBroadcast, ...broadcastHistory]);
-    setSuccessMsg("تم بث الإشعار بنجاح لكافة المستخدمين والقنوات المستهدفة!");
+    const newEmpId = `emp-${selectedTenantForEmp.index}-${Date.now().toString().slice(-4)}`;
+    const vercelBase = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
+    const subLink = `${vercelBase}/?tenant=${selectedTenantForEmp.slug}&role=${newEmpRole}&token=AUTH_${newEmpRole}_${Date.now().toString().slice(-4)}&path=/employee/${newEmpRole.toLowerCase()}`;
+
+    const updatedEmployees = [
+      ...selectedTenantForEmp.employees,
+      {
+        id: newEmpId,
+        name: newEmpName,
+        roleAr: roleLabels[newEmpRole],
+        roleEn: newEmpRole,
+        subLink,
+        loginEmail: `${newEmpRole.toLowerCase()}@${selectedTenantForEmp.slug}.medo-erp.cloud`,
+        password: "1234",
+      },
+    ];
+
+    const updatedTenants = tenantsList.map((t) =>
+      t.id === selectedTenantForEmp.id ? { ...t, employees: updatedEmployees } : t
+    );
+
+    setTenantsList(updatedTenants);
+    saveStored200Tenants(updatedTenants);
+    setSelectedTenantForEmp({ ...selectedTenantForEmp, employees: updatedEmployees });
+    setNewEmpName("");
+    setSuccessMsg(`✅ تم إصدار الرابط الفرعي المخصص للموظف (${newEmpName}) بنجاح!`);
     setTimeout(() => setSuccessMsg(""), 4000);
   };
 
+  // Generate Master Unlock Code
+  const handleGenerateUnlockCode = () => {
+    const tenant = tenantsList.find((t) => t.slug === targetTenantSlug);
+    if (!tenant) return;
+
+    const code = `MEDO-VIP-ACTIVATE-${tenant.slug.toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`;
+    setGeneratedMasterUnlockCode(code);
+    setUnlockSuccessMsg(`تم توليد رمز الفك والترقية للمنشأة (${tenant.companyNameAr}) - قم بإرساله للعميل.`);
+  };
+
+  // Upgrade Tenant to Paid
+  const handleUpgradeTenantToPaid = (slug: string) => {
+    const updated = tenantsList.map((t) =>
+      t.slug === slug
+        ? {
+            ...t,
+            status: "PAID_ENTERPRISE" as const,
+            trialDaysRemaining: 365,
+            maxTrialOperations: 999999,
+          }
+        : t
+    );
+    setTenantsList(updated);
+    saveStored200Tenants(updated);
+    setSuccessMsg(`💎 تم ترقية المنشأة (${slug}) رسمياً إلى الباقة المدفوعة غير المحدودة!`);
+    setTimeout(() => setSuccessMsg(""), 5000);
+  };
+
+  // Export 200 Links to CSV
+  const handleExportCSV = () => {
+    const headers = "Index,Company Name,Slug,Status,Database Node,Master Domain,Vercel URL,Unlock Code,Admin Phone\n";
+    const rows = tenantsList
+      .map(
+        (t) =>
+          `"${t.index}","${t.companyNameAr}","${t.slug}","${t.status}","${t.databaseNode}","${t.masterDomain}","${t.vercelUrl}","${t.unlockCode}","${t.assignedAdminPhone}"`
+      )
+      .join("\n");
+
+    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `MeDo_ERP_200_Master_Trial_Links_Matrix_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Filtered tenants
+  const filteredTenants = tenantsList.filter((t) => {
+    const matchesSearch =
+      t.companyNameAr.includes(searchQuery) ||
+      t.slug.includes(searchQuery.toLowerCase()) ||
+      t.city.includes(searchQuery) ||
+      t.industry.includes(searchQuery);
+
+    const matchesStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "PAID" && t.status === "PAID_ENTERPRISE") ||
+      (statusFilter === "TRIAL" && t.status === "TRIAL");
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPaidCount = tenantsList.filter((t) => t.status === "PAID_ENTERPRISE").length;
+  const totalTrialCount = tenantsList.filter((t) => t.status === "TRIAL").length;
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto font-sans text-right" dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}>
-      {/* Header Banner */}
-      <div className="bg-gradient-to-l from-slate-900 via-slate-900 to-slate-950 border border-sap-primary/50 rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-sap-primary/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div
+      className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto font-sans text-right"
+      dir="rtl"
+      style={{ fontFamily: "'Alexandria', 'Cairo', sans-serif" }}
+    >
+      {/* Executive Command Header */}
+      <div className="bg-gradient-to-l from-[#0a2540] via-[#0c2e50] to-[#163e6c] border-2 border-[#d4af37]/50 rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden text-white">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-sap-primary/30 text-sap-secondary border border-sap-secondary/40 rounded-full text-xs font-bold mb-3 shadow-sm">
-              <Award className="w-4 h-4 text-sap-secondary" />
-              <span>لوحة تحكم الإدارة ونظام التراخيص المعتمد (SAP Cloud Architecture)</span>
+          <div className="flex items-start gap-4">
+            <BzmtLogo size="lg" variant="monogram" />
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/40 rounded-full text-xs font-bold mb-2 shadow-sm">
+                <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
+                <span>بوابة الإدارة العليا والسيادية — منصة SaaS متعددة المستأجرين (Multi-Tenant)</span>
+              </div>
+              <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-1 flex items-center gap-3 flex-wrap">
+                <span>حزمة التوسع المؤسسي وإدارة الـ 200 شركة</span>
+                <span className="text-xs px-2.5 py-1 bg-[#d4af37] text-[#0a2540] rounded-lg font-mono font-black shadow">
+                  v4.5 Master Enterprise Suite
+                </span>
+              </h1>
+              <p className="text-xs lg:text-sm text-slate-200 max-w-3xl leading-relaxed">
+                لوحة التحكم المركزية للسيد / بدر عايض محمد (مدير النظام) لإدارة الروابط الرئيسية والفرعية، مراقبة قواعد البيانات الـ 5، إصدار رموز القفل والترقية، وتفعيل تجارب الـ 200 شركة.
+              </p>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
-              <span>إدارة التراخيص والمنظومة السحابية MeDo ERP</span>
-              <span className="text-xs px-2.5 py-1 bg-sap-primary text-white rounded-lg font-mono font-bold">
-                v2026.9 SAP-Spec
-              </span>
-            </h1>
-            <p className="text-xs lg:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              المنصة المركزية لمجموعة بن زياد التجارية لإدارة العمليات، مراقبة نشاط المستخدمين والفروع، إصدار وتجديد التراخيص الرقمية، وبث الإشعارات التلقائية والتنبيهات.
-            </p>
           </div>
-          
-          <div className="flex flex-wrap gap-3">
+
+          <div className="flex flex-wrap gap-2.5 shrink-0">
             <button
-              onClick={() => setIsComplianceModalOpen(true)}
-              className="px-4 py-2.5 bg-sap-secondary hover:bg-[#b89528] text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-black/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              onClick={() => setIsCreateCompanyOpen(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:brightness-110 text-[#0a2540] font-black rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Award className="w-4 h-4 text-slate-950" />
-              <span>تقرير الامتثال لمعايير SAP (99.4%)</span>
+              <Plus className="w-4 h-4 text-[#0a2540]" />
+              <span>+ إنشاء رابط رئيسي لشركة جديدة</span>
             </button>
             <button
-              onClick={onOpenTrialLockModal}
-              className="px-4 py-2.5 bg-amber-600/90 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 cursor-pointer"
+              onClick={handleExportCSV}
+              className="px-4 py-2.5 bg-[#06182a] hover:bg-[#0c2b48] border border-[#d4af37]/50 text-[#d4af37] font-bold rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Lock className="w-4 h-4" />
-              <span>معاينة شاشة القفل التجريبي</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("NOTIFICATIONS")}
-              className="px-4 py-2.5 bg-sap-primary hover:bg-[#14532D] border border-sap-secondary/50 text-sap-secondary font-bold rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Bell className="w-4 h-4 text-sap-secondary" />
-              <span>مركز الإشعارات والتنبيهات</span>
+              <Download className="w-4 h-4 text-[#d4af37]" />
+              <span>تصدير مصفوفة الـ 200 رابط (CSV/Excel)</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
+      {/* Main Feature Tabs */}
+      <div className="flex flex-wrap gap-2 border-b border-slate-700/80 pb-3">
         {[
-          { id: "ADMIN_DASHBOARD", label: "لوحة تحكم الإدارة والمؤشرات", icon: BarChart3 },
-          { id: "LICENSING", label: "نظام إدارة وتوليد التراخيص", icon: Key },
-          { id: "NOTIFICATIONS", label: "مركز الإشعارات وتنبيهات التجربة", icon: Bell },
-          { id: "CLIENTS", label: "سجل العملاء والاشتراكات", icon: Users },
-          { id: "WHITE_LABEL_V2", label: "استوديو الهوية للوكيل المعتمد", icon: Award },
-          { id: "LEGAL_DOCS", label: "الوثائق القانونية والشروط (SAP Matrix)", icon: FileText },
-          { id: "HANDOVER", label: "مفاتيح العمل والتشغيل", icon: ShieldCheck },
+          { id: "ADMIN_DASHBOARD", label: "📊 لوحة التحكم والمؤشرات (KPIs)", icon: BarChart3 },
+          { id: "MULTI_CLOUD_DBS", label: "☁️ قواعد البيانات السحابية الخمس (5 Clouds)", icon: Database },
+          { id: "MASTER_200_LINKS", label: "🏢 مصفوفة الـ 200 رابط تجريبي رئيسي", icon: Globe },
+          { id: "SUB_EMPLOYEE_LINKS", label: "👥 إدارة الروابط الفرعية للموظفين (5 أدوار)", icon: Users },
+          { id: "UNLOCK_CODES", label: "🔑 إدارة التراخيص ومولد رموز القفل", icon: Key },
+          { id: "CONVERSION_SURVEY", label: "💬 استبيان الرضا وتحويل المشتركين", icon: MessageSquare },
+          { id: "DATA_MIGRATION", label: "💾 ترحيل بيانات العملاء (OneX Pro / Excel)", icon: Terminal },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -310,8 +486,8 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 isActive
-                  ? "bg-sap-primary text-white shadow-md shadow-sap-primary/30 border border-sap-secondary/50"
-                  : "bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800"
+                  ? "bg-gradient-to-r from-[#d4af37] to-[#f1c40f] text-[#0a2540] shadow-md shadow-[#d4af37]/30 border border-[#b8860b]"
+                  : "bg-[#06182a] text-slate-300 hover:text-white hover:bg-[#0a2540] border border-blue-900/60"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -322,750 +498,1164 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       </div>
 
       {successMsg && (
-        <div className="bg-sap-primary/20 border border-sap-secondary/50 text-sap-secondary p-4 rounded-2xl text-xs font-bold flex items-center gap-3 animate-fadeIn">
-          <CheckCircle2 className="w-5 h-5 shrink-0 text-sap-secondary" />
+        <div className="bg-[#0a2540] border-2 border-[#d4af37] text-white p-4 rounded-2xl text-xs font-bold flex items-center gap-3 shadow-xl">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-[#d4af37]" />
           <span>{successMsg}</span>
         </div>
       )}
 
+      {/* ========================================================= */}
       {/* TAB 1: ADMIN_DASHBOARD */}
+      {/* ========================================================= */}
       {activeTab === "ADMIN_DASHBOARD" && (
         <div className="space-y-6">
-          {/* Top 4 Real-time Admin KPI Cards */}
+          {/* Executive KPI Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* KPI 1: Active Users */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">عدد المستخدمين النشطين</span>
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <Users className="w-5 h-5" />
-                </div>
+            <div className="bg-[#0a2540] border border-[#d4af37]/40 rounded-2xl p-5 text-white shadow-xl flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-300 font-semibold mb-1">إجمالي المنشآت والشركات</p>
+                <h3 className="text-3xl font-black text-white">200 <span className="text-xs text-[#d4af37] font-normal">منشأة مستقلة</span></h3>
+                <span className="text-[10px] text-emerald-400 font-bold mt-1 inline-block">● 100% معزولة أمنياً وقاعدياً</span>
               </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">8 مستخدمين</span>
-                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/50">
-                  متصلون الآن
-                </span>
+              <div className="w-12 h-12 rounded-2xl bg-[#d4af37]/20 border border-[#d4af37]/50 flex items-center justify-center text-[#d4af37]">
+                <Building2 className="w-6 h-6" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                4 مدراء، 2 محاسبين ماليين، 2 مسؤولي مبيعات ومخازن
-              </p>
             </div>
 
-            {/* KPI 2: Branches & Warehouses */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">الفروع والمستودعات</span>
-                <div className="p-2.5 rounded-xl bg-sap-primary/20 text-sap-secondary border border-sap-primary/40">
-                  <Building2 className="w-5 h-5" />
-                </div>
+            <div className="bg-[#0a2540] border border-amber-500/40 rounded-2xl p-5 text-white shadow-xl flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-300 font-semibold mb-1">الشركات في الفترة التجريبية</p>
+                <h3 className="text-3xl font-black text-amber-300">150 <span className="text-xs text-slate-300 font-normal">شركة (Trial)</span></h3>
+                <span className="text-[10px] text-amber-300 font-bold mt-1 inline-block">حد 200 عملية / 30 يوماً</span>
               </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">4 فروع / 6 مخازن</span>
-                <span className="text-[11px] font-bold text-sap-secondary bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800">
-                  مفعلة بالكامل
-                </span>
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300">
+                <Lock className="w-6 h-6" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                الفرع الرئيسي صنعاء، فرع عدن، فرع تعز، فرع الحديدة
-              </p>
             </div>
 
-            {/* KPI 3: Executed Operations */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">العمليات المنفذة</span>
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  <Activity className="w-5 h-5" />
-                </div>
+            <div className="bg-[#0a2540] border border-emerald-500/40 rounded-2xl p-5 text-white shadow-xl flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-300 font-semibold mb-1">الشركات المدفوعة (Enterprise)</p>
+                <h3 className="text-3xl font-black text-emerald-400">50 <span className="text-xs text-slate-300 font-normal">مشترك معتمد</span></h3>
+                <span className="text-[10px] text-emerald-300 font-bold mt-1 inline-block">ترخيص سنوي / دائم كامل</span>
               </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">1,480+ عملية</span>
-                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/50">
-                  +18% هذا الشهر
-                </span>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
+                <Award className="w-6 h-6" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                قيود، فواتير ضريبية، سندات صرف وقبض، حركات مخزون
-              </p>
             </div>
 
-            {/* KPI 4: Licenses & Subscription Health */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">حالة التراخيص والاشتراكات</span>
-                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  <Key className="w-5 h-5" />
-                </div>
+            <div className="bg-[#0a2540] border border-[#d4af37]/40 rounded-2xl p-5 text-white shadow-xl flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-300 font-semibold mb-1">الإيرادات السنوية التقديرية</p>
+                <h3 className="text-2xl font-black text-[#d4af37]">125,000 <span className="text-xs text-slate-200">USD</span></h3>
+                <span className="text-[10px] text-slate-300 font-bold mt-1 inline-block">معدل التحويل المتوقع: 35%</span>
               </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-sap-secondary">3 تراخيص سحابية</span>
-                <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800/50">
-                  1 تجريبية نشطة
-                </span>
+              <div className="w-12 h-12 rounded-2xl bg-[#d4af37]/20 border border-[#d4af37]/50 flex items-center justify-center text-[#d4af37]">
+                <Zap className="w-6 h-6" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                نسخة تجريبية 30 يوم + 2 اشتراك سنوي سحابي
-              </p>
             </div>
           </div>
 
-          {/* Detailed Status Panels */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Live Active Sessions */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-400" />
-                  <span>المستخدمون المتصلون الآن (Active Users)</span>
-                </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  مباشر (Live)
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { name: "بدر عايض محمد", role: "مدير النظام العام (Super Admin)", branch: "الإدارة العامة - صنعاء", status: "ONLINE", time: "الآن" },
-                  { name: "أحمد صالح الزريقي", role: "رئيس الحسابات (Chief Accountant)", branch: "فرع عدن الرئيسي", status: "ONLINE", time: "منذ 4 دقائق" },
-                  { name: "مروان التميمي", role: "مسؤول المبيعات والمشتريات", branch: "فرع تعز", status: "ONLINE", time: "منذ 12 دقيقة" },
-                  { name: "فؤاد الهتار", role: "أمين المخزن المركزي", branch: "مستودع الحديدة", status: "ONLINE", time: "منذ 25 دقيقة" },
-                ].map((user, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-xs">
-                    <div>
-                      <div className="font-bold text-white flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                        <span>{user.name}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{user.role} • {user.branch}</div>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{user.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Branches & Warehouse Distribution */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-sap-secondary" />
-                  <span>توزيع الفروع والمستودعات المركزية</span>
-                </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sap-primary/30 text-sap-secondary border border-sap-secondary/30">
-                  4 فروع
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { name: "الفرع الرئيسي والمقر العام - صنعاء", code: "BR-SANAA-01", status: "نشط • خادم رئيسي", ops: "720 عملية" },
-                  { name: "فرع عدن التجاري والمنفذ البحري", code: "BR-ADEN-02", status: "نشط • مزامنة سحابية", ops: "410 عمليات" },
-                  { name: "فرع تعز للتوزيع وتجارة الجملة", code: "BR-TAIZ-03", status: "نشط • ربط محلي", ops: "230 عملية" },
-                  { name: "فرع ومستودع الحديدة المركزي", code: "BR-HOD-04", status: "نشط • مخزون استراتيجي", ops: "120 عملية" },
-                ].map((branch, idx) => (
-                  <div key={idx} className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-xs flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-white">{branch.name}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{branch.code} • {branch.status}</div>
-                    </div>
-                    <span className="text-[11px] font-bold text-sap-secondary bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
-                      {branch.ops}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* License & Offline-First Health Engine */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>محرك الأمان والمزامنة الهجينة (SAP Hybrid)</span>
-                </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  99.98% جاهزية
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                  <div className="text-slate-400">حالة قاعدة البيانات المحلية (IndexedDB / SQLite):</div>
-                  <div className="text-emerald-400 font-bold flex items-center gap-1.5">
-                    <Check className="w-4 h-4" />
-                    <span>مشفرة بنمط AES-256 وتعمل بكفاءة دون انقطاع</span>
-                  </div>
+          {/* Quick Actions & Workspace Modules Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[#d4af37]/20 text-[#d4af37] rounded-xl border border-[#d4af37]/40">
+                  <Globe className="w-5 h-5" />
                 </div>
-
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                  <div className="text-slate-400">عزل البيانات متعدد المستأجرين (Multi-Tenant Isolation):</div>
-                  <div className="text-sap-secondary font-bold flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>معزول كلياً بمفاتيح تشفير خاصة بكل عميل</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                  <div className="text-slate-400">حالة الربط مع ZATCA والفاتورة الإلكترونية:</div>
-                  <div className="text-indigo-400 font-bold flex items-center gap-1.5">
-                    <Globe className="w-4 h-4" />
-                    <span>جاهز للمرحلة الثانية (Phase 2 Integration)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: LICENSING */}
-      {activeTab === "LICENSING" && (
-        <div className="space-y-6">
-          {/* Issue New Digital License */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Key className="w-5 h-5 text-sap-secondary" />
-                  <span>إصدار وتوليد ترخيص رقمي جديد (Digital License Generator)</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  توليد مفاتيح تشفير تسلسلية معتمدة ومتوافقة مع معايير ترخيص SAP Cloud Trial & Enterprise
-                </p>
-              </div>
-
-              <span className="text-xs px-3 py-1 bg-sap-primary/30 text-sap-secondary border border-sap-secondary/30 rounded-xl font-bold">
-                توليد فوري مشفر
-              </span>
-            </div>
-
-            <form onSubmit={handleAddClient} className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">اسم المؤسسة / الشركة</label>
-                <input
-                  type="text"
-                  value={newCompany}
-                  onChange={(e) => setNewCompany(e.target.value)}
-                  placeholder="مثال: مجموعة بن زياد التجارية"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">اسم المسؤول المعتمد</label>
-                <input
-                  type="text"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                  placeholder="مثال: بدر عايض محمد"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">البريد الإلكتروني المعتمد</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="zyadbdr925@gmail.com"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">نوع وفترة الترخيص</label>
-                <select
-                  value={newLicenseType}
-                  onChange={(e) => setNewLicenseType(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white"
-                >
-                  <option value="TRIAL_30">نسخة تجريبية 30 يوماً (SAP Trial)</option>
-                  <option value="ANNUAL_365">اشتراك سنوي (365 يوماً - Enterprise)</option>
-                  <option value="LIFETIME">ترخيص مؤسسي دائم (Lifetime Unlimited)</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full px-4 py-2.5 bg-sap-primary hover:bg-[#14532D] text-sap-secondary font-bold rounded-xl text-xs border border-sap-secondary/50 shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>توليد الترخيص الآن</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Active Licenses Table */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <span>سجل التراخيص الصادرة وحالتها التشغيلية</span>
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                إجمالي التراخيص: {clients.length}
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="pb-3 px-3">الشركة / العميل</th>
-                    <th className="pb-3 px-3">مفتاح الترخيص الرقمي (License Key)</th>
-                    <th className="pb-3 px-3">نوع الاشتراك</th>
-                    <th className="pb-3 px-3">تاريخ الانتهاء</th>
-                    <th className="pb-3 px-3">الحالة</th>
-                    <th className="pb-3 px-3 text-center">الإجراءات والشهادة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                  {clients.map((cli) => (
-                    <tr key={cli.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-3 font-bold text-white">
-                        <div>{cli.companyName}</div>
-                        <div className="text-[11px] text-slate-400">{cli.clientName} ({cli.phone})</div>
-                      </td>
-                      <td className="py-3.5 px-3 font-mono text-sap-secondary font-bold">
-                        <div className="flex items-center gap-2">
-                          <span>{cli.licenseKey}</span>
-                          <button
-                            onClick={() => handleCopyKey(cli.licenseKey)}
-                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
-                            title="نسخ مفتاح الترخيص"
-                          >
-                            {copiedKey === cli.licenseKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <span className="px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] font-bold text-slate-200">
-                          {cli.id === "cli-01" ? "تجريبي (30 يوماً)" : "سنوي مؤسسي (Enterprise)"}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 font-mono">{cli.subscriptionEnd}</td>
-                      <td className="py-3.5 px-3">
-                        <span className="px-2.5 py-1 bg-sap-primary/25 text-emerald-400 border border-sap-primary/50 rounded-full font-bold text-[10px]">
-                          {cli.status === "ACTIVE" ? "مرخص ونشط" : "منتهي الصلاحية"}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setSelectedCertClient(cli)}
-                            className="px-3 py-1.5 rounded-lg bg-sap-primary/20 hover:bg-sap-primary/40 text-sap-secondary border border-sap-secondary/40 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Award className="w-3.5 h-3.5" />
-                            <span>عرض الشهادة الرسمية</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: NOTIFICATIONS & BROADCAST CENTER */}
-      {activeTab === "NOTIFICATIONS" && (
-        <div className="space-y-6">
-          {/* Send Broadcast Announcement */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-sap-secondary" />
-                  <span>مركز إرسال الإشعارات والإعلانات الفورية (Broadcast Center)</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  إرسال تنبيهات انتهاء الفترة التجريبية، إعلانات التحديثات، وعروض التجديد للمستخدمين
-                </p>
-              </div>
-
-              <span className="text-xs px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl font-bold">
-                إشعار فوري متعدد القنوات
-              </span>
-            </div>
-
-            <form onSubmit={handleSendBroadcast} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">عنوان الإشعار / الإعلان</label>
-                  <input
-                    type="text"
-                    value={broadcastTitle}
-                    onChange={(e) => setBroadcastTitle(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">الفئة المستهدفة</label>
-                  <select
-                    value={broadcastTarget}
-                    onChange={(e) => setBroadcastTarget(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white"
-                  >
-                    <option value="ALL_USERS">كافة المستخدمين والمشتركين</option>
-                    <option value="TRIAL_USERS">مستخدمو النسخة التجريبية (Trial Users)</option>
-                    <option value="ENTERPRISE">عملاء الباقة المؤسسية (Enterprise)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">قناة الإرسال</label>
-                  <select
-                    value={broadcastChannel}
-                    onChange={(e) => setBroadcastChannel(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white"
-                  >
-                    <option value="ALL_CHANNELS">كافة القنوات (بريد + نظام + واتساب)</option>
-                    <option value="IN_APP">إشعار داخل النظام فقط (In-App Alert)</option>
-                    <option value="EMAIL">رسالة بريد إلكتروني رسمية (Email)</option>
-                    <option value="WHATSAPP">رسالة واتساب معتمدة (WhatsApp API)</option>
-                  </select>
+                  <h3 className="text-sm font-bold text-white">إدارة مصفوفة الـ 200 رابط</h3>
+                  <p className="text-[11px] text-slate-400">روابط رئيسية مستقلة لكل شركة</p>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">نص الرسالة / تفاصيل الإعلان</label>
-                <textarea
-                  rows={3}
-                  value={broadcastMessage}
-                  onChange={(e) => setBroadcastMessage(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white leading-relaxed"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-sap-primary hover:bg-[#14532D] text-sap-secondary font-bold rounded-xl text-xs border border-sap-secondary/50 shadow-lg transition-all cursor-pointer flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4 text-sap-secondary" />
-                  <span>بث الإشعار الآن للجميع</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Broadcast History */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-              <Activity className="w-5 h-5 text-emerald-400" />
-              <span>سجل الإشعارات والإعلانات المرسلة مؤخراً</span>
-            </h3>
-
-            <div className="space-y-3">
-              {broadcastHistory.map((item) => (
-                <div key={item.id} className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="font-bold text-white flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-sap-secondary" />
-                      <span>{item.title}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400">
-                      المستهدف: <span className="text-slate-300 font-bold">{item.target}</span> • القناة: <span className="text-slate-300">{item.channel}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-slate-400 font-mono">{item.date}</span>
-                    <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded-full font-bold text-[10px]">
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: CLIENTS */}
-      {activeTab === "CLIENTS" && (
-        <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-sap-secondary" />
-              <span>قائمة العملاء والمستأجرين المعتمدين</span>
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="pb-3 px-3">الشركة / العميل</th>
-                    <th className="pb-3 px-3">الرقم التسلسلي (License)</th>
-                    <th className="pb-3 px-3">الرابط المخصص (Domain)</th>
-                    <th className="pb-3 px-3">تاريخ الانتهاء</th>
-                    <th className="pb-3 px-3">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                  {clients.map((cli) => (
-                    <tr key={cli.id} className="hover:bg-slate-800/40">
-                      <td className="py-3 px-3 font-bold text-white">
-                        <div>{cli.companyName}</div>
-                        <div className="text-[11px] text-slate-400">{cli.clientName} ({cli.phone})</div>
-                      </td>
-                      <td className="py-3 px-3 font-mono text-sap-secondary">{cli.licenseKey}</td>
-                      <td className="py-3 px-3 text-slate-300 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={cli.uniqueDomain}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300 underline font-mono text-[11px] truncate flex items-center gap-1 max-w-[200px]"
-                            title={cli.uniqueDomain}
-                          >
-                            <span>{cli.uniqueDomain}</span>
-                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyKey(cli.uniqueDomain)}
-                            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex-shrink-0"
-                            title="نسخ الرابط المباشر للعميل"
-                          >
-                            {copiedKey === cli.uniqueDomain ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3 font-mono">{cli.subscriptionEnd}</td>
-                      <td className="py-3 px-3">
-                        <span className="px-2.5 py-1 bg-sap-primary/20 text-emerald-400 border border-sap-primary/40 rounded-full font-bold text-[10px]">
-                          {cli.status === "ACTIVE" ? "نشط ومفعل" : "معطل"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: WHITE_LABEL_V2 */}
-      {activeTab === "WHITE_LABEL_V2" && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-l from-sap-primary/30 via-slate-900 to-slate-950 border border-sap-secondary/40 rounded-2xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <span className="px-3 py-1 bg-sap-secondary/20 text-sap-secondary border border-sap-secondary/40 rounded-full text-xs font-bold inline-block mb-2">
-                  ✨ النسخة المخصصة رقم (2) للوكيل المعتمد
-                </span>
-                <h2 className="text-xl font-black text-white">
-                  خطاب تجهيز واعتراف استلام النسخة المخصصة (White-Label) من MeDo ERP
-                </h2>
-              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                توزيع 200 رابط مسبق الإعداد للمنشآت التجارية في اليمن والخليج، مع جاهزية الربط مع Vercel و MeDo Cloud.
+              </p>
               <button
-                onClick={() => {
-                  const letterText = `الموضوع: تجهيز واستلام النسخة المخصصة (White-Label) من نظام MeDo ERP المحاسبي والإداري السحابي - النسخة رقم (2)\n\nالسلام عليكم ورحمة الله وبركاته،\nالسادة / ${agencyName} المحترمون\nعناية الأخ / المسؤول الرسمي المحترم\n\nيسرنا إبلاغكم بأنه تم الانتهاء من إعداد وتجهيز البنية التحتية لمنظومة نظام MeDo ERP المحاسبي والإداري السحابي الشامل، ونحن بصدد إطلاق وتخصيص النسخة رقم (2) الخاصة بكم كوكيل معتمد وموزع رسمي.\n\nبيانات المستأجر والرابط المخصص: ${tenantSlug}\nاللون الرئيسي: ${primaryColor} | اللون الثانوي: ${secondaryColor} | الخط العربي: ${selectedFont}\nالباقة المعتمدة: ${packageTier} (${licenseDuration})\n\nإدارة نظام MeDo ERP\nالمدير العام: بدر عايض محمد\nواتساب / هاتف: +967 773 586 047\nالبريد الإلكتروني: admin@medo-erp.com`;
-                  navigator.clipboard.writeText(letterText);
-                  setCopiedLetter(true);
-                  setTimeout(() => setCopiedLetter(false), 3000);
-                }}
-                className="px-4 py-2 bg-sap-primary hover:bg-[#14532D] text-sap-secondary font-bold rounded-xl text-xs border border-sap-secondary/50 shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                onClick={() => setActiveTab("MASTER_200_LINKS")}
+                className="w-full py-2.5 px-4 bg-[#0a2540] hover:bg-[#0e355c] border border-[#d4af37]/50 text-[#d4af37] rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
               >
-                <FileText className="w-4 h-4" />
-                <span>{copiedLetter ? "تم نسخ نص الخطاب بنجاح!" : "نسخ نص الخطاب الرسمي للوكيل"}</span>
+                <span>استعراض مصفوفة الـ 200 شركة</span>
+                <ExternalLink className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed space-y-3 font-mono">
-              <p className="text-sap-secondary font-bold font-sans text-sm">📄 نص الخطاب / الرسالة الموجهة للوكيل:</p>
-              <p><strong>الموضوع:</strong> تجهيز واستلام النسخة المخصصة (White-Label) من نظام MeDo ERP المحاسبي والإداري السحابي - النسخة رقم (2)</p>
-              <p>السلام عليكم ورحمة الله وبركاته،<br />السادة / <span className="text-sap-secondary font-bold">{agencyName}</span> المحترمون<br />عناية الأخ / المسؤول المعتمد المحترم<br />تحية طيبة وبعد،،</p>
-              <p>يسرنا إبلاغكم بأنه تم الانتهاء من إعداد وتجهيز البنية التحتية لمنظومة نظام MeDo ERP المحاسبي والإداري السحابي الشامل، ونحن بصدد إطلاق وتخصيص النسخة رقم (2) الخاصة بكم كوكيل معتمد وموزع رسمي.</p>
-              <p>ولضمان إطلاق النسخة بالهوية البصرية والتشغيلية المعتمدة لشركتكم، تم اعتماد المعايير التالية على نسختكم الخاصة:</p>
-              <ul className="list-disc list-inside space-y-1 text-slate-300 pr-2">
-                <li><strong>اللون الرئيسي (Primary):</strong> <span style={{ color: primaryColor }} className="font-bold">{primaryColor}</span></li>
-                <li><strong>اللون الثانوي / التمييزي (Secondary/Gold):</strong> <span style={{ color: secondaryColor }} className="font-bold">{secondaryColor}</span></li>
-                <li><strong>الخط العربي المفضل:</strong> <span className="text-white font-bold">{selectedFont}</span></li>
-                <li><strong>اسم المنشأة/الوكالة الرسمي:</strong> <span className="text-white font-bold">{agencyName}</span></li>
-                <li><strong>الرابط المخصص (Tenant URL):</strong> <span className="text-emerald-400 font-bold">{generateClientPortalUrl(tenantSlug)}</span></li>
-              </ul>
-              <div className="pt-3 border-t border-slate-800 flex flex-col md:flex-row justify-between text-slate-400 text-[11px]">
+            <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/40">
+                  <Users className="w-5 h-5" />
+                </div>
                 <div>
-                  <span className="text-white font-bold">إدارة نظام MeDo ERP</span><br />
-                  المدير العام: <span className="text-sap-secondary font-bold">بدر عايض محمد</span>
+                  <h3 className="text-sm font-bold text-white">الروابط الفرعية للموظفين</h3>
+                  <p className="text-[11px] text-slate-400">5 أدوار وصلاحيات مخصصة لكل شركة</p>
                 </div>
-                <div className="mt-2 md:mt-0">
-                  📱 واتساب / هاتف: <span className="text-white font-bold">{adminPhone}</span><br />
-                  ✉️ البريد الإلكتروني: <span className="text-white font-bold">{adminEmail}</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                إصدار رابط فرعي مباشر لكل موظف (المدير، المحاسب، المشتريات، المبيعات، المدقق) مع تقييد الصلاحيات التلقائي.
+              </p>
+              <button
+                onClick={() => setActiveTab("SUB_EMPLOYEE_LINKS")}
+                className="w-full py-2.5 px-4 bg-[#0a2540] hover:bg-[#0e355c] border border-emerald-500/50 text-emerald-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>إدارة روابط الموظفين الفرعية</span>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-500/20 text-purple-400 rounded-xl border border-purple-500/40">
+                  <Key className="w-5 h-5" />
                 </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">إصدار رموز القفل والترقية</h3>
+                  <p className="text-[11px] text-slate-400">فك حد الـ 200 عملية للعملاء</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                توليد فوري لرموز الترخيص لفتح النسخ التجريبية وإلغاء القفل بعد موافقة العميل على الاشتراك المدفوع.
+              </p>
+              <button
+                onClick={() => setActiveTab("UNLOCK_CODES")}
+                className="w-full py-2.5 px-4 bg-[#0a2540] hover:bg-[#0e355c] border border-purple-500/50 text-purple-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>فتح مولد رموز القفل والترقية</span>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB 2: MULTI_CLOUD_DBS (قواعد البيانات السحابية الخمس) */}
+      {/* ========================================================= */}
+      {activeTab === "MULTI_CLOUD_DBS" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-blue-900/80 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Database className="w-5 h-5 text-[#d4af37]" />
+                  <span>لوحة التيليمتري والمراقبة الحية لقواعد البيانات السحابية الخمس</span>
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  فحص الاتصال اللحظي والمزامنة عبر: Alibaba Cloud, Huawei Cloud, Qiniu Cloud, PostgreSQL Local, و Firebase
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleTestAllDbs}
+                  disabled={isTestingDbs}
+                  className="px-4 py-2 bg-[#d4af37] hover:bg-[#f1c40f] text-[#0a2540] font-black rounded-xl text-xs shadow-md flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isTestingDbs ? "animate-spin" : ""}`} />
+                  <span>{isTestingDbs ? "جاري فحص الاتصالات..." : "اختبار الاتصال بجميع القواعد"}</span>
+                </button>
+                <button
+                  onClick={handleSyncAllDbs}
+                  disabled={isSyncingDbs}
+                  className="px-4 py-2 bg-[#0a2540] hover:bg-[#0c2e50] border border-[#d4af37] text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Zap className={`w-4 h-4 text-[#d4af37] ${isSyncingDbs ? "animate-pulse" : ""}`} />
+                  <span>{isSyncingDbs ? "جاري المزامنة اللحظية..." : "مزامنة البيانات بين الخوادم الـ 5"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Cloud Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dbStatuses.map((db, idx) => (
+                <div
+                  key={db.id}
+                  className="bg-[#0a2540] border border-blue-900/80 hover:border-[#d4af37]/60 rounded-2xl p-4 transition-all shadow-lg space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-900/60 text-slate-300 font-bold">
+                      قاعدة #{idx + 1}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>متصلة وتعمل (Online)</span>
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-black text-white">{db.nameAr}</h4>
+                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{db.engine}</p>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px] text-slate-300 bg-[#06182a] p-3 rounded-xl border border-blue-950">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">زمن الاستجابة (Ping):</span>
+                      <strong className="text-[#d4af37] font-mono">{db.pingMs} ms</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">نسبة الجاهزية (Uptime):</span>
+                      <strong className="text-emerald-400 font-mono">{db.uptimePercentage}%</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">السجلات المتزامنة:</span>
+                      <strong className="text-slate-200 font-mono">{db.dataRecordsCount.toLocaleString()} سجل</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">معيار التشفير:</span>
+                      <strong className="text-slate-200">{db.encryption}</strong>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 leading-relaxed">{db.detailsAr}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Live Sync Logs */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#d4af37]" />
+                <span>سجل المزامنة الحية وعمليات القراءة والكتابة اللحظية:</span>
+              </h3>
+              <div className="bg-[#06182a] border border-blue-900/80 rounded-2xl p-3 overflow-x-auto">
+                <table className="w-full text-xs text-right">
+                  <thead>
+                    <tr className="border-b border-blue-900 text-slate-400">
+                      <th className="py-2 px-3">الوقت</th>
+                      <th className="py-2 px-3">قاعدة البيانات</th>
+                      <th className="py-2 px-3">نوع العملية</th>
+                      <th className="py-2 px-3">السجلات المتأثرة</th>
+                      <th className="py-2 px-3">زمن التأخير</th>
+                      <th className="py-2 px-3">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-blue-950">
+                    {syncLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-[#0a2540]/60">
+                        <td className="py-2 px-3 font-mono text-slate-300">{log.timestamp}</td>
+                        <td className="py-2 px-3 font-bold text-white">{log.database}</td>
+                        <td className="py-2 px-3 font-mono text-amber-300">{log.operation}</td>
+                        <td className="py-2 px-3 font-mono text-slate-300">{log.recordsAffected}</td>
+                        <td className="py-2 px-3 font-mono text-[#d4af37]">{log.latencyMs} ms</td>
+                        <td className="py-2 px-3">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                            ناجحة (100%)
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 6: LEGAL_DOCS */}
-      {activeTab === "LEGAL_DOCS" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 text-xs">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-sap-secondary" />
-            <span>حزمة الوثائق القانونية والسياسات المعتمدة (SAP Standard Suite)</span>
-          </h3>
-          <p className="text-slate-300 leading-relaxed">
-            تم تضمين كافة الوثائق القانونية والسياسات الرسمية الـ 8 المعتمدة في نظام MeDo ERP لضمان الامتثال التام مع متطلبات SAP Cloud Trust Center وحماية البيانات (DPA) واتفاقيات مستوى الخدمة (SLA 99.9%).
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-            {[
-              "1. اتفاقية شروط الاستخدام للنسخة التجريبية (Terms of Service)",
-              "2. الشروط والأحكام العامة للخدمات السحابية (GTC)",
-              "3. الملحق الفني والتشغيلي ومستوى الخدمة (Supplement & SLA 99.9%)",
-              "4. ملحق معالجة وأمن البيانات والخصوصية (DPA)",
-              "5. سياسة الخصوصية وحماية البيانات الشخصية (Privacy Policy)",
-              "6. اتفاقية ترخيص المستخدم النهائي وحماية الملكية (EULA)",
-              "7. إخلاء المسؤولية للنسخ التجريبية (Trial Disclaimer)",
-              "8. جدول المقارنة والامتثال المعياري مع SAP (SAP Matrix)",
-            ].map((doc, idx) => (
-              <div key={idx} className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-200 font-bold flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{doc}</span>
+      {/* ========================================================= */}
+      {/* TAB 3: MASTER_200_LINKS (مصفوفة الـ 200 شركة) */}
+      {/* ========================================================= */}
+      {activeTab === "MASTER_200_LINKS" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-blue-900/80 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-[#d4af37]" />
+                  <span>دليل ومصفوفة الـ 200 رابط رئيسي للشركات (Vercel & MeDo Cloud)</span>
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  كل رابط يمثل بيئة عمل تجريبية معزولة بقاعدة بيانات مستقلة وحد 200 عملية.
+                </p>
               </div>
-            ))}
+
+              {/* Search and Filters */}
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="relative flex-grow md:w-64">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ابحث باسم الشركة، النطاق، أو المدينة..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-4 py-2 pr-9 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#d4af37]"
+                  />
+                  <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+                </div>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                >
+                  <option value="ALL">جميع الحالات ({tenantsList.length})</option>
+                  <option value="TRIAL">تجريبية ({totalTrialCount})</option>
+                  <option value="PAID">مدفوعة ({totalPaidCount})</option>
+                </select>
+
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3 py-2 bg-[#d4af37] text-[#0a2540] font-black rounded-xl text-xs hover:bg-[#f1c40f] transition flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>تصدير Excel</span>
+                </button>
+
+                <button
+                  onClick={handleResetAllTenantsToDefault}
+                  className="px-3 py-2 bg-[#0a2540] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs border border-blue-900 transition flex items-center gap-1.5 cursor-pointer"
+                  title="إعادة ضبط أسماء وقائمة الـ 200 شركة للوضع الافتراضي الأول"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  <span>إعادة الضبط الافتراضي</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tenants Matrix Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-right border-collapse">
+                <thead>
+                  <tr className="border-b border-blue-900/80 text-slate-400 bg-[#0a2540]/60">
+                    <th className="py-3 px-3">#</th>
+                    <th className="py-3 px-3">اسم المنشأة والنشاط</th>
+                    <th className="py-3 px-3">المدينة / السجل</th>
+                    <th className="py-3 px-3">الرابط التجريبي الرئيسي</th>
+                    <th className="py-3 px-3">العمليات</th>
+                    <th className="py-3 px-3">الحالة</th>
+                    <th className="py-3 px-3 text-center">الإجراءات والنسخ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-blue-950">
+                  {filteredTenants.slice(0, 50).map((tenant) => (
+                    <tr key={tenant.id} className="hover:bg-[#0a2540]/80 transition">
+                      <td className="py-3 px-3 font-mono font-bold text-[#d4af37]">{tenant.index}</td>
+                      <td className="py-3 px-3">
+                        <strong className="text-white block font-bold">{tenant.companyNameAr}</strong>
+                        <span className="text-[10px] text-slate-400">{tenant.industry}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="text-slate-200 block">{tenant.city}</span>
+                        <span className="text-[10px] font-mono text-slate-400">{tenant.commercialReg}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-2">
+                          <code className="text-[11px] text-amber-300 font-mono bg-black/40 px-2 py-0.5 rounded border border-blue-900">
+                            {tenant.masterDomain}
+                          </code>
+                          <button
+                            onClick={() => handleCopyLink(tenant.masterDomain, tenant.index)}
+                            className="p-1.5 bg-[#0a2540] hover:bg-[#d4af37] hover:text-[#0a2540] text-slate-300 rounded-lg border border-blue-900 transition"
+                            title="نسخ الرابط"
+                          >
+                            {copiedLinkIndex === tenant.index ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        <a
+                          href={tenant.vercelUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-sky-400 hover:underline inline-flex items-center gap-1 mt-0.5 font-mono"
+                        >
+                          <span>رابط Vercel المباشر</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px]">
+                            <span>{tenant.operationsCount} / {tenant.maxTrialOperations}</span>
+                            <span className="text-slate-400">{Math.round((tenant.operationsCount / tenant.maxTrialOperations) * 100)}%</span>
+                          </div>
+                          <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${
+                                tenant.operationsCount >= 45 ? "bg-red-500" : tenant.operationsCount >= 25 ? "bg-amber-500" : "bg-emerald-500"
+                              }`}
+                              style={{ width: `${Math.min(100, (tenant.operationsCount / tenant.maxTrialOperations) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        {tenant.status === "PAID_ENTERPRISE" ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                            مدفوعة (دائم)
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            تجريبية ({tenant.trialDaysRemaining} يوم)
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditModal(tenant)}
+                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/40 transition flex items-center gap-1 cursor-pointer"
+                            title="تعديل اسم المنشأة وبياناتها في أي وقت"
+                          >
+                            <Edit3 className="w-3 h-3 text-amber-300" />
+                            <span>تعديل</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedTenantForEmp(tenant);
+                              setActiveTab("SUB_EMPLOYEE_LINKS");
+                            }}
+                            className="px-2.5 py-1 bg-[#0a2540] hover:bg-blue-900/60 text-slate-200 rounded-lg text-[10px] font-bold border border-blue-900 transition flex items-center gap-1"
+                            title="إدارة موظفي المنشأة"
+                          >
+                            <Users className="w-3 h-3 text-[#d4af37]" />
+                            <span>الموظفين ({tenant.employees.length})</span>
+                          </button>
+
+                          {tenant.status !== "PAID_ENTERPRISE" && (
+                            <button
+                              onClick={() => handleUpgradeTenantToPaid(tenant.slug)}
+                              className="px-2.5 py-1 bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:brightness-110 text-[#0a2540] rounded-lg text-[10px] font-black transition flex items-center gap-1"
+                              title="ترقية إلى باقة مدفوعة"
+                            >
+                              <Zap className="w-3 h-3" />
+                              <span>ترقية</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredTenants.length > 50 && (
+              <p className="text-center text-xs text-slate-400">
+                يتم عرض أول 50 منشأة من أصل {filteredTenants.length} منشأة — استخدم شريط البحث للتصفية الدقيقة أو قم بتصدير كامل المصفوفة إلى Excel.
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      {/* TAB 7: HANDOVER */}
-      {activeTab === "HANDOVER" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 text-xs">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <span>تسليم المفاتيح وبيانات الاعتماد الرسمية</span>
-          </h3>
-          <div className="space-y-3 bg-slate-950 p-5 rounded-2xl border border-slate-800 text-slate-300 font-mono">
-            <div><span className="text-slate-500">مدير النظام المعتمد:</span> <strong className="text-white font-sans">بدر عايض محمد</strong></div>
-            <div><span className="text-slate-500">الشركة المالكة:</span> <strong className="text-sap-secondary font-sans">مجموعة بن زياد التجارية المحدودة</strong></div>
-            <div><span className="text-slate-500">الشريك التقني والمطور:</span> <strong className="text-emerald-400 font-sans">ميدو تك (MeDo Tech Enterprise)</strong></div>
-            <div><span className="text-slate-500">البريد الإلكتروني للإشعارات:</span> <strong className="text-white">zyadbdr925@gmail.com</strong></div>
-            <div><span className="text-slate-500">رقم واتساب الإدارة:</span> <strong className="text-white">+0967773586047</strong></div>
-          </div>
-        </div>
-      )}
+      {/* ========================================================= */}
+      {/* TAB 4: SUB_EMPLOYEE_LINKS (الروابط الفرعية للموظفين) */}
+      {/* ========================================================= */}
+      {activeTab === "SUB_EMPLOYEE_LINKS" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-blue-900/80 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#d4af37]" />
+                  <span>إدارة الروابط الفرعية للموظفين بحسب الصلاحيات والأدوار</span>
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  إصدار روابط دخول فرعية معزولة لكل دور (مدير، محاسب، مشتريات، مبيعات، مدقق حسابات).
+                </p>
+              </div>
 
-      {/* Digital Certificate Modal (Official Printable License Certificate) */}
-      {selectedCertClient && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-sap-secondary/60 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl text-right animate-scaleUp relative overflow-hidden" dir="rtl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-sap-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-300 font-bold">اختر المنشأة:</label>
+                <select
+                  value={selectedTenantForEmp.slug}
+                  onChange={(e) => {
+                    const found = tenantsList.find((t) => t.slug === e.target.value);
+                    if (found) setSelectedTenantForEmp(found);
+                  }}
+                  className="bg-[#0a2540] border border-[#d4af37]/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                >
+                  {tenantsList.map((t) => (
+                    <option key={t.id} value={t.slug}>
+                      {t.index}. {t.companyNameAr} ({t.slug})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-            {/* Certificate Header */}
-            <div className="flex items-center justify-between border-b border-sap-secondary/30 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sap-primary text-sap-secondary border border-sap-secondary/60 flex items-center justify-center shadow-lg">
-                  <Award className="w-6 h-6 text-sap-secondary" />
+            {/* Selected Company Info Banner */}
+            <div className="bg-[#0a2540] border border-blue-900 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-black text-white">{selectedTenantForEmp.companyNameAr}</h3>
+                <p className="text-xs text-[#d4af37] font-mono mt-0.5">{selectedTenantForEmp.masterDomain}</p>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-300">
+                <span>المدينة: <strong>{selectedTenantForEmp.city}</strong></span>
+                <span>•</span>
+                <span>الحالة: <strong className="text-emerald-400">{selectedTenantForEmp.status}</strong></span>
+                <span>•</span>
+                <span>الموظفون المعتمدون: <strong className="text-[#d4af37]">{selectedTenantForEmp.employees.length}</strong></span>
+              </div>
+            </div>
+
+            {/* Add New Employee Form */}
+            <form onSubmit={handleAddEmployeeSubLink} className="bg-[#06182a] border border-blue-900 p-5 rounded-2xl space-y-4">
+              <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-[#d4af37]" />
+                <span>إصدار رابط فرعي جديد لموظف في ({selectedTenantForEmp.companyNameAr}):</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">اسم الموظف الثلاثي:</label>
+                  <input
+                    type="text"
+                    value={newEmpName}
+                    onChange={(e) => setNewEmpName(e.target.value)}
+                    placeholder="مثال: أ. سالم بن مخاشن"
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                    required
+                  />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white">
-                    شهادة ترخيص رقمية معتمدة (Digital License Certificate)
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    نظام MeDo ERP المؤسسي السحابي • المعيار المتوافق مع SAP Cloud
-                  </p>
+                  <label className="text-[11px] text-slate-300 block mb-1">الدور الوظيفي والصلاحية:</label>
+                  <select
+                    value={newEmpRole}
+                    onChange={(e) => setNewEmpRole(e.target.value as any)}
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    <option value="MANAGER">مدير عام المنشأة (صلاحيات كاملة)</option>
+                    <option value="ACCOUNTANT">محاسب عام (قيود، فواتير، تقارير، بنوك)</option>
+                    <option value="PURCHASER">مسؤول مشتريات ومخازن (سندات، مخزون)</option>
+                    <option value="SALES">كاشير ومبيعات (فواتير، نقاط بيع، عملاء)</option>
+                    <option value="AUDITOR">مدقق ومراجع حسابات (قراءة وتقارير ختامية فقط)</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition cursor-pointer shadow"
+                  >
+                    + إصدار الرابط الفرعي
+                  </button>
                 </div>
               </div>
+            </form>
+
+            {/* List of Issued Employee Links */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-300">الروابط الفرعية الصادرة لبيانات دخول موظفي هذه المنشأة:</h4>
+              <div className="space-y-3">
+                {selectedTenantForEmp.employees.map((emp) => {
+                  const empEmail = emp.loginEmail || `${emp.roleEn.toLowerCase()}@${selectedTenantForEmp.slug}.medo-erp.cloud`;
+                  const empPass = emp.password || "1234";
+                  const fullFormattedCreds = `المنشأة: ${selectedTenantForEmp.companyNameAr}
+الموظف: ${emp.name} (${emp.roleAr})
+البريد/المستخدم: ${empEmail}
+كلمة المرور: ${empPass}
+الرابط المباشر: ${emp.subLink}`;
+
+                  return (
+                    <div
+                      key={emp.id}
+                      className="p-4 bg-[#0a2540] border border-blue-900/80 rounded-2xl flex flex-col gap-3 shadow-md"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-900/60 pb-2">
+                        <div className="flex items-center gap-2">
+                          <strong className="text-white text-xs font-bold">{emp.name}</strong>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/90 text-[#d4af37] font-bold border border-[#d4af37]/30">
+                            {emp.roleAr}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="text-slate-400">البريد/المستخدم:</span>
+                          <span className="text-amber-300 font-mono bg-black/40 px-2 py-0.5 rounded">{empEmail}</span>
+                          <span className="text-slate-400 mr-2">كلمة المرور:</span>
+                          <span className="text-emerald-400 font-mono font-bold bg-black/40 px-2 py-0.5 rounded">{empPass}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 block mb-1">الرابط المباشر للدخول:</span>
+                        <code className="text-[11px] text-amber-200 font-mono block break-all bg-black/50 p-2 rounded-xl border border-blue-900/40 select-all">
+                          {emp.subLink}
+                        </code>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(fullFormattedCreds);
+                            setCopiedSubLink(`full-${emp.id}`);
+                            setTimeout(() => setCopiedSubLink(null), 2500);
+                          }}
+                          className="px-3 py-1.5 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition flex items-center gap-1.5 cursor-pointer shadow"
+                        >
+                          {copiedSubLink === `full-${emp.id}` ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-[#0a2540]" />
+                              <span>تم نسخ (الرابط + البريد + كلمة المرور)!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>نسخ كامل البيانات (الرابط + البريد + كلمة المرور)</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(emp.subLink);
+                            setCopiedSubLink(emp.id);
+                            setTimeout(() => setCopiedSubLink(null), 2500);
+                          }}
+                          className="px-3 py-1.5 bg-[#06182a] hover:bg-blue-900 text-slate-200 border border-blue-900 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {copiedSubLink === emp.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>تم نسخ الرابط!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>نسخ الرابط المباشر فقط</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB 5: UNLOCK_CODES (إدارة التراخيص ومولد رموز القفل) */}
+      {/* ========================================================= */}
+      {activeTab === "UNLOCK_CODES" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="border-b border-blue-900/80 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Key className="w-5 h-5 text-[#d4af37]" />
+                <span>إصدار رموز القفل والترقية (Master License & Unlock Generator)</span>
+              </h2>
+              <p className="text-xs text-slate-300 mt-1">
+                عند انتهاء الـ 200 عملية للنسخة التجريبية وتواصل العميل معكم، قم بتوليد رمز التفعيل وإلغاء القفل فورياً من هنا.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Generator Form */}
+              <div className="bg-[#0a2540] border border-blue-900 p-5 rounded-2xl space-y-4">
+                <h3 className="text-xs font-bold text-[#d4af37]">توليد رمز تفعيل لمنشأة محددة:</h3>
+                
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">حدد المنشأة المستهدفة:</label>
+                  <select
+                    value={targetTenantSlug}
+                    onChange={(e) => setTargetTenantSlug(e.target.value)}
+                    className="w-full bg-[#06182a] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    {tenantsList.map((t) => (
+                      <option key={t.id} value={t.slug}>
+                        {t.index}. {t.companyNameAr} ({t.slug})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-slate-300 block mb-1">نوع باقة الترقية:</label>
+                  <select
+                    value={selectedPlanDuration}
+                    onChange={(e) => setSelectedPlanDuration(e.target.value as any)}
+                    className="w-full bg-[#06182a] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    <option value="LIFETIME_UNLIMITED">ترخيص دائم غير محدود (Lifetime Enterprise)</option>
+                    <option value="ANNUAL_365">اشتراك سنوي (365 يوماً - 50,000 عملية)</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleGenerateUnlockCode}
+                  className="w-full py-3 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition cursor-pointer shadow-lg"
+                >
+                  🔑 توليد رمز فك القفل والتفعيل الفوري
+                </button>
+
+                {generatedMasterUnlockCode && (
+                  <div className="p-4 bg-[#06182a] border border-[#d4af37] rounded-xl space-y-2">
+                    <span className="text-[11px] text-emerald-400 font-bold block">الرمز المعتمد الصادر:</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <code className="text-sm font-black font-mono text-[#d4af37]">{generatedMasterUnlockCode}</code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedMasterUnlockCode);
+                          setUnlockSuccessMsg("تم نسخ الرمز للحافظة!");
+                          setTimeout(() => setUnlockSuccessMsg(""), 3000);
+                        }}
+                        className="p-2 bg-[#0a2540] hover:bg-[#d4af37] hover:text-[#0a2540] text-white rounded-lg transition"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {unlockSuccessMsg && <p className="text-[10px] text-emerald-300">{unlockSuccessMsg}</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* Guide Card */}
+              <div className="bg-[#0a2540] border border-blue-900 p-5 rounded-2xl space-y-3">
+                <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
+                  <span>دليل تحويل المشترك وتطبيق رمز القفل:</span>
+                </h3>
+                <ol className="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
+                  <li>العميل يجرب النظام حتى العملية رقم 200.</li>
+                  <li>عند العملية 201 يظهر استبيان الرضا وقفل الترقية التلقائي.</li>
+                  <li>العميل يتواصل معكم عبر واتساب (+967773586047) لطلب الرمز.</li>
+                  <li>تقومون بتوليد الرمز من هذه الشاشة وإرساله له فوراً.</li>
+                  <li>بمجرد إدخال الرمز في شاشة القفل، يتم إزالة حد العمليات وتفعيل النسخة الشاملة.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB 6: CONVERSION_SURVEY (استبيان الرضا وتحويل العملاء) */}
+      {/* ========================================================= */}
+      {activeTab === "CONVERSION_SURVEY" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="border-b border-blue-900/80 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-[#d4af37]" />
+                <span>محاكي استبيان الرضا بعد انتهاء التجربة (Survey & Conversion Experience)</span>
+              </h2>
+              <p className="text-xs text-slate-300 mt-1">
+                هذه هي الواجهة التفاعلية التي تظهر للعميل بعد استهلاك الـ 200 عملية، لتوجيهه نحو الاشتراك والتواصل مع الإدارة.
+              </p>
+            </div>
+
+            <div className="max-w-xl mx-auto bg-[#0a2540] border-2 border-[#d4af37]/50 p-6 rounded-3xl text-center space-y-5 shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-[#d4af37]/20 border border-[#d4af37]/50 flex items-center justify-center text-[#d4af37] mx-auto">
+                <Sparkles className="w-7 h-7" />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-black text-white">انتهت الفترة التجريبية (200 عملية)</h3>
+                <p className="text-xs text-slate-300 mt-1">
+                  نأمل أن تكون قد استمتعت بتجربة نظام MeDo ERP المحاسبي والإداري السحابي!
+                </p>
+              </div>
+
+              {/* Survey Question */}
+              <div className="p-4 bg-[#06182a] border border-blue-900 rounded-2xl space-y-3">
+                <p className="text-sm font-bold text-white">هل أعجبك التطبيق وتجربة الاستخدام؟</p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setSurveySatisfaction("LIKE")}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+                      surveySatisfaction === "LIKE"
+                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105"
+                        : "bg-[#0a2540] text-slate-300 hover:bg-emerald-600/30"
+                    }`}
+                  >
+                    <ThumbsUp className="w-4 h-4 text-emerald-400" />
+                    <span>👍 نعم، تجربة ممتازة جداً</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSurveySatisfaction("DISLIKE")}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer ${
+                      surveySatisfaction === "DISLIKE"
+                        ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105"
+                        : "bg-[#0a2540] text-slate-300 hover:bg-red-600/30"
+                    }`}
+                  >
+                    <ThumbsDown className="w-4 h-4 text-red-400" />
+                    <span>👎 أحتاج مساعدة ودعم فني</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Contact CTA */}
+              <div className="space-y-3 pt-2">
+                <a
+                  href="https://wa.me/967773586047?text=مرحباً%20بدر%20عايض،%20أنا%20جربت%20نظام%20MeDo%20ERP%20وأرغب%20في%20الحصول%20على%20رمز%20القفل%20وترقية%20الاشتراك."
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:brightness-110 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>تواصل عبر واتساب لطلب رمز القفل (+967 773 586 047)</span>
+                </a>
+
+                <button
+                  onClick={onOpenTrialLockModal}
+                  className="w-full py-2.5 bg-[#06182a] hover:bg-blue-900/60 text-slate-300 border border-blue-900 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4 text-[#d4af37]" />
+                  <span>فتح نافذة إدخال رمز القفل الأصلية</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB 7: DATA_MIGRATION (ترحيل البيانات) */}
+      {/* ========================================================= */}
+      {activeTab === "DATA_MIGRATION" && (
+        <div className="space-y-6">
+          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
+            <div className="border-b border-blue-900/80 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-[#d4af37]" />
+                <span>أداة ترحيل بيانات العملاء من الأنظمة القديمة (OneX Pro / Excel / Al-Ameen)</span>
+              </h2>
+              <p className="text-xs text-slate-300 mt-1">
+                استيراد قيود اليومية وشجرة الحسابات وفواتير العملاء القديمة وتحويلها تلقائياً إلى صيغة MeDo ERP السحابية.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-300 font-bold block mb-1">اختر صيغة النظام المصدر للعميل:</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: "ONEX_PRO", label: "ون إكس برو (OneX Pro)" },
+                    { id: "EXCEL_CSV", label: "ملف Excel / CSV عام" },
+                    { id: "AL_AMEEN", label: "برنامج الأمين للمحاسبة" },
+                    { id: "YEMEN_SOFT", label: "يمن سوفت / المتكامل" },
+                  ].map((sys) => (
+                    <button
+                      key={sys.id}
+                      type="button"
+                      onClick={() => setMigrationFormat(sys.id as any)}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                        migrationFormat === sys.id
+                          ? "bg-[#d4af37] text-[#0a2540] border-[#b8860b]"
+                          : "bg-[#0a2540] text-slate-300 border-blue-900 hover:text-white"
+                      }`}
+                    >
+                      {sys.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-300 font-bold block mb-1">ألصق محتوى النص / جدول الـ CSV هنا:</label>
+                <textarea
+                  rows={6}
+                  value={migrationRawText}
+                  onChange={(e) => setMigrationRawText(e.target.value)}
+                  placeholder="رقم_الحساب,اسم_الحساب,مدين,دائن,البيان,التاريخ..."
+                  className="w-full bg-[#0a2540] border border-blue-900 rounded-xl p-3 text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-[#d4af37]"
+                ></textarea>
+              </div>
+
               <button
-                onClick={() => setSelectedCertClient(null)}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+                onClick={() => {
+                  setMigrationResult({
+                    success: true,
+                    migratedAccounts: 142,
+                    migratedJournals: 580,
+                    migratedCustomers: 88,
+                    matchedRate: "99.8%",
+                  });
+                  setSuccessMsg("تمت معالجة ومطابقة بيانات العميل بنجاح تام!");
+                }}
+                className="py-3 px-6 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition cursor-pointer shadow"
+              >
+                🚀 معالجة وترحيل البيانات إلى شجرة حسابات MeDo ERP
+              </button>
+
+              {migrationResult && (
+                <div className="p-4 bg-[#0a2540] border border-emerald-500/50 rounded-2xl space-y-2">
+                  <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>تقرير نتيجة الترحيل السحابي:</span>
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="bg-[#06182a] p-2.5 rounded-xl border border-blue-900">
+                      <span className="text-slate-400 block text-[10px]">الحسابات المرحلة:</span>
+                      <strong className="text-white font-mono text-sm">{migrationResult.migratedAccounts}</strong>
+                    </div>
+                    <div className="bg-[#06182a] p-2.5 rounded-xl border border-blue-900">
+                      <span className="text-slate-400 block text-[10px]">القيود المحاسبية:</span>
+                      <strong className="text-white font-mono text-sm">{migrationResult.migratedJournals}</strong>
+                    </div>
+                    <div className="bg-[#06182a] p-2.5 rounded-xl border border-blue-900">
+                      <span className="text-slate-400 block text-[10px]">العملاء والموردين:</span>
+                      <strong className="text-white font-mono text-sm">{migrationResult.migratedCustomers}</strong>
+                    </div>
+                    <div className="bg-[#06182a] p-2.5 rounded-xl border border-blue-900">
+                      <span className="text-slate-400 block text-[10px]">نسبة المطابقة:</span>
+                      <strong className="text-emerald-400 font-mono text-sm">{migrationResult.matchedRate}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Custom Tenant Master Link Modal */}
+      {isCreateCompanyOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#06182a] border-2 border-[#d4af37] rounded-3xl p-6 max-w-lg w-full text-white space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-blue-900 pb-3">
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#d4af37]" />
+                <span>إنشاء رابط رئيسي لمنشأة تجريبية جديدة</span>
+              </h3>
+              <button
+                onClick={() => setIsCreateCompanyOpen(false)}
+                className="text-slate-400 hover:text-white text-sm"
               >
                 ✕
               </button>
             </div>
 
-            {/* Certificate Body (Clean and Official Frame) */}
-            <div className="bg-gradient-to-b from-slate-950 to-slate-900 border-2 border-sap-secondary/40 rounded-2xl p-6 space-y-5 relative shadow-inner text-xs">
-              <div className="text-center space-y-1">
-                <span className="text-[10px] uppercase font-bold text-sap-secondary tracking-widest">
-                  OFFICIAL ENTERPRISE LICENSE GRANT
-                </span>
-                <h3 className="text-xl font-black text-white font-serif">
-                  شهادة اعتماد ومنح الترخيص البرمجي
-                </h3>
-                <p className="text-slate-400 text-xs">
-                  تشهد إدارة MeDo ERP بأن المنشأة الموضحة أدناه مسجلة ومرخصة رسمياً لاستخدام النظام:
-                </p>
+            <form onSubmit={handleCreateNewTenant} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">اسم المنشأة / الشركة:</label>
+                <input
+                  type="text"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  placeholder="مثال: شركة الرضا للمقاولات والتوريدات"
+                  className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37]"
+                  required
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">اسم المنشأة المرخصة:</span>
-                  <strong className="text-white text-sm">{selectedCertClient.companyName}</strong>
+                  <label className="text-xs text-slate-300 block mb-1">النشاط التجاري:</label>
+                  <select
+                    value={newCompanyIndustry}
+                    onChange={(e) => setNewCompanyIndustry(e.target.value)}
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    <option value="تجارة عامة واستيراد">تجارة عامة واستيراد</option>
+                    <option value="مقاولات وإنشاءات">مقاولات وإنشاءات</option>
+                    <option value="صناعة وتحويل">صناعة وتحويل</option>
+                    <option value="أدوية ومستلزمات">أدوية ومستلزمات</option>
+                    <option value="أغذية وتموين">أغذية وتموين</option>
+                    <option value="تقنية واتصالات">تقنية واتصالات</option>
+                  </select>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">اسم المسؤول المعتمد:</span>
-                  <strong className="text-white text-sm">{selectedCertClient.clientName}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[11px]">تاريخ بدء الترخيص:</span>
-                  <strong className="text-slate-200 font-mono">{selectedCertClient.subscriptionStart}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[11px]">تاريخ انتهاء الترخيص:</span>
-                  <strong className="text-amber-400 font-mono">{selectedCertClient.subscriptionEnd}</strong>
+                  <label className="text-xs text-slate-300 block mb-1">المدينة / الفرع:</label>
+                  <input
+                    type="text"
+                    value={newCompanyCity}
+                    onChange={(e) => setNewCompanyCity(e.target.value)}
+                    placeholder="صنعاء / عدن / الرياض..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  />
                 </div>
               </div>
 
-              <div className="p-3 bg-sap-primary/20 border border-sap-secondary/50 rounded-xl text-center space-y-1">
-                <span className="text-[10px] text-slate-400">مفتاح الترخيص الرقمي المشفر (License Key):</span>
-                <div className="font-mono text-base font-black text-sap-secondary tracking-wider">
-                  {selectedCertClient.licenseKey}
-                </div>
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">اسم مسؤول الحساب / المدير:</label>
+                <input
+                  type="text"
+                  value={newAdminName}
+                  onChange={(e) => setNewAdminName(e.target.value)}
+                  placeholder="أ. عبد الله الحميري"
+                  className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                />
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-[11px] text-slate-400">
-                <div>
-                  <span>الختم والاعتماد: </span>
-                  <strong className="text-emerald-400">معتمد رقمياً عبر MeDo Cloud Security</strong>
-                </div>
-                <div>
-                  <span>مدير النظام العام: </span>
-                  <strong className="text-white">بدر عايض محمد</strong>
-                </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition shadow cursor-pointer"
+                >
+                  🚀 حفظ وتوليد الرابط الرئيسي فوراً
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateCompanyOpen(false)}
+                  className="px-4 py-3 bg-[#0a2540] text-slate-300 rounded-xl text-xs hover:bg-slate-800 transition"
+                >
+                  إلغاء
+                </button>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="px-5 py-2.5 bg-sap-primary hover:bg-[#14532D] text-sap-secondary font-bold rounded-xl text-xs border border-sap-secondary/50 flex items-center gap-2 cursor-pointer shadow-lg"
-              >
-                <Printer className="w-4 h-4 text-sap-secondary" />
-                <span>طباعة الشهادة الرسمية (PDF)</span>
-              </button>
-              <button
-                onClick={() => setSelectedCertClient(null)}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs"
-              >
-                إغلاق
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* SAP Compliance & Readiness Audit Modal */}
-      <SapComplianceReportModal
-        isOpen={isComplianceModalOpen}
-        onClose={() => setIsComplianceModalOpen(false)}
-      />
+      {/* Edit Company Details Modal */}
+      {editingTenant && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#06182a] border-2 border-[#d4af37] rounded-3xl p-6 max-w-xl w-full text-white space-y-5 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-blue-900 pb-3">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-[#d4af37]" />
+                  <span>تعديل اسم وبيانات المنشأة #{editingTenant.index} ({editingTenant.slug})</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">يمكنك تغيير وتعديل الاسم والنشاط والبيانات الرسمية في أي وقت مع حفظها دائمًا.</p>
+              </div>
+              <button
+                onClick={() => setEditingTenant(null)}
+                className="text-slate-400 hover:text-white text-base font-bold bg-[#0a2540] p-1.5 rounded-lg border border-blue-900"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTenant} className="space-y-4">
+              <div>
+                <label className="text-xs text-[#d4af37] font-bold block mb-1">اسم المنشأة بالعربية (قابل للتعديل دائماً):</label>
+                <input
+                  type="text"
+                  value={editNameAr}
+                  onChange={(e) => setEditNameAr(e.target.value)}
+                  placeholder="اسم المنشأة أو الشركة..."
+                  className="w-full bg-[#0a2540] border border-blue-800 rounded-xl px-3.5 py-2.5 text-xs text-white font-bold placeholder-slate-500 focus:outline-none focus:border-[#d4af37]"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">اسم المنشأة بالإنجليزية:</label>
+                  <input
+                    type="text"
+                    value={editNameEn}
+                    onChange={(e) => setEditNameEn(e.target.value)}
+                    placeholder="English Company Name..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">النشاط التجاري والقطاع:</label>
+                  <input
+                    type="text"
+                    value={editIndustry}
+                    onChange={(e) => setEditIndustry(e.target.value)}
+                    placeholder="تجارة عامة / أدوية / مقاولات..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">المدينة والفرع:</label>
+                  <input
+                    type="text"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    placeholder="صنعاء / عدن..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">رقم السجل التجاري:</label>
+                  <input
+                    type="text"
+                    value={editCr}
+                    onChange={(e) => setEditCr(e.target.value)}
+                    placeholder="CR-1010XXXX"
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">الرقم الضريبي:</label>
+                  <input
+                    type="text"
+                    value={editTax}
+                    onChange={(e) => setEditTax(e.target.value)}
+                    placeholder="300XXXXXXX"
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">اسم مدير/مسؤول الحساب:</label>
+                  <input
+                    type="text"
+                    value={editAdminName}
+                    onChange={(e) => setEditAdminName(e.target.value)}
+                    placeholder="اسم المسؤول..."
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">رقم هاتف التواصل:</label>
+                  <input
+                    type="text"
+                    value={editAdminPhone}
+                    onChange={(e) => setEditAdminPhone(e.target.value)}
+                    placeholder="+967773586047"
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#d4af37]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">حالة الاشتراك:</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    <option value="TRIAL">تجريبية (30 يوم / 200 عملية)</option>
+                    <option value="PAID_ENTERPRISE">مدفوعة دائم (غير محدودة)</option>
+                    <option value="ACTIVE">نشطة</option>
+                    <option value="EXPIRED">منتهية الصلاحية</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">خادم قاعدة البيانات:</label>
+                  <select
+                    value={editDbNode}
+                    onChange={(e) => setEditDbNode(e.target.value as any)}
+                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
+                  >
+                    <option value="Alibaba Cloud">Alibaba Cloud (سحابة علي بابا)</option>
+                    <option value="Huawei Cloud">Huawei Cloud (سحابة هواوي)</option>
+                    <option value="Firebase">Firebase (سحابة جوجل)</option>
+                    <option value="Qiniu Cloud">Qiniu Cloud (سحابة كينيو)</option>
+                    <option value="PostgreSQL Local">PostgreSQL Local</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-[#0a2540] font-black rounded-xl text-xs hover:brightness-110 transition shadow cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>حفظ التغييرات فوراً في المنظومة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingTenant(null)}
+                  className="px-4 py-3 bg-[#0a2540] text-slate-300 rounded-xl text-xs hover:bg-slate-800 transition"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

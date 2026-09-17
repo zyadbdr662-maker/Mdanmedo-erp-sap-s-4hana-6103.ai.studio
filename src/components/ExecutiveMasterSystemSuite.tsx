@@ -26,7 +26,9 @@ import {
   History,
   Clock,
   PhoneCall,
+  Archive,
 } from "lucide-react";
+import { CentralArchiveSection } from "./CentralArchiveSection";
 import { SystemSettingsView } from "./SystemSettingsView";
 import { ScheduledBackupView } from "./ScheduledBackupView";
 import { SaaSPlatformView } from "./SaaSPlatformView";
@@ -39,6 +41,7 @@ import { TrialExtensionDashboardView } from "./TrialExtensionDashboardView";
 import { SystemAlertCenterView } from "./SystemAlertCenterView";
 import { AdminDeviceManagerView } from "./AdminDeviceManagerView";
 import { SystemPromptsHistoryDashboard } from "./SystemPromptsHistoryDashboard";
+import { SystemAuditReportView } from "./SystemAuditReportView";
 import { ERPState, SystemSettings } from "../types/erp";
 import { soundService, SoundType, WhatsAppNotificationPayload } from "../services/notificationSoundService";
 
@@ -59,17 +62,19 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
 }) => {
   const [activeTab, setActiveTab] = useState<
     | "SETTINGS"
+    | "SAAS_LICENSES"
+    | "CENTRAL_ARCHIVE"
     | "CLOUD_SECURITY"
     | "GOVERNANCE_REPORTS"
     | "ACCESS_LICENSES"
     | "IMMUTABLE_AUDIT"
-    | "SAAS_LICENSES"
     | "TRIAL_EXTENSIONS"
     | "SYSTEM_ALERT_CENTER"
     | "BACKUP"
     | "AUDIO_WHATSAPP_ALERTS"
     | "DEVICE_WHITELIST"
     | "PROMPTS_HISTORY"
+    | "SYSTEM_AUDIT_REPORT"
   >("SETTINGS");
 
   // Audio & WhatsApp Settings State
@@ -204,7 +209,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
   return (
     <div className="space-y-6 animate-fadeIn font-['Alexandria','Cairo',sans-serif]">
       {/* Master Executive Header Banner */}
-      <div className="bg-gradient-to-r from-[#0B192C] via-[#0F284E] to-[#081220] border border-blue-500/40 p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#0B192C] via-[#0F284E] to-[#081220] border-2 border-blue-500/50 p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
@@ -214,25 +219,25 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
-                  إدارة النظام الرأسية (Executive Master System Suite)
+                  بوابة الإدارة العليا — الإجراءات السيادية للمبرمج والمصمم مالك البرنامج (الأستاذ بدر عايض محمد)
                 </h1>
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500 text-white shadow-md border border-blue-300/40">
-                  SYSTEM_ADMIN & SUPER_ADMIN 🔒
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-[#D4AF37] text-slate-950 shadow-md border border-amber-300 font-bold">
+                  المبرمج والمصمم مالك البرنامج: الأستاذ بدر عايض محمد 👑
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-3xl leading-relaxed font-medium">
-                الواجهة المركزية الشاملة الموحدة: تجمع إعدادات المنشأة، الحوكمة والامتثال، المنظومة السحابية والتراخيص، النسخ الاحتياطي التلقائي، وإشعارات الواتساب الفورية مع النغمات الصوتية التفاعلية.
+                الواجهة السيادية المركزية الخاصة بالمبرمج والمصمم مالك البرنامج الأستاذ بدر عايض محمد: تضم لوحة التحكم السيادية، منظومة عملاء النظام 9 (ميدو إرب)، ومنظومة الأرشيف المركزي والوثائق السيادية مع مركز الأمان السحابي والحوكمة المالية.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right font-mono text-xs text-slate-200 bg-[#081220]/90 p-3 rounded-2xl border border-blue-500/30 shadow-inner">
-              <div className="text-blue-400 font-bold flex items-center gap-1.5 justify-end">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                <span>Node: Vertical Sovereign Suite</span>
+              <div className="text-amber-300 font-bold flex items-center gap-1.5 justify-end">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span>المبرمج والمصمم مالك البرنامج</span>
               </div>
-              <div className="text-slate-300 text-[11px]">Role: {userRole || "SUPER_ADMIN"}</div>
+              <div className="text-amber-200 text-[11px] font-bold">الأستاذ بدر عايض محمد</div>
             </div>
           </div>
         </div>
@@ -240,6 +245,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
 
       {/* Navigation Tabs for Master Vertical Hub */}
       <div className="flex flex-wrap items-center gap-2 bg-[#0B192C] border border-blue-500/30 p-2.5 rounded-2xl shadow-lg">
+        {/* 1. لوحة التحكم السيادية */}
         <button
           onClick={() => setActiveTab("SETTINGS")}
           className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
@@ -248,8 +254,34 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
               : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
           }`}
         >
-          <Settings className="w-4 h-4 text-blue-300" />
-          <span>1. إعدادات المنشأة</span>
+          <ShieldCheck className="w-4 h-4 text-blue-300" />
+          <span>1. لوحة التحكم السيادية والتحكم بالنظام 🛡️</span>
+        </button>
+
+        {/* 2. المنصة السحابية المشفرة ومنظومة عملاء النظام 9 */}
+        <button
+          onClick={() => setActiveTab("SAAS_LICENSES")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            activeTab === "SAAS_LICENSES"
+              ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-950/60 border border-emerald-400/40"
+              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+          }`}
+        >
+          <Cloud className="w-4 h-4 text-emerald-300" />
+          <span>2. المنصة السحابية المشفرة ومنظومة عملاء النظام 9 ☁️</span>
+        </button>
+
+        {/* 3. منظومة الأرشيف المركزي */}
+        <button
+          onClick={() => setActiveTab("CENTRAL_ARCHIVE")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            activeTab === "CENTRAL_ARCHIVE"
+              ? "bg-gradient-to-r from-purple-600 to-indigo-700 text-white shadow-lg shadow-purple-950/60 border border-purple-400/40"
+              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+          }`}
+        >
+          <Archive className="w-4 h-4 text-purple-300" />
+          <span>3. منظومة الأرشيف المركزي والوثائق السيادية 🏛️</span>
         </button>
 
         <button
@@ -261,7 +293,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <Shield className="w-4 h-4 text-blue-300" />
-          <span>2. المنصة السحابية المشفرة ومركز الأمان (Cloud Security & Firewall)</span>
+          <span>4. الأمان السحابي (Cloud Firewall)</span>
         </button>
 
         <button
@@ -273,7 +305,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <FileCheck2 className="w-4 h-4 text-emerald-300" />
-          <span>3. تقارير الحوكمة المالية</span>
+          <span>5. تقارير الحوكمة المالية</span>
         </button>
 
         <button
@@ -285,7 +317,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <KeyRound className="w-4 h-4 text-rose-300" />
-          <span>4. تراخيص الموظفين والإيقاف الفوري</span>
+          <span>6. تراخيص الموظفين والإيقاف</span>
         </button>
 
         <button
@@ -297,19 +329,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <History className="w-4 h-4 text-indigo-300" />
-          <span>5. سجل التدقيق غير القابل للتعديل</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("SAAS_LICENSES")}
-          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
-            activeTab === "SAAS_LICENSES"
-              ? "bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] text-white shadow-lg shadow-blue-950/60 border border-blue-400/40"
-              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
-          }`}
-        >
-          <Award className="w-4 h-4 text-blue-300" />
-          <span>6. المنظومة والتراخيص السحابية</span>
+          <span>7. سجل التدقيق المشفر</span>
         </button>
 
         <button
@@ -321,7 +341,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <Clock className="w-4 h-4 text-amber-300" />
-          <span>7. تمديد الفترة التجريبية وتاريخ التمديدات</span>
+          <span>8. تمديد الفترة التجريبية</span>
         </button>
 
         <button
@@ -333,7 +353,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <BellRing className="w-4 h-4 text-indigo-300" />
-          <span>8. مركز تنبيهات النظام ونغمات الحركات</span>
+          <span>9. مركز التنبيهات والنغمات</span>
         </button>
 
         <button
@@ -345,7 +365,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <Database className="w-4 h-4 text-blue-300" />
-          <span>9. النسخ الاحتياطي التلقائي</span>
+          <span>10. النسخ الاحتياطي التلقائي</span>
         </button>
 
         <button
@@ -357,7 +377,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <MessageSquare className="w-4 h-4 text-emerald-300" />
-          <span>10. إشعارات واتساب السريعة</span>
+          <span>11. إشعارات واتساب السريعة</span>
         </button>
 
         <button
@@ -369,7 +389,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <ShieldCheck className="w-4 h-4 text-amber-300" />
-          <span>11. الأجهزة المصرح بها والحماية 🔐</span>
+          <span>12. الأجهزة المصرح بها 🔐</span>
         </button>
 
         <button
@@ -381,7 +401,19 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           }`}
         >
           <History className="w-4 h-4 text-amber-300" />
-          <span>12. سجل المحادثات والطلبات الكامل 📜</span>
+          <span>13. سجل المحادثات والطلبات 📜</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("SYSTEM_AUDIT_REPORT")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            activeTab === "SYSTEM_AUDIT_REPORT"
+              ? "bg-gradient-to-r from-amber-500 to-[#D4AF37] text-slate-950 shadow-lg shadow-amber-950/60 border border-amber-400/40 font-bold"
+              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+          }`}
+        >
+          <Award className="w-4 h-4 text-slate-950" />
+          <span>14. تقرير المراجعة والتدقيق الشامل 🏆</span>
         </button>
       </div>
 
@@ -420,7 +452,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
         <ImmutableAuditTrailView currentUserName={fullState.currentUser?.name || "مدير النظام الأعلى"} />
       )}
 
-      {/* TAB 6: SAAS LICENSES & CLOUD MULTI-TENANT */}
+      {/* TAB 2: SAAS LICENSES & CLOUD MULTI-TENANT (منظومة عملاء النظام 9) */}
       {activeTab === "SAAS_LICENSES" && (
         <SaaSPlatformView
           erpState={fullState}
@@ -430,6 +462,14 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
             }
           }}
           onOpenTrialLockModal={() => {}}
+        />
+      )}
+
+      {/* TAB 3: CENTRAL ARHCIVE (منظومة الأرشيف المركزي والوثائق السيادية) */}
+      {activeTab === "CENTRAL_ARCHIVE" && (
+        <CentralArchiveSection
+          companyName={fullState.systemSettings.companyNameAr}
+          currencies={fullState.currencies}
         />
       )}
 
@@ -698,6 +738,11 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
       {/* TAB 12: PROMPTS & ACTIONS TIMELINE HISTORY */}
       {activeTab === "PROMPTS_HISTORY" && (
         <SystemPromptsHistoryDashboard />
+      )}
+
+      {/* TAB 14: COMPREHENSIVE AUDIT REPORT */}
+      {activeTab === "SYSTEM_AUDIT_REPORT" && (
+        <SystemAuditReportView currentUserName={fullState.currentUser?.name || "الأستاذ بدر عايض محمد"} />
       )}
     </div>
   );

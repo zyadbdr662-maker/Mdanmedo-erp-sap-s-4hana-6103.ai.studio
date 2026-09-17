@@ -250,8 +250,8 @@ export const BlogPostDetail = () => {
                   <h4 className="font-bold text-[#0A2540] text-base">{article.author}</h4>
                   <p className="text-xs text-gray-500">
                     {lang === 'ar' 
-                      ? 'منظومة MeDo ERP السحابية • مجموعة بن زياد المتحدة' 
-                      : 'MeDo ERP Cloud Platform • Bin Ziyad United Group'}
+                      ? 'منظومة SAP/MeDO ERP السحابية • ميدو تك للحلول السحابية' 
+                      : 'SAP/MeDO ERP Cloud Platform • MeDo Tech Cloud'}
                   </p>
                 </div>
               </div>

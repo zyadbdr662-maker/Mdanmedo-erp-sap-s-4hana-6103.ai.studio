@@ -345,6 +345,30 @@ export class SecurityAuditService {
       status: "SUCCESS",
     });
 
+    // Real-Time Multi-Channel Notification Dispatcher to Manager
+    try {
+      fetch("/api/security/login-notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: user.name,
+          email: user.email || `${user.id.toLowerCase()}@medoerp.com`,
+          companyName: user.branch || "المنظومة السحابية MeDo ERP",
+          branchName: user.branch || "الفرع الرئيسي",
+          role: user.role,
+          ipAddress: this.getClientIp(),
+          userAgent: dev.userAgent,
+          deviceType: dev.deviceType,
+          isTrial: user.plan === "TRIAL",
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch((err) => {
+        console.warn("[SECURITY AUDIT] Login notification dispatch warning:", err);
+      });
+    } catch (e) {
+      // Non-blocking
+    }
+
     this.notify();
     return newSession;
   }

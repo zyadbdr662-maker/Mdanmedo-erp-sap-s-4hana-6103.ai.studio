@@ -830,11 +830,49 @@ aside .text-slate-400, aside .text-slate-500 {
 /* --------------------------------------------------------------------------
    5.3. ضبط الطباعة الورقية والتصدير لـ PDF (@media print)
    خلفية بيضاء ناصعة #FFFFFF إجبارياً | ألوان داكنة عالية التباين #000000 و #333333
+   دعم الهيدر/الفوتر والشعار والمائية الديناميكية لكل فرع
    -------------------------------------------------------------------------- */
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm 10mm 10mm;
+}
+
+@page :left {
+  @bottom-right {
+    content: "صفحة " counter(page) " من " counter(pages);
+    font-size: 9pt;
+    color: #64748B;
+  }
+}
+
+@page :right {
+  @bottom-left {
+    content: "صفحة " counter(page) " من " counter(pages);
+    font-size: 9pt;
+    color: #64748B;
+  }
+}
+
 @media print {
-  body {
+  html, body {
     background-color: #FFFFFF !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive non-printable UI elements */
+  .print\:hidden,
+  button,
+  nav,
+  aside,
+  header:not(.printable-header),
+  .no-print,
+  .modal-backdrop,
+  .action-toolbar {
+    display: none !important;
   }
 
   .doc-canvas,
@@ -849,12 +887,14 @@ aside .text-slate-400, aside .text-slate-500 {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    position: relative !important;
   }
 
   .doc-title,
   .doc-company-title,
   .doc-number {
     color: #000000 !important;
+    font-weight: 900 !important;
   }
 
   .doc-body-text,
@@ -892,10 +932,61 @@ aside .text-slate-400, aside .text-slate-500 {
 
   .doc-signature {
     color: #000000 !important;
+    font-weight: 700 !important;
   }
 
   .doc-signature-line {
     border-bottom: 1px dashed #64748B !important;
+  }
+
+  /* Dynamic Branch Watermark in Print */
+  .doc-print-watermark {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) rotate(-30deg) !important;
+    font-size: 4rem !important;
+    font-weight: 900 !important;
+    color: rgba(10, 37, 64, 0.05) !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+    white-space: nowrap !important;
+    text-transform: uppercase !important;
+  }
+
+  /* Table break handling */
+  table {
+    page-break-inside: auto !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Dynamic thermal receipt paper mode */
+  .doc-paper-thermal {
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    font-size: 10px !important;
+  }
+
+  .doc-paper-thermal table th,
+  .doc-paper-thermal table td {
+    padding: 3px 2px !important;
+    font-size: 9px !important;
   }
 }
 

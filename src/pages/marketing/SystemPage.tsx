@@ -5,7 +5,7 @@ export const SystemPage = () => {
   const { lang } = useLanguage();
   return (
     <div className="p-16 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-[#0A2540] mb-8">{lang === 'ar' ? 'نظام MeDo ERP' : 'MeDo ERP System'}</h1>
+      <h1 className="text-4xl font-bold text-[#0A2540] mb-8">{lang === 'ar' ? 'نظام SAP/MeDO ERP' : 'SAP/MeDO ERP System'}</h1>
       <p className="text-lg text-gray-700 mb-6">
         {lang === 'ar' 
           ? 'منصة سحابية متكاملة مصممة لإدارة المؤسسات وفق معايير عالمية (IFRS/GAAP) مع ربط لحظي لكافة الأقسام.'
