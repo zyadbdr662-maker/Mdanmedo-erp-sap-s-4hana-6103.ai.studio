@@ -13,6 +13,7 @@ import {
   getStored200Tenants,
   saveStored200Tenants,
 } from "../data/preGeneratedTenants";
+import { Master200TenantsMatrixView } from "./Master200TenantsMatrixView";
 import {
   ShieldCheck,
   Users,
@@ -207,12 +208,18 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       index: nextIndex,
       id: `tenant-${slug}`,
       slug,
+      name: newCompanyName,
+      nameEn: `Enterprise Node #${nextIndex} (${slug})`,
       companyNameAr: newCompanyName,
       companyNameEn: `Enterprise Node #${nextIndex} (${slug})`,
+      crNumber: cr,
       commercialReg: cr,
       taxNumber: vat,
+      phone: newAdminPhone || "+967 773 586 047",
+      address: `${newCompanyCity} - الجمهورية اليمنية`,
       industry: newCompanyIndustry,
       city: newCompanyCity,
+      logo: "🏢",
       masterDomain,
       vercelUrl,
       status: "TRIAL",
@@ -230,6 +237,8 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
           name: newAdminName || "المدير العام",
           roleAr: "مدير عام المنشأة",
           roleEn: "MANAGER",
+          loginEmail: `manager@${slug}.medo-erp.cloud`,
+          password: "1234",
           subLink: `${vercelBase}/?tenant=${slug}&role=MANAGER&token=AUTH_MGR_${nextIndex}&path=/employee/manager`,
         },
         {
@@ -237,6 +246,8 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
           name: "المحاسب المالي",
           roleAr: "محاسب عام رئيسي",
           roleEn: "ACCOUNTANT",
+          loginEmail: `accountant@${slug}.medo-erp.cloud`,
+          password: "1234",
           subLink: `${vercelBase}/?tenant=${slug}&role=ACCOUNTANT&token=AUTH_ACC_${nextIndex}&path=/employee/accountant`,
         },
       ],
@@ -751,192 +762,10 @@ export const SaaSPlatformView: React.FC<SaaSPlatformViewProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* TAB 3: MASTER_200_LINKS (مصفوفة الـ 200 شركة) */}
+      {/* TAB 3: MASTER_200_LINKS (مصفوفة الـ 200 شركة و 1000 رابط) */}
       {/* ========================================================= */}
       {activeTab === "MASTER_200_LINKS" && (
-        <div className="space-y-6">
-          <div className="bg-[#06182a] border border-blue-900/80 rounded-3xl p-6 text-white shadow-xl space-y-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-blue-900/80 pb-4">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-[#d4af37]" />
-                  <span>دليل ومصفوفة الـ 200 رابط رئيسي للشركات (Vercel & MeDo Cloud)</span>
-                </h2>
-                <p className="text-xs text-slate-300 mt-1">
-                  كل رابط يمثل بيئة عمل تجريبية معزولة بقاعدة بيانات مستقلة وحد 200 عملية.
-                </p>
-              </div>
-
-              {/* Search and Filters */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="relative flex-grow md:w-64">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="ابحث باسم الشركة، النطاق، أو المدينة..."
-                    className="w-full bg-[#0a2540] border border-blue-900 rounded-xl px-4 py-2 pr-9 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
-                </div>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#0a2540] border border-blue-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]"
-                >
-                  <option value="ALL">جميع الحالات ({tenantsList.length})</option>
-                  <option value="TRIAL">تجريبية ({totalTrialCount})</option>
-                  <option value="PAID">مدفوعة ({totalPaidCount})</option>
-                </select>
-
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3 py-2 bg-[#d4af37] text-[#0a2540] font-black rounded-xl text-xs hover:bg-[#f1c40f] transition flex items-center gap-1.5 cursor-pointer shadow"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>تصدير Excel</span>
-                </button>
-
-                <button
-                  onClick={handleResetAllTenantsToDefault}
-                  className="px-3 py-2 bg-[#0a2540] hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs border border-blue-900 transition flex items-center gap-1.5 cursor-pointer"
-                  title="إعادة ضبط أسماء وقائمة الـ 200 شركة للوضع الافتراضي الأول"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                  <span>إعادة الضبط الافتراضي</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Tenants Matrix Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-right border-collapse">
-                <thead>
-                  <tr className="border-b border-blue-900/80 text-slate-400 bg-[#0a2540]/60">
-                    <th className="py-3 px-3">#</th>
-                    <th className="py-3 px-3">اسم المنشأة والنشاط</th>
-                    <th className="py-3 px-3">المدينة / السجل</th>
-                    <th className="py-3 px-3">الرابط التجريبي الرئيسي</th>
-                    <th className="py-3 px-3">العمليات</th>
-                    <th className="py-3 px-3">الحالة</th>
-                    <th className="py-3 px-3 text-center">الإجراءات والنسخ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-blue-950">
-                  {filteredTenants.slice(0, 50).map((tenant) => (
-                    <tr key={tenant.id} className="hover:bg-[#0a2540]/80 transition">
-                      <td className="py-3 px-3 font-mono font-bold text-[#d4af37]">{tenant.index}</td>
-                      <td className="py-3 px-3">
-                        <strong className="text-white block font-bold">{tenant.companyNameAr}</strong>
-                        <span className="text-[10px] text-slate-400">{tenant.industry}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-slate-200 block">{tenant.city}</span>
-                        <span className="text-[10px] font-mono text-slate-400">{tenant.commercialReg}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <code className="text-[11px] text-amber-300 font-mono bg-black/40 px-2 py-0.5 rounded border border-blue-900">
-                            {tenant.masterDomain}
-                          </code>
-                          <button
-                            onClick={() => handleCopyLink(tenant.masterDomain, tenant.index)}
-                            className="p-1.5 bg-[#0a2540] hover:bg-[#d4af37] hover:text-[#0a2540] text-slate-300 rounded-lg border border-blue-900 transition"
-                            title="نسخ الرابط"
-                          >
-                            {copiedLinkIndex === tenant.index ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                        <a
-                          href={tenant.vercelUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-sky-400 hover:underline inline-flex items-center gap-1 mt-0.5 font-mono"
-                        >
-                          <span>رابط Vercel المباشر</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px]">
-                            <span>{tenant.operationsCount} / {tenant.maxTrialOperations}</span>
-                            <span className="text-slate-400">{Math.round((tenant.operationsCount / tenant.maxTrialOperations) * 100)}%</span>
-                          </div>
-                          <div className="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${
-                                tenant.operationsCount >= 45 ? "bg-red-500" : tenant.operationsCount >= 25 ? "bg-amber-500" : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${Math.min(100, (tenant.operationsCount / tenant.maxTrialOperations) * 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        {tenant.status === "PAID_ENTERPRISE" ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                            مدفوعة (دائم)
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                            تجريبية ({tenant.trialDaysRemaining} يوم)
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenEditModal(tenant)}
-                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/40 transition flex items-center gap-1 cursor-pointer"
-                            title="تعديل اسم المنشأة وبياناتها في أي وقت"
-                          >
-                            <Edit3 className="w-3 h-3 text-amber-300" />
-                            <span>تعديل</span>
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setSelectedTenantForEmp(tenant);
-                              setActiveTab("SUB_EMPLOYEE_LINKS");
-                            }}
-                            className="px-2.5 py-1 bg-[#0a2540] hover:bg-blue-900/60 text-slate-200 rounded-lg text-[10px] font-bold border border-blue-900 transition flex items-center gap-1"
-                            title="إدارة موظفي المنشأة"
-                          >
-                            <Users className="w-3 h-3 text-[#d4af37]" />
-                            <span>الموظفين ({tenant.employees.length})</span>
-                          </button>
-
-                          {tenant.status !== "PAID_ENTERPRISE" && (
-                            <button
-                              onClick={() => handleUpgradeTenantToPaid(tenant.slug)}
-                              className="px-2.5 py-1 bg-gradient-to-r from-[#d4af37] to-[#f39c12] hover:brightness-110 text-[#0a2540] rounded-lg text-[10px] font-black transition flex items-center gap-1"
-                              title="ترقية إلى باقة مدفوعة"
-                            >
-                              <Zap className="w-3 h-3" />
-                              <span>ترقية</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredTenants.length > 50 && (
-              <p className="text-center text-xs text-slate-400">
-                يتم عرض أول 50 منشأة من أصل {filteredTenants.length} منشأة — استخدم شريط البحث للتصفية الدقيقة أو قم بتصدير كامل المصفوفة إلى Excel.
-              </p>
-            )}
-          </div>
-        </div>
+        <Master200TenantsMatrixView />
       )}
 
       {/* ========================================================= */}

@@ -777,16 +777,28 @@ export class TenantIsolationService {
   /**
    * Parses employee authentication & role parameters from URL query or path
    */
-  public static parseEmployeeFromUrl(): { role: string; token: string; path: string; employeeName: string } | null {
+  public static parseEmployeeFromUrl(): { 
+    role: string; 
+    token: string; 
+    path: string; 
+    employeeName: string;
+    tenantSlug?: string;
+    companyName?: string;
+  } | null {
     if (typeof window === "undefined" || !window.location) return null;
     try {
       const search = window.location.search || "";
       const pathname = window.location.pathname || "";
       const urlParams = new URLSearchParams(search);
 
+      const tenantParam = urlParams.get("tenant") || urlParams.get("client") || "";
       let role = urlParams.get("role");
       const token = urlParams.get("token");
       const path = urlParams.get("path") || pathname;
+
+      if (tenantParam) {
+        this.setActiveTenant(tenantParam);
+      }
 
       if (!role && path) {
         if (path.includes("/employee/sales")) role = "SALES";
@@ -798,18 +810,38 @@ export class TenantIsolationService {
 
       if (role || token) {
         const roleUpper = (role || "SALES").toUpperCase();
+        
+        // Lookup dynamic tenant metadata if from 200 matrix
+        let companyName = "";
+        let specificEmployeeName = "";
+
+        if (tenantParam.startsWith("company-")) {
+          const matchedTenant = PRE_GENERATED_200_TENANTS.find((t) => t.slug === tenantParam || t.id === tenantParam);
+          if (matchedTenant) {
+            companyName = matchedTenant.name;
+            const roleKey = roleUpper === "SALES" ? "CASHIER" : roleUpper === "PURCHASER" ? "PURCHASER" : (roleUpper as keyof typeof matchedTenant.roles);
+            if (matchedTenant.roles && matchedTenant.roles[roleKey]) {
+              specificEmployeeName = `${matchedTenant.roles[roleKey].roleNameAr} - ${matchedTenant.name}`;
+            }
+          }
+        }
+
         const roleNames: Record<string, string> = {
-          SALES: "أ. طارق الشميري (مسؤول المبيعات)",
+          SALES: "أ. محمود صالح يحيى عايض (مسؤول المبيعات)",
+          CASHIER: "أ. محمود صالح يحيى عايض (مسؤول المبيعات ونقاط البيع)",
           ACCOUNTANT: "أ. أحمد باوزير (كبير المحاسبين)",
           MANAGER: "أ. محمد العتيبي (المدير التنفيذي)",
           PURCHASER: "أ. خالد اليافعي (مدير المشتريات)",
           AUDITOR: "د. سامي القحطاني (المراجع المالي)",
         };
+
         return {
           role: roleUpper,
           token: token || `AUTH_${roleUpper}_AUTO`,
           path,
-          employeeName: roleNames[roleUpper] || `موظف معتمد (${roleUpper})`,
+          employeeName: specificEmployeeName || roleNames[roleUpper] || `موظف معتمد (${roleUpper})`,
+          tenantSlug: tenantParam || undefined,
+          companyName: companyName || undefined,
         };
       }
     } catch (e) {

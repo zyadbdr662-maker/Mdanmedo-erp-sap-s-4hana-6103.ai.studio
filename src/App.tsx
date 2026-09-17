@@ -65,6 +65,7 @@ import { trialOperationsService } from "./services/trialOperationsService";
 import { SecretAdminGatewayModal } from "./components/SecretAdminGatewayModal";
 import { AdminPortalSecurityService } from "./services/adminPortalSecurityService";
 import { UnauthorizedAccessView } from "./components/UnauthorizedAccessView";
+import { RoleSwitchingToolbar } from "./components/RoleSwitchingToolbar";
 import {
   Account,
   BankAccountItem,
@@ -233,15 +234,36 @@ export default function App() {
     sessionStorage.setItem("medo_erp_auth", "true");
     setActiveTab(startTab);
 
+    // Retrieve company metadata from 200 matrix if applicable
+    const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
+
     setErpState((prev) => ({
       ...prev,
       currentUser: employeeUser,
+      systemSettings: {
+        ...prev.systemSettings,
+        companyNameAr: activeTenantDetails.nameAr,
+        companyNameEn: activeTenantDetails.nameEn,
+        commercialRegisterNumber: activeTenantDetails.commercialReg,
+        taxNumber: activeTenantDetails.taxNumber,
+        companyPhone: activeTenantDetails.phone,
+        companyAddress: activeTenantDetails.address,
+      },
     }));
 
     // Role authorization isolation
     if (mappedRole === "SYSTEM_ADMIN") {
       setIsAdminSessionUnlocked(true);
       localStorage.setItem("medo_erp_admin_mode", "true");
+      const mgrSession = {
+        isManager: true,
+        managerName: employeeUser.name || "أ. بدر عايض محمد (المدير العام)",
+        tenantSlug: empFromUrl.tenantSlug || TenantIsolationService.resolveActiveTenant() || "binziyad",
+        token: empFromUrl.token || "AUTH_MGR_AUTO",
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem("medo_original_manager_session", JSON.stringify(mgrSession));
+      localStorage.setItem("medo_original_manager_session", JSON.stringify(mgrSession));
     } else {
       setIsAdminSessionUnlocked(false);
       localStorage.removeItem("medo_erp_admin_mode");
@@ -254,6 +276,172 @@ export default function App() {
       initialTab: startTab,
     };
   }, []);
+
+  // Manager Original Session Tracking State
+  const [hasOriginalManagerSession, setHasOriginalManagerSession] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(
+      sessionStorage.getItem("medo_original_manager_session") ||
+      localStorage.getItem("medo_original_manager_session")
+    );
+  });
+
+  useEffect(() => {
+    const checkSession = () => {
+      const sessionExists = Boolean(
+        sessionStorage.getItem("medo_original_manager_session") ||
+        localStorage.getItem("medo_original_manager_session")
+      );
+      setHasOriginalManagerSession(sessionExists);
+    };
+    checkSession();
+    window.addEventListener("storage", checkSession);
+    return () => window.removeEventListener("storage", checkSession);
+  }, [erpState?.currentUser]);
+
+  // Global Logout Handler
+  const handleLogout = useCallback(() => {
+    sessionStorage.removeItem("medo_erp_auth");
+    sessionStorage.removeItem("medo_original_manager_session");
+    sessionStorage.removeItem("medo_designer_badr_auth");
+    localStorage.removeItem("medo_erp_admin_mode");
+    localStorage.removeItem("medo_original_manager_session");
+
+    setIsAuthenticated(false);
+    setIsAdminSessionUnlocked(false);
+    setHasOriginalManagerSession(false);
+
+    setErpState((prev) => prev ? ({
+      ...prev,
+      currentUser: {
+        id: "GUEST",
+        name: "زائر غير مسجل",
+        role: "CASHIER",
+        branch: "الفرع الرئيسي",
+        status: "ACTIVE",
+        avatar: "🚪",
+      }
+    }) : null);
+
+    window.history.pushState({}, "", window.location.pathname);
+    setRefreshSuccessMessage("🚪 تم تسجيل الخروج بنجاح. مرحباً بك في بوابة الدخول الرئيسية.");
+    soundService.playSound("ROYAL_BANK_CHIME");
+    setTimeout(() => setRefreshSuccessMessage(null), 4000);
+  }, []);
+
+  // Handler to Return Back to Manager Mode
+  const handleSwitchBackToManager = useCallback(() => {
+    let mgrSessionRaw = sessionStorage.getItem("medo_original_manager_session") || localStorage.getItem("medo_original_manager_session");
+    let mgrSession: any = null;
+    if (mgrSessionRaw) {
+      try { mgrSession = JSON.parse(mgrSessionRaw); } catch (e) {}
+    }
+
+    const managerUser: ERPUser = {
+      id: "EMP-MANAGER-9999",
+      name: mgrSession?.managerName || "أ. بدر عايض محمد (المدير العام)",
+      role: "SYSTEM_ADMIN",
+      branch: "الفرع الرئيسي - صنعاء",
+      status: "ACTIVE",
+      avatar: "👑",
+    };
+
+    setIsAdminSessionUnlocked(true);
+    localStorage.setItem("medo_erp_admin_mode", "true");
+    setIsAuthenticated(true);
+    sessionStorage.setItem("medo_erp_auth", "true");
+
+    setErpState((prev) => prev ? ({
+      ...prev,
+      currentUser: managerUser,
+    }) : null);
+
+    setActiveTab("DASHBOARD");
+
+    const tenant = mgrSession?.tenantSlug || TenantIsolationService.resolveActiveTenant() || "binziyad";
+    const token = mgrSession?.token || "AUTH_MGR_AUTO";
+    const newUrl = `${window.location.pathname}?tenant=${tenant}&role=MANAGER&token=${token}&path=/employee/manager`;
+    window.history.pushState({}, "", newUrl);
+
+    setRefreshSuccessMessage("👑 تم العودة بنجاح إلى وضع المدير العام واستعادة كامل الصلاحيات الإدارية والمالية!");
+    soundService.playSound("ROYAL_BANK_CHIME");
+    setTimeout(() => setRefreshSuccessMessage(null), 5000);
+  }, []);
+
+  // Handler to Switch to Test Role safely
+  const handleSwitchRole = useCallback((targetRole: "MANAGER" | "ACCOUNTANT" | "PURCHASER" | "CASHIER" | "AUDITOR") => {
+    if (targetRole === "MANAGER") {
+      handleSwitchBackToManager();
+      return;
+    }
+
+    if (erpState?.currentUser?.role === "SYSTEM_ADMIN" || erpState?.currentUser?.role === "ADMIN") {
+      const mgrSession = {
+        isManager: true,
+        managerName: erpState.currentUser.name || "أ. بدر عايض محمد (المدير العام)",
+        tenantSlug: TenantIsolationService.resolveActiveTenant() || "binziyad",
+        token: "AUTH_MGR_AUTO",
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem("medo_original_manager_session", JSON.stringify(mgrSession));
+      localStorage.setItem("medo_original_manager_session", JSON.stringify(mgrSession));
+      setHasOriginalManagerSession(true);
+    }
+
+    let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "CASHIER";
+    let startTab: NavTab = "SALES_RETURNS";
+    let empName = "أ. محمود صالح يحيى عايض (مسؤول المبيعات ونقاط البيع)";
+    let roleTitleAr = "مسؤول المبيعات ونقاط البيع";
+
+    if (targetRole === "CASHIER") {
+      mappedRole = "CASHIER";
+      startTab = "SALES_RETURNS";
+      empName = "أ. محمود صالح يحيى عايض (مسؤول المبيعات ونقاط البيع)";
+      roleTitleAr = "مسؤول المبيعات ونقاط البيع";
+    } else if (targetRole === "ACCOUNTANT") {
+      mappedRole = "ACCOUNTANT";
+      startTab = "GENERAL_LEDGER";
+      empName = "أ. محمد عبد الله العريقي (المحاسب المالي العام)";
+      roleTitleAr = "المحاسب المالي العام";
+    } else if (targetRole === "PURCHASER") {
+      mappedRole = "DATA_ENTRY";
+      startTab = "PURCHASES_RETURNS";
+      empName = "أ. علي أحمد المخلافي (مسؤول المشتريات والمخازن)";
+      roleTitleAr = "مسؤول المشتريات والمخازن";
+    } else if (targetRole === "AUDITOR") {
+      mappedRole = "AUDITOR";
+      startTab = "FINANCIAL_REPORTS";
+      empName = "أ. سامي عبد الرحمن الحكيمي (المراجع والمدقق المالي)";
+      roleTitleAr = "المراجع والمدقق المالي";
+    }
+
+    const newEmpUser: ERPUser = {
+      id: `EMP-${targetRole}-${Date.now().toString().slice(-4)}`,
+      name: empName,
+      role: mappedRole,
+      branch: "الفرع الرئيسي - صنعاء",
+      status: "ACTIVE",
+      avatar: targetRole.slice(0, 2),
+    };
+
+    setIsAdminSessionUnlocked(false);
+    localStorage.removeItem("medo_erp_admin_mode");
+
+    setErpState((prev) => prev ? ({
+      ...prev,
+      currentUser: newEmpUser,
+    }) : null);
+
+    setActiveTab(startTab);
+
+    const tenant = TenantIsolationService.resolveActiveTenant() || "binziyad";
+    const newUrl = `${window.location.pathname}?tenant=${tenant}&role=${targetRole}&token=AUTH_${targetRole}_AUTO&path=/employee/${targetRole.toLowerCase()}`;
+    window.history.pushState({}, "", newUrl);
+
+    setRefreshSuccessMessage(`🔄 تم التبديل التجريبي إلى دور (${roleTitleAr}). يمكنك العودة لوضع المدير العام في أي وقت!`);
+    soundService.playSound("SUCCESS_CHIME");
+    setTimeout(() => setRefreshSuccessMessage(null), 5000);
+  }, [erpState?.currentUser, handleSwitchBackToManager]);
 
   // ⚡ Priority #1: Central Auth & Token Access Verification Hook (Executes before module load)
   useEffect(() => {
@@ -1950,10 +2138,7 @@ export default function App() {
             onQuickBackup={() => {
               setActiveTab("SCHEDULED_BACKUP");
             }}
-            onLogout={() => {
-              sessionStorage.removeItem("medo_erp_auth");
-              setIsAuthenticated(false);
-            }}
+            onLogout={handleLogout}
             appVersion={appVersion}
             onVersionClick={() => setIsSystemUpdateOpen(true)}
             isMobileOpen={isMobileMenuOpen}
@@ -2077,10 +2262,7 @@ export default function App() {
                 setActiveTab("DASHBOARD");
               }}
               onOpenTrialManager={() => setIsTrialManagerOpen(true)}
-              onLogout={() => {
-                sessionStorage.removeItem("medo_erp_auth");
-                setIsAuthenticated(false);
-              }}
+              onLogout={handleLogout}
             />
 
             {/* 48-Hour Trial Live Countdown & Operations Bar */}
@@ -2782,10 +2964,7 @@ export default function App() {
                     fullState={erpState}
                     onUpdateSystemSettings={handleUpdateSystemSettings}
                     onResetAllData={handleResetData}
-                    onLogout={() => {
-                      sessionStorage.removeItem("medo_erp_auth");
-                      setIsAuthenticated(false);
-                    }}
+                    onLogout={handleLogout}
                     isSuperAdmin={true}
                   />
                 );
@@ -3005,6 +3184,18 @@ export default function App() {
               setIsAdminSessionUnlocked(true);
               setActiveTab("EXECUTIVE_MASTER_SUITE");
             }}
+          />
+
+          {/* Global Role Switching Toolbar & Top Floating Bar */}
+          <RoleSwitchingToolbar
+            currentUser={erpState.currentUser}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onLogout={handleLogout}
+            onSwitchBackToManager={handleSwitchBackToManager}
+            onSwitchRole={handleSwitchRole}
+            hasOriginalManagerSession={hasOriginalManagerSession}
+            companyName={erpState.systemSettings?.companyNameAr}
           />
         </>
       )}

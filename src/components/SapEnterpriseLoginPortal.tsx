@@ -177,16 +177,16 @@ export const SAP_ENTERPRISE_ROLES: SapEnterpriseRole[] = [
   },
   {
     id: "ROLE-SALES-DIR",
-    name: "طارق عبد الجليل الشرجبي",
+    name: "محمود صالح يحيى عايض",
     role: "CASHIER",
     roleTitleAr: "مسؤول المبيعات ونقاط البيع (SD/POS)",
     roleTitleEn: "Sales & POS Specialist (SD)",
     branch: "الفرع الرئيسي - صنعاء",
     branchId: "BR-SANAA-MAIN",
     warehouseId: "WH-01",
-    avatar: "TS",
+    avatar: "MA",
     email: "sales.director@medo-group.ye",
-    description: "إصدار ومتابعة فواتير المبيعات ونقاط البيع، عروض الأسعار، وتدقيق حدود الائتمان وسقوف الديون للعملاء.",
+    description: "هاتف: 715-144-635 | إصدار ومتابعة فواتير المبيعات ونقاط البيع، عروض الأسعار، وتدقيق حدود الائتمان وسقوف الديون للعملاء.",
     badgeColor: "bg-emerald-900/40 text-emerald-300 border-emerald-700/50",
     sapAuthProfile: "SAP_SD_SALES_POS",
   },
@@ -545,15 +545,15 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
         // Dedicated Tenant / Employee Pattern Recognition (e.g. sales@company-X, purchaser@company-X)
         if (password && password.length >= 3) {
           let roleType: "CASHIER" | "DATA_ENTRY" | "AUDITOR" | "ACCOUNTANT" | "SYSTEM_ADMIN" = "CASHIER";
-          let employeeName = "أ. طارق الشميري (مسؤول المبيعات)";
+          let employeeName = "أ. محمود صالح يحيى عايض (مسؤول المبيعات)";
           let titleAr = "مسؤول المبيعات ونقاط البيع (SD/POS)";
-          let avatar = "TS";
+          let avatar = "MA";
 
           if (cleanEmail.includes("sales") || cleanEmail.includes("cashier") || cleanEmail.includes("pos")) {
             roleType = "CASHIER";
-            employeeName = "أ. طارق الشميري (مسؤول المبيعات ونقاط البيع)";
+            employeeName = "أ. محمود صالح يحيى عايض (مسؤول المبيعات ونقاط البيع)";
             titleAr = "مسؤول المبيعات ونقاط البيع";
-            avatar = "TS";
+            avatar = "MA";
           } else if (cleanEmail.includes("purchas") || cleanEmail.includes("procurement") || cleanEmail.includes("supply")) {
             roleType = "DATA_ENTRY";
             employeeName = "أ. خالد اليافعي (مسؤول المشتريات والمخازن)";

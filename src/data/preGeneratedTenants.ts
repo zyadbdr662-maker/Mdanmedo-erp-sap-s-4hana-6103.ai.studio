@@ -1,19 +1,35 @@
 /**
- * MeDo ERP - 200 Multi-Tenant Master Trial Companies Directory
- * Pre-configured directory of 200 independent enterprise trial nodes
+ * MeDo ERP - 200 Multi-Tenant Master Enterprise Companies Directory
+ * Pre-configured directory of 200 independent enterprise nodes
  * Distributed across Vercel & MeDo Cloud domains (company-1 to company-200)
+ * 5 Dedicated Roles per company = 1000 Total Isolated Links
  */
+
+export interface TenantRoleCredentials {
+  token: string;
+  email: string;
+  password: string;
+  roleNameAr: string;
+  path: string;
+  subLink: string;
+}
 
 export interface PreGeneratedTenant {
   index: number;
-  id: string;
+  id: string; // 'company-1' to 'company-200'
   slug: string;
-  companyNameAr: string;
+  name: string; // 'شركة الأمل للتجارة والمقاولات'
+  nameEn: string;
+  companyNameAr: string; // Alias for backward compatibility
   companyNameEn: string;
-  commercialReg: string;
-  taxNumber: string;
-  industry: string;
+  crNumber: string; // Commercial Registration
+  commercialReg: string; // Alias
+  taxNumber: string; // VAT Number
+  phone: string;
+  address: string;
   city: string;
+  industry: string;
+  logo: string;
   masterDomain: string;
   vercelUrl: string;
   status: "ACTIVE" | "TRIAL" | "EXPIRED" | "PAID_ENTERPRISE";
@@ -25,14 +41,21 @@ export interface PreGeneratedTenant {
   assignedAdminEmail: string;
   databaseNode: "Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebase" | "Qiniu Cloud";
   unlockCode: string;
+  roles?: {
+    MANAGER: TenantRoleCredentials;
+    ACCOUNTANT: TenantRoleCredentials;
+    CASHIER: TenantRoleCredentials;
+    PURCHASER: TenantRoleCredentials;
+    AUDITOR: TenantRoleCredentials;
+  };
   employees: {
     id: string;
     name: string;
     roleAr: string;
-    roleEn: "MANAGER" | "ACCOUNTANT" | "PURCHASER" | "SALES" | "AUDITOR";
+    roleEn: "MANAGER" | "ACCOUNTANT" | "PURCHASER" | "SALES" | "AUDITOR" | "CASHIER";
     subLink: string;
-    loginEmail?: string;
-    password?: string;
+    loginEmail: string;
+    password: string;
   }[];
 }
 
@@ -80,7 +103,34 @@ const companyNames = [
 ];
 
 const cities = ["صنعاء", "عدن", "الرياض", "جدة", "دبي", "الدمام", "تعز", "الحديدة", "المكلا", "أبوظبي", "الدوحة", "مسقط"];
-const industries = ["تجارة عامة واستيراد", "صناعة وتحويل", "مقاولات وإنشاءات", "أدوية ورعاية صحية", "أغذية ومشروبات", "تقنية واتصالات", "شحن ولوجستيات", "صرافة وخدمات مالية"];
+const addresses = [
+  "شارع حدة - مجمع النخبة التجاري",
+  "شارع الزبيري - مقابل برج الأطباء",
+  "شارع الستين الجنوبي - برج الأمل",
+  "شارع الستين الغربي - بجوار سيتي ماكس",
+  "شارع تعز - جولة 45",
+  "شارع الدائري الغربي - مبنى التميز",
+  "شارع التحلية - مركز التجارة والأعمال",
+  "طريق الملك فهد - برج المروة",
+  "شارع المطار - المنطقة الحرة",
+  "شارع التسعين - مجمع النور",
+  "شارع بغداد - عمارة الرواد",
+  "شارع القيادة - مقابل البنك المركزي",
+];
+
+const industries = [
+  "تجارة عامة واستيراد",
+  "صناعة وتحويل",
+  "مقاولات وإنشاءات",
+  "أدوية ورعاية صحية",
+  "أغذية ومشروبات",
+  "تقنية واتصالات",
+  "شحن ولوجستيات",
+  "صرافة وخدمات مالية",
+  "معدات وسيارات",
+  "طاقة وبيئة",
+];
+
 const dbNodes: ("Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebase" | "Qiniu Cloud")[] = [
   "Alibaba Cloud",
   "Huawei Cloud",
@@ -89,87 +139,140 @@ const dbNodes: ("Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebas
   "Qiniu Cloud",
 ];
 
-// Generate exact 200 distinct enterprise nodes
+export const VERCEL_PRODUCTION_BASE = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
+
+// Generate exact 200 distinct enterprise nodes with full 5-role credentials
 export const PRE_GENERATED_200_TENANTS: PreGeneratedTenant[] = Array.from({ length: 200 }, (_, i) => {
   const num = i + 1;
   const nameBase = companyNames[(num - 1) % companyNames.length];
-  const companyNameAr = num <= companyNames.length ? nameBase : `${nameBase} - الفرع (${Math.floor((num - 1) / companyNames.length) + 1})`;
+  const companyNameAr = num <= companyNames.length ? nameBase : `${nameBase} (الفرع ${Math.floor((num - 1) / companyNames.length) + 1})`;
   const slug = `company-${num}`;
+  const id = slug;
   const city = cities[(num * 3) % cities.length];
+  const address = `${city} - ${addresses[(num * 5) % addresses.length]}`;
   const industry = industries[(num * 2) % industries.length];
-  const cr = `CR-1010${(500000 + num * 37).toString().substring(0, 6)}`;
+  const cr = `1010${(500000 + num * 37).toString().substring(0, 6)}`;
   const vat = `300${(748291000 + num * 91).toString().substring(0, 9)}00003`;
+  const phone = `777${(111000 + num * 23).toString().substring(0, 6)}`;
   
   const isPaid = num % 4 === 0; // 50 paid, 150 trial
-  const status = isPaid ? "PAID_ENTERPRISE" : "TRIAL";
+  const status: "ACTIVE" | "TRIAL" | "EXPIRED" | "PAID_ENTERPRISE" = isPaid ? "PAID_ENTERPRISE" : "TRIAL";
   const opsCount = isPaid ? Math.floor(Math.random() * 4500) + 500 : Math.floor(Math.random() * 185) + 1;
   const trialDaysRemaining = isPaid ? 365 : Math.max(1, 30 - Math.floor(opsCount / 7));
   const databaseNode = dbNodes[num % dbNodes.length];
 
   const unlockCode = `MEDO-UNLOCK-2026-C${num.toString().padStart(3, "0")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-  const vercelBase = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
-  const masterDomain = `${vercelBase}/?tenant=${slug}`;
+  const masterDomain = `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}`;
   const vercelUrl = masterDomain;
+
+  const roles = {
+    MANAGER: {
+      token: `AUTH_MGR_${num}`,
+      email: `manager@${slug}.medo-erp.cloud`,
+      password: "1234",
+      roleNameAr: "مدير عام المنشأة (MANAGER)",
+      path: "/employee/manager",
+      subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}&role=MANAGER&token=AUTH_MGR_${num}&path=/employee/manager`,
+    },
+    ACCOUNTANT: {
+      token: `AUTH_ACC_${num}`,
+      email: `accountant@${slug}.medo-erp.cloud`,
+      password: "1234",
+      roleNameAr: "كبير المحاسبين (ACCOUNTANT)",
+      path: "/employee/accountant",
+      subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}&role=ACCOUNTANT&token=AUTH_ACC_${num}&path=/employee/accountant`,
+    },
+    CASHIER: {
+      token: `AUTH_SALES_${num}`,
+      email: `sales@${slug}.medo-erp.cloud`,
+      password: "1234",
+      roleNameAr: "مسؤول المبيعات ونقاط البيع (CASHIER)",
+      path: "/employee/sales",
+      subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}&role=CASHIER&token=AUTH_SALES_${num}&path=/employee/sales`,
+    },
+    PURCHASER: {
+      token: `AUTH_PUR_${num}`,
+      email: `purchase@${slug}.medo-erp.cloud`,
+      password: "1234",
+      roleNameAr: "مسؤول المشتريات والتوريد (PURCHASER)",
+      path: "/employee/purchase",
+      subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}&role=PURCHASER&token=AUTH_PUR_${num}&path=/employee/purchase`,
+    },
+    AUDITOR: {
+      token: `AUTH_AUD_${num}`,
+      email: `auditor@${slug}.medo-erp.cloud`,
+      password: "1234",
+      roleNameAr: "مدقق ومراجع الحسابات (AUDITOR)",
+      path: "/employee/auditor",
+      subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=${slug}&role=AUDITOR&token=AUTH_AUD_${num}&path=/employee/auditor`,
+    },
+  };
 
   const employees = [
     {
       id: `emp-${num}-1`,
-      name: `أ. محمد العتيبي (المدير التنفيذي)`,
+      name: `أ. محمد العتيبي (المدير العام)`,
       roleAr: "مدير عام المنشأة",
       roleEn: "MANAGER" as const,
-      subLink: `${vercelBase}/?tenant=${slug}&role=MANAGER&token=AUTH_MGR_${num}&path=/employee/manager`,
-      loginEmail: `manager@${slug}.medo-erp.cloud`,
-      password: "1234",
+      subLink: roles.MANAGER.subLink,
+      loginEmail: roles.MANAGER.email,
+      password: roles.MANAGER.password,
     },
     {
       id: `emp-${num}-2`,
       name: `أ. أحمد باوزير (كبير المحاسبين)`,
       roleAr: "محاسب عام رئيسي",
       roleEn: "ACCOUNTANT" as const,
-      subLink: `${vercelBase}/?tenant=${slug}&role=ACCOUNTANT&token=AUTH_ACC_${num}&path=/employee/accountant`,
-      loginEmail: `accountant@${slug}.medo-erp.cloud`,
-      password: "1234",
+      subLink: roles.ACCOUNTANT.subLink,
+      loginEmail: roles.ACCOUNTANT.email,
+      password: roles.ACCOUNTANT.password,
     },
     {
       id: `emp-${num}-3`,
       name: `أ. خالد اليافعي (مدير المشتريات)`,
-      roleAr: "مسؤول مشتريات ومخازن",
+      roleAr: "مسؤول مشتريات وتوريد",
       roleEn: "PURCHASER" as const,
-      subLink: `${vercelBase}/?tenant=${slug}&role=PURCHASER&token=AUTH_PUR_${num}&path=/employee/purchaser`,
-      loginEmail: `purchaser@${slug}.medo-erp.cloud`,
-      password: "1234",
+      subLink: roles.PURCHASER.subLink,
+      loginEmail: roles.PURCHASER.email,
+      password: roles.PURCHASER.password,
     },
     {
       id: `emp-${num}-4`,
-      name: `أ. طارق الشميري (مسؤول المبيعات)`,
-      roleAr: "كاشير ومبيعات نقاط البيع",
+      name: `أ. محمود صالح يحيى عايض (مسؤول المبيعات ونقاط البيع)`,
+      roleAr: "كاشير ونقاط البيع POS",
       roleEn: "SALES" as const,
-      subLink: `${vercelBase}/?tenant=${slug}&role=SALES&token=AUTH_SALES_${num.toString().padStart(4, "0")}&path=/employee/sales`,
-      loginEmail: `sales@${slug}.medo-erp.cloud`,
-      password: "1234",
+      subLink: roles.CASHIER.subLink,
+      loginEmail: roles.CASHIER.email,
+      password: roles.CASHIER.password,
     },
     {
       id: `emp-${num}-5`,
       name: `د. سامي القحطاني (المراجع المالي)`,
       roleAr: "مدقق ومراجع حسابات خارجي",
       roleEn: "AUDITOR" as const,
-      subLink: `${vercelBase}/?tenant=${slug}&role=AUDITOR&token=AUTH_AUD_${num}&path=/employee/auditor`,
-      loginEmail: `auditor@${slug}.medo-erp.cloud`,
-      password: "1234",
+      subLink: roles.AUDITOR.subLink,
+      loginEmail: roles.AUDITOR.email,
+      password: roles.AUDITOR.password,
     },
   ];
 
   return {
     index: num,
-    id: `tenant-${slug}`,
+    id,
     slug,
+    name: companyNameAr,
+    nameEn: `Enterprise Node #${num} (${slug})`,
     companyNameAr,
     companyNameEn: `Enterprise Node #${num} (${slug})`,
+    crNumber: cr,
     commercialReg: cr,
     taxNumber: vat,
-    industry,
+    phone,
+    address,
     city,
+    industry,
+    logo: `/logos/${slug}.png`,
     masterDomain,
     vercelUrl,
     status,
@@ -177,15 +280,19 @@ export const PRE_GENERATED_200_TENANTS: PreGeneratedTenant[] = Array.from({ leng
     operationsCount: opsCount,
     maxTrialOperations: 200,
     assignedAdminName: `مسؤول الحساب - المنشأة ${num}`,
-    assignedAdminPhone: `+967 773 586 047`,
-    assignedAdminEmail: `admin@${slug}.medo-erp.cloud`,
+    assignedAdminPhone: phone,
+    assignedAdminEmail: roles.MANAGER.email,
     databaseNode,
     unlockCode,
+    roles,
     employees,
   };
 });
 
-const TENANTS_STORAGE_KEY = "medo_erp_200_tenants_v2";
+// Alias export for standard naming
+export const preGeneratedTenants = PRE_GENERATED_200_TENANTS;
+
+const TENANTS_STORAGE_KEY = "medo_erp_200_tenants_v3";
 
 /**
  * Retrieves stored 200 tenants from localStorage or defaults to generated list

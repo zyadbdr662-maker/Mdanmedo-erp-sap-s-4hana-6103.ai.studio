@@ -9,6 +9,7 @@ interface UnauthorizedAccessViewProps {
   allowedRoles?: string[];
   onNavigateToAllowed?: () => void;
   onLogout?: () => void;
+  onSwitchBackToManager?: () => void;
 }
 
 export const UnauthorizedAccessView: React.FC<UnauthorizedAccessViewProps> = ({
@@ -17,6 +18,7 @@ export const UnauthorizedAccessView: React.FC<UnauthorizedAccessViewProps> = ({
   allowedRoles = ["مدير النظام", "المحاسب المالي العام"],
   onNavigateToAllowed,
   onLogout,
+  onSwitchBackToManager,
 }) => {
   const userRole = currentUser?.role || "GUEST";
   
@@ -83,6 +85,18 @@ export const UnauthorizedAccessView: React.FC<UnauthorizedAccessViewProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+          {onSwitchBackToManager && (
+            <button
+              onClick={() => {
+                soundService.playSound("SUCCESS_CHIME");
+                onSwitchBackToManager();
+              }}
+              className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#f1c40f] hover:brightness-110 text-[#0a2540] text-sm font-black rounded-xl shadow-lg border border-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <span>🔄 العودة إلى وضع المدير (Switch Back to Admin)</span>
+            </button>
+          )}
+
           {onNavigateToAllowed && (
             <button
               onClick={() => {
