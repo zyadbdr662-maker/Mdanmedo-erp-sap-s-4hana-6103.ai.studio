@@ -32,17 +32,18 @@ import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { DisclaimerDocument } from "./DisclaimerDocument";
 import { RefundPolicyDocument } from "./RefundPolicyDocument";
 import { CookiesPolicyDocument } from "./CookiesPolicyDocument";
+import { DpaPolicyDocument } from "./DpaPolicyDocument";
 
 interface LegalDocumentsPageProps {
   onBack?: () => void;
-  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES";
+  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA";
 }
 
 export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
   onBack,
   initialDoc = "TERMS",
 }) => {
-  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES">(initialDoc);
+  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA">(initialDoc);
   const [activeArticleId, setActiveArticleId] = useState<string>("art-1");
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -284,6 +285,24 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
     },
   ];
 
+  // Article groupings for Data Processing Agreement (DPA)
+  const dpaCategories = [
+    {
+      category: "الأحكام العامة والنطاق",
+      items: [
+        { id: "dpa-art-1", num: 1, title: "المادة الأولى: النطاق والتعريفات" },
+        { id: "dpa-art-2", num: 2, title: "المادة الثانية: التزامات معالج البيانات" },
+      ],
+    },
+    {
+      category: "الأمن والتدقيق",
+      items: [
+        { id: "dpa-art-3", num: 3, title: "المادة الثالثة: أمن البيانات والتشفير" },
+        { id: "dpa-art-4", num: 4, title: "المادة الرابعة: التدقيق وحقوق الرقابة" },
+      ],
+    },
+  ];
+
   const currentCategories =
     activeDoc === "TERMS"
       ? termsCategories
@@ -293,7 +312,9 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
       ? disclaimerCategories
       : activeDoc === "REFUND"
       ? refundCategories
-      : cookiesCategories;
+      : activeDoc === "COOKIES"
+      ? cookiesCategories
+      : dpaCategories;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20 select-text" dir="rtl">
@@ -425,6 +446,23 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <Cookie className="w-3.5 h-3.5" />
               <span>ملفات الارتباط</span>
               <span className="text-[10px] opacity-80">(13 مادة)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("DPA");
+                setActiveArticleId("dpa-art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeDoc === "DPA"
+                  ? "bg-blue-500 text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>معالجة البيانات (DPA)</span>
+              <span className="text-[10px] opacity-80">(4 مواد)</span>
             </button>
           </div>
 
@@ -624,8 +662,10 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <DisclaimerDocument />
             ) : activeDoc === "REFUND" ? (
               <RefundPolicyDocument />
-            ) : (
+            ) : activeDoc === "COOKIES" ? (
               <CookiesPolicyDocument />
+            ) : (
+              <DpaPolicyDocument />
             )}
           </div>
 
