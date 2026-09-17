@@ -1,6 +1,17 @@
 import { CurrencyCode, CurrencyInfo, Customer, Invoice, JournalEntry, Vendor, Voucher } from "../types/erp";
 import { formatMoney, formatNumberOnly } from "./erpStorage";
 import { generateDocumentShareUrl, OFFICIAL_APP_DOMAIN } from "../config/appConfig";
+import { TenantIsolationService } from "./tenantIsolationService";
+
+export interface TenantDetailsOverride {
+  nameAr?: string;
+  nameEn?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  taxNumber?: string;
+  commercialReg?: string;
+}
 
 export interface ShareDocumentPayload {
   title: string;
@@ -9,6 +20,17 @@ export interface ShareDocumentPayload {
   recipientName?: string;
   recipientPhone?: string;
   currency?: CurrencyCode;
+}
+
+function resolveTenantInfo(override?: TenantDetailsOverride) {
+  const activeTenant = TenantIsolationService.getActiveTenantDetails();
+  return {
+    nameAr: override?.nameAr || activeTenant.nameAr || "ميدو تك للحلول البرمجية",
+    nameEn: override?.nameEn || activeTenant.nameEn || "MeDo Tech Solutions",
+    phone: override?.phone || activeTenant.phone || "+967 773 586 047",
+    address: override?.address || activeTenant.address || "المركز الرئيسي",
+    city: override?.city || activeTenant.city || "صنعاء",
+  };
 }
 
 // Clean and normalize phone numbers for WhatsApp and SMS
@@ -84,8 +106,10 @@ export async function copyShareText(text: string): Promise<boolean> {
 export function formatInvoiceMessage(
   invoice: Invoice,
   currencies: CurrencyInfo[],
-  format: "WHATSAPP" | "SMS"
+  format: "WHATSAPP" | "SMS",
+  tenantOverride?: TenantDetailsOverride
 ): string {
+  const tenant = resolveTenantInfo(tenantOverride);
   const isSales = invoice.type === "SALES";
   const isSalesReturn = invoice.type === "SALES_RETURN";
   const isPurchase = invoice.type === "PURCHASE";
@@ -105,14 +129,14 @@ export function formatInvoiceMessage(
   const remaining = invoice.remainingAmount !== undefined ? invoice.remainingAmount : (invoice.totalAmount - paid);
 
   if (format === "SMS") {
-    return `مجموعة ريمكس ميدو للاستثمار
+    return `${tenant.nameAr}
 ${docTitle} رقم: ${invoice.invoiceNumber}
 السيد: ${partyName}
 التاريخ: ${invoice.date}
 الإجمالي: ${currFormattedTotal}
 المدفوع: ${formatMoney(paid, invoice.currency, currencies)}
 المتبقي: ${formatMoney(remaining, invoice.currency, currencies)}
-شكراً لتعاملكم معنا. للاستفسار: 777123456`;
+شكراً لتعاملكم معنا. للاستفسار: ${tenant.phone}`;
   }
 
   // WhatsApp rich formatted text
@@ -140,8 +164,8 @@ ${docTitle} رقم: ${invoice.invoiceNumber}
 
   const verificationUrl = generateDocumentShareUrl("invoice", invoice.invoiceNumber);
 
-  return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
-نظام الإدارة المالية MeDo ERP (SAP S/4HANA)
+  return `🏢 *${tenant.nameAr}*
+نظام الإدارة المالية والفوترة الإلكترونية
 ━━━━━━━━━━━━━━━━━━━━
 📄 *${docTitle}*
 🔢 *رقم الفاتورة:* \`${invoice.invoiceNumber}\`
@@ -150,7 +174,7 @@ ${docTitle} رقم: ${invoice.invoiceNumber}
 💳 *طريقة السداد:* ${paymentText}
 ━━━━━━━━━━━━━━━━━━━━
 📦 *تفاصيل الأصناف والبنود:*
-${itemsList || "• خدمات واستشارات تجارية معتمدة"}
+${itemsList || "• خدمات ومشتريات تجارية معتمدة"}
 ━━━━━━━━━━━━━━━━━━━━
 💰 *إجمالي الفاتورة:* *${currFormattedTotal}*
 ${paid > 0 ? `✅ *المبلغ المسدد:* *${formatMoney(paid, invoice.currency, currencies)}*\n` : ""}${remaining > 0 ? `⚠️ *الرصيد المتبقي (ذمة):* *${formatMoney(remaining, invoice.currency, currencies)}*\n` : ""}📅 *تاريخ الاستحقاق:* ${invoice.dueDate || invoice.date}
@@ -159,7 +183,7 @@ ${paid > 0 ? `✅ *المبلغ المسدد:* *${formatMoney(paid, invoice.curr
 ${verificationUrl}
 ━━━━━━━━━━━━━━━━━━━━
 ✨ *شاكرين ثقتكم وتعاملكم الراقي معنا.*
-📞 المركز الرئيسي: صنعاء - هاتف: +967 1 456789 / 777123456`;
+📞 ${tenant.address} - هاتف: ${tenant.phone}`;
 }
 
 // 2. STATEMENT OF ACCOUNT (كشف حساب عميل أو مورد)
@@ -169,31 +193,33 @@ export function formatStatementMessage(
   currencies: CurrencyInfo[],
   format: "WHATSAPP" | "SMS",
   invoicesCount: number = 0,
-  lastTransactionDate?: string
+  lastTransactionDate?: string,
+  tenantOverride?: TenantDetailsOverride
 ): string {
+  const tenant = resolveTenantInfo(tenantOverride);
   const isCust = partyType === "CUSTOMER";
   const title = isCust ? "كشف حساب عميل معتمد (Customer Statement)" : "كشف حساب مورد معتمد (Vendor Statement)";
   const bal = formatMoney(party.currentBalance, party.currency, currencies);
 
   if (format === "SMS") {
-    return `مجموعة ريمكس ميدو
+    return `${tenant.nameAr}
 ${title}
 الاسم: ${party.nameAr} (${party.code})
 الرصيد المستحق: ${bal}
 العملة: ${party.currency}
 تاريخ: ${new Date().toISOString().split("T")[0]}
-يرجى مراجعة الحساب وتأكيد المطابقة. هاتف: 777123456`;
+يرجى مراجعة الحساب وتأكيد المطابقة. هاتف: ${tenant.phone}`;
   }
 
   const statementUrl = generateDocumentShareUrl("statement", party.code);
 
-  return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
+  return `🏢 *${tenant.nameAr}*
 الإدارة المالية والمحاسبية | إدارة الذمم والائتمان
 ━━━━━━━━━━━━━━━━━━━━
 📑 *${title}*
 👤 *الاسم:* ${party.nameAr} (${party.nameEn || ""})
 🆔 *رمز الحساب:* \`${party.code}\`
-📍 *المدينة:* ${party.city || "صنعاء"} | 📞 ${party.phone || "-"}
+📍 *المدينة:* ${party.city || tenant.city} | 📞 ${party.phone || "-"}
 📅 *تاريخ الكشف:* ${new Date().toISOString().split("T")[0]}
 ━━━━━━━━━━━━━━━━━━━━
 💵 *الرصيد الإجمالي القائم:*
@@ -204,7 +230,7 @@ ${statementUrl}
 ━━━━━━━━━━━━━━━━━━━━
 📌 *ملاحظة:* نرجو التكرم بمطابقة الرصيد وموافاتنا بأي ملاحظات خلال 3 أيام عمل.
 ✨ *مع خالص التقدير والاحترام.*
-📞 الإدارة المالية: +967 777123456`;
+📞 الإدارة المالية: ${tenant.phone}`;
 }
 
 // 3. FINANCIAL REPORTS (قائمة الدخل، الميزانية العمومية، ميزان المراجعة)
@@ -223,8 +249,10 @@ export function formatFinancialReportMessage(
   },
   displayCurrency: CurrencyCode,
   currencies: CurrencyInfo[],
-  format: "WHATSAPP" | "SMS"
+  format: "WHATSAPP" | "SMS",
+  tenantOverride?: TenantDetailsOverride
 ): string {
+  const tenant = resolveTenantInfo(tenantOverride);
   const reportTitles: Record<string, string> = {
     BALANCE_SHEET: "الميزانية العمومية والمركز المالي (Balance Sheet)",
     INCOME_STATEMENT: "قائمة الأرباح والخسائر والدخل الشامل (Income Statement)",
@@ -236,13 +264,13 @@ export function formatFinancialReportMessage(
 
   if (format === "SMS") {
     if (reportType === "INCOME_STATEMENT") {
-      return `مجموعة ريمكس ميدو - ملخص قائمة الدخل ${fiscalYear}
+      return `${tenant.nameAr} - ملخص قائمة الدخل ${fiscalYear}
 الإيرادات: ${formatMoney(summary.totalRevenues || 0, displayCurrency, currencies)}
 المصروفات: ${formatMoney(summary.totalExpenses || 0, displayCurrency, currencies)}
 صافي الربح: ${formatMoney(summary.netProfit || 0, displayCurrency, currencies)}
 معتمد من الإدارة المالية`;
     }
-    return `مجموعة ريمكس ميدو - ${reportTitle}
+    return `${tenant.nameAr} - ${reportTitle}
 السنة المالية: ${fiscalYear}
 إجمالي الأصول: ${formatMoney(summary.totalAssets || 0, displayCurrency, currencies)}
 إجمالي الالتزامات وحقوق الملكية: ${formatMoney((summary.totalLiabilities || 0) + (summary.totalEquity || 0), displayCurrency, currencies)}
@@ -274,8 +302,8 @@ export function formatFinancialReportMessage(
     bodyContent = `💵 *صافي السيولة النقدية المتاحة:* *${formatMoney(summary.totalAssets || 0, displayCurrency, currencies)}*`;
   }
 
-  return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
-نظام الإدارة المالية الموحد MeDo ERP (SAP S/4HANA)
+  return `🏢 *${tenant.nameAr}*
+نظام الإدارة المالية والتقارير المحاسبية المعتمدة
 ━━━━━━━━━━━━━━━━━━━━
 📊 *${reportTitle}*
 📅 *السنة المالية:* ${fiscalYear} | العملة المعتمدة: ${displayCurrency}
@@ -284,23 +312,24 @@ export function formatFinancialReportMessage(
 ${bodyContent}
 ━━━━━━━━━━━━━━━━━━━━
 ✍️ *اعتماد:*
-• المدير المالي (CFO): أ. سامي الشرجبي
-• المراجع الداخلي: د. طارق المنصوري
-📞 المركز الرئيسي: صنعاء - الجمهورية اليمنية`;
+• الإدارة المالية والتدقيق الداخلي
+📞 المركز الرئيسي: ${tenant.city} - هاتف: ${tenant.phone}`;
 }
 
 // 4. VOUCHER (سند قبض / سند صرف)
 export function formatVoucherMessage(
   voucher: Voucher,
   currencies: CurrencyInfo[],
-  format: "WHATSAPP" | "SMS"
+  format: "WHATSAPP" | "SMS",
+  tenantOverride?: TenantDetailsOverride
 ): string {
+  const tenant = resolveTenantInfo(tenantOverride);
   const isReceipt = voucher.type === "RECEIPT";
   const title = isReceipt ? "سند قبض مالي رسمي (Receipt Voucher)" : "سند صرف مالي رسمي (Payment Voucher)";
   const amtFormatted = formatMoney(voucher.amount, voucher.currency, currencies);
 
   if (format === "SMS") {
-    return `مجموعة ريمكس ميدو للاستثمار
+    return `${tenant.nameAr}
 ${title} رقم: ${voucher.voucherNumber}
 ${isReceipt ? "استلمنا من:" : "صرف للأخ:"} ${voucher.beneficiaryOrPayer}
 المبلغ: ${amtFormatted}
@@ -318,8 +347,8 @@ ${isReceipt ? "استلمنا من:" : "صرف للأخ:"} ${voucher.beneficiary
 
   const voucherUrl = generateDocumentShareUrl("voucher", voucher.voucherNumber);
 
-  return `🏢 *مجموعة ريمكس ميدو للاستثمار والتجارة المحدودة*
-الإدارة المالية والمصرفية | MeDo ERP
+  return `🏢 *${tenant.nameAr}*
+الإدارة المالية والمصرفية
 ━━━━━━━━━━━━━━━━━━━━
 📑 *${title}*
 🔢 *رقم السند:* \`${voucher.voucherNumber}\`
@@ -336,6 +365,6 @@ ${voucher.notes}
 ${voucherUrl}
 ━━━━━━━━━━━━━━━━━━━━
 🔒 *حالة السند:* مقيد ومرحل في دفتر الأستاذ العام
-✍️ *المحاسب المختص:* أ. محمد عبد الرقيب
+✍️ *المحاسب المختص:* قسم الحسابات العامة
 ✨ *شكراً لتعاملكم معنا.*`;
 }

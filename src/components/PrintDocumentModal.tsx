@@ -24,6 +24,7 @@ import {
 import { exportElementToPdf, getTodayFormattedDate } from "../services/pdfExporter";
 import { QRCodeSVG } from "qrcode.react";
 import { formatCalendarDate, formatDualDate } from "../utils/calendarUtils";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 
 interface PrintDocumentModalProps {
   isOpen: boolean;
@@ -69,23 +70,25 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
   const [showPrintCustomizer, setShowPrintCustomizer] = useState(false);
   const [paperFormat, setPaperFormat] = useState<"A4" | "THERMAL_80MM">("A4");
 
+  const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
+
   const [headerCompanyAr, setHeaderCompanyAr] = useState(() => {
-    return localStorage.getItem("mdo_print_header_ar") || systemSettings?.companyNameAr || "مجموعة بن زياد التجارية المتحدة";
+    return localStorage.getItem("mdo_print_header_ar") || systemSettings?.companyNameAr || activeTenantDetails.nameAr;
   });
   const [headerSubtitleAr, setHeaderSubtitleAr] = useState(() => {
     return localStorage.getItem("mdo_print_sub_ar") || "الفرع الرئيسي - قسم التوريدات والخدمات التجارية";
   });
   const [headerCompanyEn, setHeaderCompanyEn] = useState(() => {
-    return localStorage.getItem("mdo_print_header_en") || systemSettings?.companyNameEn || "Bin Ziad United Commercial Group";
+    return localStorage.getItem("mdo_print_header_en") || systemSettings?.companyNameEn || activeTenantDetails.nameEn;
   });
   const [headerSubtitleEn, setHeaderSubtitleEn] = useState(() => {
     return localStorage.getItem("mdo_print_sub_en") || "Building Materials & Commercial Supplies";
   });
   const [headerPhone, setHeaderPhone] = useState(() => {
-    return localStorage.getItem("mdo_print_phone") || systemSettings?.phone || "0967773586047 + 715779976";
+    return localStorage.getItem("mdo_print_phone") || systemSettings?.phone || activeTenantDetails.phone;
   });
   const [headerTaxReg, setHeaderTaxReg] = useState(() => {
-    return localStorage.getItem("mdo_print_tax_reg") || `س.ت: ${systemSettings?.commercialRegister || '7102030'} | ضريبي: ${systemSettings?.taxNumber || '300010020'}`;
+    return localStorage.getItem("mdo_print_tax_reg") || `س.ت: ${systemSettings?.commercialRegister || activeTenantDetails.commercialReg} | ضريبي: ${systemSettings?.taxNumber || activeTenantDetails.taxNumber}`;
   });
 
   const [logoType, setLogoType] = useState<"DEFAULT_CREST" | "CUSTOM_IMAGE" | "TEXT_BADGE">(
@@ -256,13 +259,23 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
   };
 
   const getShareText = (format: "WHATSAPP" | "SMS") => {
+    const tenantOverride = systemSettings
+      ? {
+          nameAr: systemSettings.companyNameAr,
+          nameEn: systemSettings.companyNameEn,
+          phone: systemSettings.phone,
+          address: systemSettings.address,
+        }
+      : undefined;
+
     if (documentType === "INVOICE") {
-      return formatInvoiceMessage(documentData, currencies, format);
+      return formatInvoiceMessage(documentData, currencies, format, tenantOverride);
     }
     if (documentType === "RECEIPT" || documentType === "PAYMENT") {
-      return formatVoucherMessage(documentData, currencies, format);
+      return formatVoucherMessage(documentData, currencies, format, tenantOverride);
     }
-    return `مجموعة بن زياد التجارية المتحدة - مستند رسمي رقم ${
+    const compName = systemSettings?.companyNameAr || activeTenantDetails.nameAr;
+    return `${compName} - مستند رسمي رقم ${
       documentData.voucherNumber || documentData.entryNumber || documentData.invoiceNumber
     }`;
   };
@@ -281,7 +294,8 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
   const handleDirectEmail = () => {
     const text = getShareText("WHATSAPP");
-    const subject = `مستند رسمي - مجموعة بن زياد التجارية المتحدة`;
+    const compName = systemSettings?.companyNameAr || activeTenantDetails.nameAr;
+    const subject = `مستند رسمي - ${compName}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
       text
     )}`;

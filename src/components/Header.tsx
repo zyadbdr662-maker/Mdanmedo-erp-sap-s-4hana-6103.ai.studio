@@ -37,6 +37,7 @@ import { useCalendar } from "../utils/calendarUtils";
 import { PWAInstallButton } from "./PWAInstallButton";
 import { SyncStatusIndicator } from "./SyncStatusIndicator";
 import { NavTab } from "./Sidebar";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 
 interface HeaderProps {
   currencies: CurrencyInfo[];
@@ -202,9 +203,11 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div className="hidden xl:flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-100 tracking-tight">نظام SAP/MeDO ERP</span>
+                <span className="text-xs font-bold text-slate-100 tracking-tight">
+                  {TenantIsolationService.getActiveTenantDetails()?.nameAr || "نظام SAP/MeDO ERP"}
+                </span>
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">
-                  S/4HANA
+                  {currentUser?.role === "CASHIER" ? "مبيعات" : currentUser?.role === "DATA_ENTRY" ? "مشتريات" : currentUser?.role === "AUDITOR" ? "تدقيق" : "S/4HANA"}
                 </span>
               </div>
               <span className="text-[10px] font-medium text-slate-300">منظومة الإدارة السحابية والفوترة الإلكترونية</span>

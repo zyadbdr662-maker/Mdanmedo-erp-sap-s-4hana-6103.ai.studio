@@ -178,17 +178,17 @@ export const SAP_ENTERPRISE_ROLES: SapEnterpriseRole[] = [
   {
     id: "ROLE-SALES-DIR",
     name: "طارق عبد الجليل الشرجبي",
-    role: "ACCOUNTANT",
-    roleTitleAr: "مدير إدارة المبيعات والعملاء (SD)",
-    roleTitleEn: "Sales & Distribution Manager",
+    role: "CASHIER",
+    roleTitleAr: "مسؤول المبيعات ونقاط البيع (SD/POS)",
+    roleTitleEn: "Sales & POS Specialist (SD)",
     branch: "الفرع الرئيسي - صنعاء",
     branchId: "BR-SANAA-MAIN",
     warehouseId: "WH-01",
     avatar: "TS",
     email: "sales.director@medo-group.ye",
-    description: "إصدار ومتابعة الفواتير الإلكترونية ZATCA، عروض الأسعار، وتدقيق حدود الائتمان وسقوف الديون.",
+    description: "إصدار ومتابعة فواتير المبيعات ونقاط البيع، عروض الأسعار، وتدقيق حدود الائتمان وسقوف الديون للعملاء.",
     badgeColor: "bg-emerald-900/40 text-emerald-300 border-emerald-700/50",
-    sapAuthProfile: "SAP_SD_SALES_DIRECTOR",
+    sapAuthProfile: "SAP_SD_SALES_POS",
   },
   {
     id: "ROLE-PROCUREMENT",
@@ -266,8 +266,36 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [language, setLanguage] = useState<"AR" | "EN">("AR");
   const [showSaaSOnboarding, setShowSaaSOnboarding] = useState(defaultShowSaaSOnboarding);
 
+  // Dynamic Tenant Isolation Resolution
+  const activeTenantSlug = TenantIsolationService.resolveActiveTenant();
+  const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
+  const isCustomTenant = Boolean(
+    activeTenantSlug &&
+    !["default", "master-badr", "bdr-zyad"].includes(activeTenantSlug)
+  );
+
+  const customTenantClientOption: SapClientOption | null = isCustomTenant
+    ? {
+        id: `CLIENT-${activeTenantSlug.toUpperCase()}`,
+        code: `Client-${activeTenantSlug.slice(0, 8)}`,
+        nameAr: activeTenantDetails.nameAr,
+        nameEn: activeTenantDetails.nameEn,
+        type: "PRD",
+        badge: "مساحة العمل السحابية المعزولة",
+        description: `قاعدة بيانات معزولة ومستقلة خاصة بـ ${activeTenantDetails.nameAr}. العمليات والفواتير والحسابات مشفرة ومحمية بالكامل.`,
+        dbName: `medo_tenant_${activeTenantSlug}`,
+      }
+    : null;
+
+  const allClients: SapClientOption[] = customTenantClientOption
+    ? [customTenantClientOption, ...SAP_CLIENTS]
+    : SAP_CLIENTS;
+
   // Selection states
-  const [selectedClientId, setSelectedClientId] = useState<string>("CLIENT-100");
+  const [selectedClientId, setSelectedClientId] = useState<string>(() => {
+    if (customTenantClientOption) return customTenantClientOption.id;
+    return "CLIENT-100";
+  });
   const [selectedBranchId, setSelectedBranchId] = useState<string>(availableBranches[0]?.id || "BR-SANAA-MAIN");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("WH-01");
 
@@ -358,7 +386,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Current selected client object
-  const currentClient = SAP_CLIENTS.find((c) => c.id === selectedClientId) || SAP_CLIENTS[0];
+  const currentClient = allClients.find((c) => c.id === selectedClientId) || allClients[0];
   const filteredWarehouses = SAP_WAREHOUSES.filter((w) => w.branchId === selectedBranchId);
 
   const openLegalPolicy = (type: LegalPolicyType) => {
@@ -496,6 +524,10 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             phone: "+967 773 586 047",
           };
 
+          if (user.role !== "SYSTEM_ADMIN" && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+            localStorage.removeItem("medo_erp_admin_mode");
+          }
+
           // Register session
           SecurityAuditService.getInstance().registerSession(user);
 
@@ -510,21 +542,60 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           return;
         }
 
-        // Generic enterprise login fallback or error
-        if (password && password.length >= 4) {
+        // Dedicated Tenant / Employee Pattern Recognition (e.g. sales@company-X, purchaser@company-X)
+        if (password && password.length >= 3) {
+          let roleType: "CASHIER" | "DATA_ENTRY" | "AUDITOR" | "ACCOUNTANT" | "SYSTEM_ADMIN" = "CASHIER";
+          let employeeName = "أ. طارق الشميري (مسؤول المبيعات)";
+          let titleAr = "مسؤول المبيعات ونقاط البيع (SD/POS)";
+          let avatar = "TS";
+
+          if (cleanEmail.includes("sales") || cleanEmail.includes("cashier") || cleanEmail.includes("pos")) {
+            roleType = "CASHIER";
+            employeeName = "أ. طارق الشميري (مسؤول المبيعات ونقاط البيع)";
+            titleAr = "مسؤول المبيعات ونقاط البيع";
+            avatar = "TS";
+          } else if (cleanEmail.includes("purchas") || cleanEmail.includes("procurement") || cleanEmail.includes("supply")) {
+            roleType = "DATA_ENTRY";
+            employeeName = "أ. خالد اليافعي (مسؤول المشتريات والمخازن)";
+            titleAr = "مسؤول المشتريات والتوريد";
+            avatar = "KY";
+          } else if (cleanEmail.includes("audit") || cleanEmail.includes("review")) {
+            roleType = "AUDITOR";
+            employeeName = "د. سامي القحطاني (المراجع والمدقق المالي)";
+            titleAr = "المراجع المالي والرقابي";
+            avatar = "SQ";
+          } else if (cleanEmail.includes("acc") || cleanEmail.includes("finance")) {
+            roleType = "ACCOUNTANT";
+            employeeName = "أ. أحمد باوزير (كبير المحاسبين)";
+            titleAr = "المحاسب المالي العام";
+            avatar = "AB";
+          } else if (cleanEmail.includes("manager") || cleanEmail.includes("admin") || cleanEmail.includes("ceo") || cleanEmail.includes("badr") || cleanEmail.includes("bdr")) {
+            roleType = "SYSTEM_ADMIN";
+            employeeName = "أ. بدر عايض محمد (المدير العام والمالك)";
+            titleAr = "مدير عام المنظومة";
+            avatar = "BM";
+          }
+
           const user: ERPUser = {
-            id: "USR-MAIN-001",
-            name: email.split("@")[0] || "بدر عايض محمد",
-            role: "SYSTEM_ADMIN",
+            id: `EMP-${roleType}-${Date.now().toString().slice(-4)}`,
+            name: employeeName,
+            role: roleType,
             branch: availableBranches.find((b) => b.id === selectedBranchId)?.nameAr || "الفرع الرئيسي - صنعاء",
             branchId: selectedBranchId,
-            avatar: "BM",
+            avatar,
             status: "ACTIVE",
+            email: cleanEmail,
           };
+
+          if (roleType === "SYSTEM_ADMIN") {
+            localStorage.setItem("medo_erp_admin_mode", "true");
+          } else {
+            localStorage.removeItem("medo_erp_admin_mode");
+          }
 
           SecurityAuditService.getInstance().registerSession(user);
 
-          setMessage("تمت المصادقة المؤسسية بنجاح! جاري تشغيل وحدة SAP Business One...");
+          setMessage(`تمت المصادقة بنجاح بصلاحية ${titleAr}. مرحباً بك!`);
           setTimeout(() => {
             onLoginSuccess(user, selectedBranchId, {
               clientId: currentClient.id,
@@ -830,6 +901,34 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
       {/* MAIN CONTAINER */}
       <main id="sap-portal-main" className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center z-10">
+        {isCustomTenant && (
+          <div className="mb-6 p-4 rounded-2xl bg-[#06182a]/95 border border-emerald-500/60 shadow-[0_10px_30px_rgba(16,185,129,0.15)] backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold">
+                <Building2 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-white">
+                    {activeTenantDetails.nameAr}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-bold">
+                    نطاق مخصص ومعزول
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-normal mt-0.5">
+                  أهلاً بك في البوابة السحابية المخصصة للمنشأة. يتم تطبيق قواعد الأمان وسياسات الصلاحيات تلقائياً.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <span className="text-[11px] text-slate-400 font-mono bg-[#030d17] px-2.5 py-1 rounded-lg border border-slate-800">
+                Tenant: {activeTenantSlug}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT/RIGHT SIDEBAR: SAP CLIENT, BRANCH & WAREHOUSE CONFIG */}
           <div className="lg:col-span-4 bg-gradient-to-br from-[#0a1525]/80 to-[#040810]/90 backdrop-blur-3xl border border-[#d4af37]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_40px_rgba(212,175,55,0.15)] space-y-5">
@@ -858,7 +957,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   onChange={(e) => setSelectedClientId(e.target.value)}
                   className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
-                  {SAP_CLIENTS.map((c) => (
+                  {allClients.map((c) => (
                     <option key={c.id} value={c.id} className="bg-[#070d18] text-white">
                       [{c.code}] {c.nameAr} ({c.type})
                     </option>

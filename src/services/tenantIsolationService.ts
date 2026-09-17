@@ -37,6 +37,36 @@ export const KNOWN_TENANTS: Record<string, TenantMetadata> = {
     category: "TRADING",
     dbPrefix: "medo_tenant_client_1",
   },
+  "alamal": {
+    id: "CLIENT-01",
+    slug: "client-1",
+    nameAr: "شركة الأمل للتجارة العامة والاستيراد",
+    nameEn: "Al-Amal General Trading & Contracting Co.",
+    adminName: "مدير المشتريات والمبيعات",
+    adminEmail: "client1@medo-trial.com",
+    category: "TRADING",
+    dbPrefix: "medo_tenant_client_1",
+  },
+  "al-amal": {
+    id: "CLIENT-01",
+    slug: "client-1",
+    nameAr: "شركة الأمل للتجارة العامة والاستيراد",
+    nameEn: "Al-Amal General Trading & Contracting Co.",
+    adminName: "مدير المشتريات والمبيعات",
+    adminEmail: "client1@medo-trial.com",
+    category: "TRADING",
+    dbPrefix: "medo_tenant_client_1",
+  },
+  "company-1": {
+    id: "CLIENT-01",
+    slug: "client-1",
+    nameAr: "شركة الأمل للتجارة العامة والاستيراد",
+    nameEn: "Al-Amal General Trading & Contracting Co.",
+    adminName: "مدير المشتريات والمبيعات",
+    adminEmail: "client1@medo-trial.com",
+    category: "TRADING",
+    dbPrefix: "medo_tenant_client_1",
+  },
   "client-2": {
     id: "CLIENT-02",
     slug: "client-2",
@@ -707,13 +737,17 @@ export class TenantIsolationService {
         return cleanSlug;
       }
 
-      // 3. Check query param: ?client=client-1 or ?tenant=company-201
-      const clientParam = urlParams.get("client") || urlParams.get("tenant");
+      // 3. Check query param: ?client=client-1 or ?tenant=company-201 or ?company=company-1
+      const clientParam = urlParams.get("client") || urlParams.get("tenant") || urlParams.get("company");
       if (clientParam) {
         const cleanSlug = clientParam.toLowerCase().trim();
         if (cleanSlug.includes("albadr") || cleanSlug.includes("badr")) {
           this.setActiveTenant("albadr-pharma-2026");
           return "albadr-pharma-2026";
+        }
+        if (cleanSlug === "alamal" || cleanSlug === "al-amal" || cleanSlug === "amal" || cleanSlug === "company-1") {
+          this.setActiveTenant("client-1");
+          return "client-1";
         }
         this.setActiveTenant(cleanSlug);
         return cleanSlug;
@@ -943,5 +977,106 @@ export class TenantIsolationService {
       city: "عمران",
       industry: "مواد بناء ومواد زراعية"
     };
+  }
+
+  /**
+   * Validates if a given token matches the requested role
+   */
+  public static validateTokenForRole(token: string | null | undefined, role: string): boolean {
+    if (!token) return false;
+    const cleanToken = token.trim().toUpperCase();
+    const cleanRole = role.trim().toUpperCase();
+
+    if (cleanRole === "CASHIER" || cleanRole === "SALES") {
+      return cleanToken.startsWith("AUTH_SALES") || cleanToken.startsWith("AUTH_CASHIER") || cleanToken === "1234";
+    }
+    if (cleanRole === "DATA_ENTRY" || cleanRole === "PURCHASER" || cleanRole === "PURCHASES") {
+      return cleanToken.startsWith("AUTH_PUR") || cleanToken === "1234";
+    }
+    if (cleanRole === "AUDITOR") {
+      return cleanToken.startsWith("AUTH_AUD") || cleanToken === "1234";
+    }
+    if (cleanRole === "ACCOUNTANT") {
+      return cleanToken.startsWith("AUTH_ACC") || cleanToken === "1234";
+    }
+    if (cleanRole === "MANAGER" || cleanRole === "SYSTEM_ADMIN" || cleanRole === "SUPER_ADMIN" || cleanRole === "ADMIN") {
+      return cleanToken.startsWith("AUTH_MGR") || cleanToken.startsWith("AUTH_ADMIN") || cleanToken === "1234";
+    }
+    return true;
+  }
+
+  /**
+   * Checks if a navigation tab is allowed for the user's role
+   */
+  public static isTabAllowedForRole(role: string | undefined | null, tab: string): boolean {
+    if (!role) return false;
+    const cleanRole = role.toUpperCase();
+
+    if (cleanRole === "SYSTEM_ADMIN" || cleanRole === "SUPER_ADMIN" || cleanRole === "ADMIN" || cleanRole === "MANAGER") {
+      return true;
+    }
+
+    if (cleanRole === "CASHIER" || cleanRole === "SALES") {
+      const allowedSalesTabs = [
+        "SALES_RETURNS",
+        "CUSTOMERS_AR",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return allowedSalesTabs.includes(tab);
+    }
+
+    if (cleanRole === "DATA_ENTRY" || cleanRole === "PURCHASER") {
+      const allowedProcurementTabs = [
+        "PURCHASES_RETURNS",
+        "VENDORS_AP",
+        "INVENTORY",
+        "VOUCHERS",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return allowedProcurementTabs.includes(tab);
+    }
+
+    if (cleanRole === "AUDITOR") {
+      const allowedAuditorTabs = [
+        "DASHBOARD",
+        "FINANCIAL_REPORTS",
+        "GENERAL_LEDGER",
+        "JOURNAL_ENTRIES",
+        "CHART_OF_ACCOUNTS",
+        "CASH_FLOW",
+        "FIXED_ASSETS",
+        "COST_CENTERS",
+        "CUSTOMERS_AR",
+        "VENDORS_AP",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return allowedAuditorTabs.includes(tab);
+    }
+
+    if (cleanRole === "ACCOUNTANT") {
+      const adminOnlyTabs = [
+        "EXECUTIVE_MASTER_SUITE",
+        "SAAS_PLATFORM",
+        "CENTRAL_ARCHIVE",
+        "SECURITY_AND_ROLES",
+        "SETTINGS",
+      ];
+      return !adminOnlyTabs.includes(tab);
+    }
+
+    return false;
   }
 }

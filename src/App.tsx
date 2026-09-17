@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { Lock, ShieldCheck } from "lucide-react";
 import { Sidebar, NavTab } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -64,6 +64,7 @@ import { trialService, TrialState } from "./services/trialService";
 import { trialOperationsService } from "./services/trialOperationsService";
 import { SecretAdminGatewayModal } from "./components/SecretAdminGatewayModal";
 import { AdminPortalSecurityService } from "./services/adminPortalSecurityService";
+import { UnauthorizedAccessView } from "./components/UnauthorizedAccessView";
 import {
   Account,
   BankAccountItem,
@@ -164,6 +165,105 @@ export default function App() {
   const [isSecretGatewayOpen, setIsSecretGatewayOpen] = useState(false);
   const [isTrialManagerOpen, setIsTrialManagerOpen] = useState(false);
 
+  /**
+   * Central Authentication & Token Security Guard
+   * Validates token authenticity, role matching, and isolates permissions before modules load
+   */
+  const checkAuthAccess = useCallback((): {
+    isAuthenticated: boolean;
+    user: ERPUser | null;
+    role: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" | null;
+    initialTab: NavTab | "HOME_HUB";
+  } => {
+    const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
+    if (!empFromUrl) {
+      return {
+        isAuthenticated: sessionStorage.getItem("medo_erp_auth") === "true",
+        user: erpState?.currentUser || null,
+        role: (erpState?.currentUser?.role as any) || null,
+        initialTab: activeTab,
+      };
+    }
+
+    const isTokenValid = TenantIsolationService.validateTokenForRole(empFromUrl.token, empFromUrl.role);
+    if (!isTokenValid) {
+      console.warn("⛔ checkAuthAccess: Invalid or mismatched Token for role:", empFromUrl);
+      sessionStorage.removeItem("medo_erp_auth");
+      localStorage.removeItem("medo_erp_admin_mode");
+      setIsAuthenticated(false);
+      setIsAdminSessionUnlocked(false);
+      return {
+        isAuthenticated: false,
+        user: null,
+        role: null,
+        initialTab: "SALES_RETURNS",
+      };
+    }
+
+    let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "CASHIER";
+    let startTab: NavTab = "SALES_RETURNS";
+
+    if (empFromUrl.role === "MANAGER" || empFromUrl.role === "SYSTEM_ADMIN" || empFromUrl.role === "ADMIN") {
+      mappedRole = "SYSTEM_ADMIN";
+      startTab = "DASHBOARD";
+    } else if (empFromUrl.role === "SALES" || empFromUrl.role === "CASHIER" || empFromUrl.role === "POS") {
+      mappedRole = "CASHIER";
+      startTab = "SALES_RETURNS";
+    } else if (empFromUrl.role === "PURCHASER" || empFromUrl.role === "DATA_ENTRY" || empFromUrl.role === "PURCHASES") {
+      mappedRole = "DATA_ENTRY";
+      startTab = "PURCHASES_RETURNS";
+    } else if (empFromUrl.role === "AUDITOR") {
+      mappedRole = "AUDITOR";
+      startTab = "FINANCIAL_REPORTS";
+    } else if (empFromUrl.role === "ACCOUNTANT") {
+      mappedRole = "ACCOUNTANT";
+      startTab = "GENERAL_LEDGER";
+    }
+
+    const employeeUser: ERPUser = {
+      id: `EMP-${empFromUrl.role}-${Date.now().toString().slice(-4)}`,
+      name: empFromUrl.employeeName,
+      role: mappedRole,
+      branch: "الفرع الرئيسي - صنعاء",
+      status: "ACTIVE",
+      avatar: empFromUrl.role.slice(0, 2),
+    };
+
+    setIsAuthenticated(true);
+    sessionStorage.setItem("medo_erp_auth", "true");
+    setActiveTab(startTab);
+
+    setErpState((prev) => ({
+      ...prev,
+      currentUser: employeeUser,
+    }));
+
+    // Role authorization isolation
+    if (mappedRole === "SYSTEM_ADMIN") {
+      setIsAdminSessionUnlocked(true);
+      localStorage.setItem("medo_erp_admin_mode", "true");
+    } else {
+      setIsAdminSessionUnlocked(false);
+      localStorage.removeItem("medo_erp_admin_mode");
+    }
+
+    return {
+      isAuthenticated: true,
+      user: employeeUser,
+      role: mappedRole,
+      initialTab: startTab,
+    };
+  }, []);
+
+  // ⚡ Priority #1: Central Auth & Token Access Verification Hook (Executes before module load)
+  useEffect(() => {
+    const authResult = checkAuthAccess();
+    if (authResult.isAuthenticated && authResult.user) {
+      setRefreshSuccessMessage(`🔒 تم التحقق الأمني من الـ Token والصلاحية (${authResult.user.name}) - الوحدة المصرح بها: ${authResult.initialTab}`);
+      setTimeout(() => setRefreshSuccessMessage(null), 4000);
+    }
+  }, [checkAuthAccess]);
+
   // Secret Admin URL & Auto-Sanitization & License Token Activation Listener
   useEffect(() => {
     // 0. Register Trial Client Access if on trial link
@@ -173,61 +273,6 @@ export default function App() {
       if (trialOperationsService.isTrialLocked(activeTenant, erpState?.currentUser?.role)) {
         setIsTrialLockModalOpen(true);
       }
-    }
-
-    // 0.5 Detect Employee Direct Sublink Login from Vercel URL
-    const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
-    if (empFromUrl) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("medo_erp_auth", "true");
-
-      let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "ACCOUNTANT";
-      let startTab: NavTab = "GENERAL_LEDGER";
-
-      if (empFromUrl.role === "MANAGER") {
-        mappedRole = "SYSTEM_ADMIN";
-        startTab = "DASHBOARD";
-      } else if (empFromUrl.role === "SALES") {
-        mappedRole = "CASHIER";
-        startTab = "CUSTOMERS_AR";
-      } else if (empFromUrl.role === "PURCHASER") {
-        mappedRole = "DATA_ENTRY";
-        startTab = "VENDORS_AP";
-      } else if (empFromUrl.role === "AUDITOR") {
-        mappedRole = "AUDITOR";
-        startTab = "FINANCIAL_REPORTS";
-      } else if (empFromUrl.role === "ACCOUNTANT") {
-        mappedRole = "ACCOUNTANT";
-        startTab = "GENERAL_LEDGER";
-      }
-
-      setActiveTab(startTab);
-
-      const employeeUser: ERPUser = {
-        id: `EMP-${empFromUrl.role}-${Date.now().toString().slice(-4)}`,
-        name: empFromUrl.employeeName,
-        role: mappedRole,
-        branch: "الفرع الرئيسي - صنعاء",
-        status: "ACTIVE",
-        avatar: empFromUrl.role.slice(0, 2),
-      };
-
-      setErpState((prev) => ({
-        ...prev,
-        currentUser: employeeUser,
-      }));
-
-      // Role authorization isolation
-      if (mappedRole === "SYSTEM_ADMIN") {
-        setIsAdminSessionUnlocked(true);
-        localStorage.setItem("medo_erp_admin_mode", "true");
-      } else {
-        setIsAdminSessionUnlocked(false);
-        localStorage.removeItem("medo_erp_admin_mode");
-      }
-
-      setRefreshSuccessMessage(`🔑 تم تسجيل الدخول المباشر بالصلاحية (${empFromUrl.employeeName}) - تم فتح وحدة: ${startTab}`);
-      setTimeout(() => setRefreshSuccessMessage(null), 5000);
     }
 
     // 1. Check if user opened a dedicated license activation link
@@ -272,7 +317,10 @@ export default function App() {
     const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
     if (!empFromUrl) return loaded;
 
-    let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "ACCOUNTANT";
+    const isTokenValid = TenantIsolationService.validateTokenForRole(empFromUrl.token, empFromUrl.role);
+    if (!isTokenValid) return loaded;
+
+    let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "CASHIER";
 
     if (empFromUrl.role === "MANAGER" || empFromUrl.role === "SYSTEM_ADMIN") {
       mappedRole = "SYSTEM_ADMIN";
@@ -377,6 +425,62 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+
+  // Role-Based Tab Guard & Auto-Redirect
+  useEffect(() => {
+    const role = erpState?.currentUser?.role;
+    if (role === "CASHIER") {
+      const allowedSalesTabs: (NavTab | "HOME_HUB")[] = [
+        "SALES_RETURNS",
+        "CUSTOMERS_AR",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      if (!allowedSalesTabs.includes(activeTab)) {
+        setActiveTab("SALES_RETURNS");
+      }
+    } else if (role === "DATA_ENTRY") {
+      const allowedProcurementTabs: (NavTab | "HOME_HUB")[] = [
+        "PURCHASES_RETURNS",
+        "VENDORS_AP",
+        "INVENTORY",
+        "VOUCHERS",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      if (!allowedProcurementTabs.includes(activeTab)) {
+        setActiveTab("PURCHASES_RETURNS");
+      }
+    } else if (role === "AUDITOR") {
+      const allowedAuditorTabs: (NavTab | "HOME_HUB")[] = [
+        "DASHBOARD",
+        "FINANCIAL_REPORTS",
+        "GENERAL_LEDGER",
+        "JOURNAL_ENTRIES",
+        "CHART_OF_ACCOUNTS",
+        "CASH_FLOW",
+        "FIXED_ASSETS",
+        "COST_CENTERS",
+        "CUSTOMERS_AR",
+        "VENDORS_AP",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      if (!allowedAuditorTabs.includes(activeTab)) {
+        setActiveTab("FINANCIAL_REPORTS");
+      }
+    }
+  }, [erpState?.currentUser?.role, activeTab]);
 
   // Background Scheduled Backup Engine Initialization (Always active & reactive)
   useEffect(() => {
@@ -1720,6 +1824,35 @@ export default function App() {
     updateStateWithRecalculatedGL({ workflowRules: rules });
   };
 
+  const getTabDisplayTitle = (tab: NavTab | "HOME_HUB"): string => {
+    const titles: Record<string, string> = {
+      DASHBOARD: "لوحة القيادة التنفيذية",
+      CHART_OF_ACCOUNTS: "دليل وشجرة الحسابات",
+      JOURNAL_ENTRIES: "سجل قيود اليومية العامة",
+      GENERAL_LEDGER: "دفتر الأستاذ العام",
+      VOUCHERS: "سندات القبض والصرف",
+      SALES_RETURNS: "فواتير المبيعات ونقاط البيع",
+      PURCHASES_RETURNS: "فواتير المشتريات والتوريد",
+      CASH_AND_BANK: "إدارة الخزائن والحسابات البنكية",
+      CUSTOMERS_AR: "حسابات العملاء والذمم المدينة",
+      VENDORS_AP: "حسابات الموردين والذمم الدائنة",
+      FINANCIAL_REPORTS: "التقارير المالية والختامية",
+      CASH_FLOW: "قائمة التدفقات النقدية",
+      FIXED_ASSETS: "الأصول الثابتة والإهلاكات",
+      COST_CENTERS: "مراكز التكلفة والمشاريع",
+      INVENTORY: "المستودعات والمخزون السلعي",
+      BRANCH_MANAGEMENT: "إدارة الفروع والمواقع",
+      HUMAN_RESOURCES: "الموارد البشرية والرواتب",
+      EXPENSES_AND_REVENUES: "المصروفات والإيرادات",
+      SETTINGS: "إعدادات النظام والتهيئة",
+      SECURITY_AND_ROLES: "الأمان والمستخدمين والصلاحيات",
+      EXECUTIVE_MASTER_SUITE: "اللوحة السيادية والتحكم المالي المركزي",
+      SAAS_PLATFORM: "منصة السحاب وإدارة المنشآت",
+      CENTRAL_ARCHIVE: "الأرشيف السحابي المركزي",
+    };
+    return titles[tab] || "هذه الوحدة المحاسبية";
+  };
+
   if (erpState === null) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-sans" dir="rtl">
@@ -1756,7 +1889,13 @@ export default function App() {
           onLoginSuccess={(user, branchId) => {
             if (user) {
               setErpState((prev) => (prev ? { ...prev, currentUser: user, activeBranchId: branchId || prev.activeBranchId } : prev));
-              if (user.plan === "TRIAL") {
+              if (user.role === "CASHIER") {
+                setActiveTab("SALES_RETURNS");
+              } else if (user.role === "DATA_ENTRY") {
+                setActiveTab("PURCHASES_RETURNS");
+              } else if (user.role === "AUDITOR") {
+                setActiveTab("FINANCIAL_REPORTS");
+              } else if (user.plan === "TRIAL") {
                 setActiveTab("DASHBOARD");
               }
             }
@@ -2057,6 +2196,21 @@ export default function App() {
                     ترقية النسخة وتفعيل النظام
                   </button>
                 </div>
+              ) : !TenantIsolationService.isTabAllowedForRole(erpState.currentUser?.role, activeTab) ? (
+                <UnauthorizedAccessView
+                  currentUser={erpState.currentUser}
+                  attemptedTabTitle={getTabDisplayTitle(activeTab)}
+                  onNavigateToAllowed={() => {
+                    if (erpState.currentUser?.role === "CASHIER") setActiveTab("SALES_RETURNS");
+                    else if (erpState.currentUser?.role === "DATA_ENTRY") setActiveTab("PURCHASES_RETURNS");
+                    else if (erpState.currentUser?.role === "AUDITOR") setActiveTab("FINANCIAL_REPORTS");
+                    else setActiveTab("GENERAL_LEDGER");
+                  }}
+                  onLogout={() => {
+                    sessionStorage.removeItem("medo_erp_auth");
+                    setIsAuthenticated(false);
+                  }}
+                />
               ) : (
                 <Suspense fallback={null}>
                   <>

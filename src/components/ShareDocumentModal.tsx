@@ -13,7 +13,7 @@ import {
   Smartphone,
   Info,
 } from "lucide-react";
-import { CurrencyCode, CurrencyInfo, Customer, Invoice, Vendor, Voucher } from "../types/erp";
+import { CurrencyCode, CurrencyInfo, Customer, Invoice, SystemSettings, Vendor, Voucher } from "../types/erp";
 import {
   formatInvoiceMessage,
   formatStatementMessage,
@@ -23,6 +23,7 @@ import {
   sendViaSMS,
   copyShareText,
 } from "../services/shareService";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 
 export interface ShareData {
   type: "INVOICE" | "STATEMENT" | "REPORT" | "VOUCHER";
@@ -41,6 +42,7 @@ interface ShareDocumentModalProps {
   currencies: CurrencyInfo[];
   displayCurrency: CurrencyCode;
   onOpenPrint?: () => void;
+  systemSettings?: SystemSettings;
 }
 
 const COUNTRY_CODES = [
@@ -63,12 +65,23 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
   currencies,
   displayCurrency,
   onOpenPrint,
+  systemSettings,
 }) => {
   const [activeChannel, setActiveChannel] = useState<"WHATSAPP" | "SMS">("WHATSAPP");
   const [selectedCountryCode, setSelectedCountryCode] = useState("967");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [customMessage, setCustomMessage] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Derive tenant override
+  const tenantOverride = systemSettings
+    ? {
+        nameAr: systemSettings.companyNameAr,
+        nameEn: systemSettings.companyNameEn,
+        phone: systemSettings.phone,
+        address: systemSettings.address,
+      }
+    : undefined;
 
   // Initialize message based on payload
   useEffect(() => {
@@ -95,7 +108,7 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
     }
 
     generateMessageText(activeChannel);
-  }, [shareData, activeChannel, displayCurrency]);
+  }, [shareData, activeChannel, displayCurrency, systemSettings]);
 
   if (!isOpen || !shareData) return null;
 
@@ -105,7 +118,7 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
 
     switch (shareData.type) {
       case "INVOICE":
-        msg = formatInvoiceMessage(shareData.data as Invoice, currencies, channel);
+        msg = formatInvoiceMessage(shareData.data as Invoice, currencies, channel, tenantOverride);
         break;
 
       case "STATEMENT":
@@ -115,7 +128,10 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
           party,
           isCust ? "CUSTOMER" : "VENDOR",
           currencies,
-          channel
+          channel,
+          0,
+          undefined,
+          tenantOverride
         );
         break;
 
@@ -126,12 +142,13 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
           shareData.reportSummary || {},
           displayCurrency,
           currencies,
-          channel
+          channel,
+          tenantOverride
         );
         break;
 
       case "VOUCHER":
-        msg = formatVoucherMessage(shareData.data as Voucher, currencies, channel);
+        msg = formatVoucherMessage(shareData.data as Voucher, currencies, channel, tenantOverride);
         break;
 
       default:
@@ -202,7 +219,12 @@ export const ShareDocumentModal: React.FC<ShareDocumentModalProps> = ({
               <Share2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">{getModalTitle()}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">{getModalTitle()}</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  {tenantOverride?.nameAr || TenantIsolationService.getActiveTenantDetails().nameAr}
+                </span>
+              </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 إرسال ومشاركة فورية عبر تطبيق واتساب أو الرسائل النصية القصيرة (SMS)
               </p>

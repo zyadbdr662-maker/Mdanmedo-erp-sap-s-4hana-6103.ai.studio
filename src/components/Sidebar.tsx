@@ -43,6 +43,7 @@ import {
 import { PWAInstallButton } from "./PWAInstallButton";
 import { BzmtLogo } from "./BzmtLogo";
 import { IS_ADMIN_ENV } from "../config/env";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 
 export type NavTab =
   | "DASHBOARD"
@@ -424,18 +425,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isMasterUnlocked = Boolean(isAdminUnlocked || IS_ADMIN_ENV);
   const isSuperOrSystemAdmin =
-    currentUser?.role === "SUPER_ADMIN" ||
-    currentUser?.role === "SYSTEM_ADMIN" ||
-    currentUser?.name?.includes("بدر") ||
-    currentUser?.id === "USR-MAIN-001" ||
-    localStorage.getItem("medo_erp_admin_mode") === "true";
+    (currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "SYSTEM_ADMIN") &&
+    (currentUser?.name?.includes("بدر") ||
+      currentUser?.id === "USR-MAIN-001" ||
+      localStorage.getItem("medo_erp_admin_mode") === "true");
+
+  const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
 
   const filteredMenuItems = menuItems.filter((item) => {
-    // 1. Environmental Isolation (Production vs Admin)
+    // 1. Strict Role-Based Access Control (RBAC) Isolation
+    if (userRole === "CASHIER") {
+      const salesAllowedTabs: NavTab[] = [
+        "SALES_RETURNS",
+        "CUSTOMERS_AR",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return salesAllowedTabs.includes(item.id);
+    }
+    
+    if (userRole === "DATA_ENTRY") {
+      const procurementAllowedTabs: NavTab[] = [
+        "PURCHASES_RETURNS",
+        "VENDORS_AP",
+        "INVENTORY",
+        "VOUCHERS",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return procurementAllowedTabs.includes(item.id);
+    }
+    
+    if (userRole === "AUDITOR") {
+      const auditorAllowedTabs: NavTab[] = [
+        "DASHBOARD",
+        "FINANCIAL_REPORTS",
+        "GENERAL_LEDGER",
+        "JOURNAL_ENTRIES",
+        "CHART_OF_ACCOUNTS",
+        "CASH_FLOW",
+        "FIXED_ASSETS",
+        "COST_CENTERS",
+        "CUSTOMERS_AR",
+        "VENDORS_AP",
+        "INVENTORY",
+        "CASH_AND_BANK",
+        "USER_MANUAL",
+        "MEDO_BROCHURE",
+        "AI_ASSISTANT",
+        "COLLABORATION",
+      ];
+      return auditorAllowedTabs.includes(item.id);
+    }
+
+    // 2. Environmental Isolation (Production vs Sovereign Admin)
     const adminOnlyTabs = [
       "EXECUTIVE_MASTER_SUITE",
       "SAAS_PLATFORM",
       "CENTRAL_ARCHIVE",
+      "SECURITY_AND_ROLES",
+      "SETTINGS",
     ];
     
     if (adminOnlyTabs.includes(item.id)) {
@@ -444,6 +499,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       if (!isSuperOrSystemAdmin) return false;
     }
 
+    // 3. Trial Limits
     if (currentUser?.plan === "TRIAL") {
       const restrictedForTrial: NavTab[] = [
         "EXECUTIVE_MASTER_SUITE",
@@ -468,14 +524,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center justify-between px-4 py-4 border-b border-[#1E3A8A]/40 bg-[#0B192C]">
               <div className="flex items-center gap-3">
                 <BzmtLogo size="md" variant="monogram" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-white text-base tracking-tight">SAP/MeDO ERP</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
-                      BZMT
+                    <span className="font-extrabold text-white text-base tracking-tight truncate">
+                      {activeTenantDetails?.nameAr || "SAP/MeDO ERP"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 font-medium truncate">قائمة التنقل الرئيسية</p>
+                  <p className="text-[11px] text-slate-300 font-medium truncate">
+                    {userRole === "CASHIER" ? "بوابة المبيعات والكاشير" : userRole === "DATA_ENTRY" ? "بوابة المشتريات والتوريدات" : userRole === "AUDITOR" ? "بوابة الرقابة والتدقيق" : "قائمة التنقل الرئيسية"}
+                  </p>
                 </div>
               </div>
 
@@ -648,16 +705,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-[#1E3A8A]/40 bg-[#0B192C]">
           {!isCollapsed && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <BzmtLogo size="md" variant="monogram" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-white text-base tracking-tight">SAP/MeDO ERP</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
-                    BZMT
+                  <span className="font-extrabold text-white text-sm tracking-tight truncate" title={activeTenantDetails?.nameAr || "SAP/MeDO ERP"}>
+                    {activeTenantDetails?.nameAr || "SAP/MeDO ERP"}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 font-medium truncate">نظام المحاسبة والمالية الذكي</p>
+                <p className="text-[11px] text-slate-300 font-medium truncate">
+                  {userRole === "CASHIER" ? "بوابة المبيعات والكاشير" : userRole === "DATA_ENTRY" ? "بوابة المشتريات والتوريدات" : userRole === "AUDITOR" ? "بوابة الرقابة والتدقيق" : "نظام المحاسبة والمالية الذكي"}
+                </p>
               </div>
             </div>
           )}
