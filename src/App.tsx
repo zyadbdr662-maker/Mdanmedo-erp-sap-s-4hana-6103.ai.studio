@@ -153,6 +153,7 @@ export default function App() {
   const [isTrialLockModalOpen, setIsTrialLockModalOpen] = useState(false);
   const [globalLegalModalOpen, setGlobalLegalModalOpen] = useState(false);
   const [globalLegalPolicy, setGlobalLegalPolicy] = useState<LegalPolicyType>("TRIAL_TERMS");
+  const [legalInitialDoc, setLegalInitialDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES">("TERMS");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isSystemUpdateOpen, setIsSystemUpdateOpen] = useState(false);
   const [isRefreshingData, setIsRefreshingData] = useState(false);
@@ -2748,7 +2749,10 @@ export default function App() {
                 />
               )}
               {activeTab === "LEGAL_DOCUMENTS" && (
-                <LegalDocumentsPage onBack={() => setActiveTab("DASHBOARD")} />
+                <LegalDocumentsPage
+                  initialDoc={legalInitialDoc}
+                  onBack={() => setActiveTab("DASHBOARD")}
+                />
               )}
               {isMasterAdminActive && activeTab === "SCHEDULED_BACKUP" && (
                 <ScheduledBackupView
@@ -3005,7 +3009,12 @@ export default function App() {
             </main>
 
             {/* Persistent Enterprise Brand Footer */}
-            <SystemFooter onOpenLegalDocuments={() => setActiveTab("LEGAL_DOCUMENTS")} />
+            <SystemFooter
+              onOpenLegalDocuments={(tab) => {
+                if (tab) setLegalInitialDoc(tab);
+                setActiveTab("LEGAL_DOCUMENTS");
+              }}
+            />
           </div>
 
           <SapOnboardingModal

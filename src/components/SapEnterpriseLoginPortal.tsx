@@ -56,6 +56,8 @@ import {
   Phone,
   ShieldAlert,
   Bot,
+  Cookie,
+  RotateCcw,
 } from "lucide-react";
 import { ERPUser } from "../types/erp";
 import { BzmtLogo } from "./BzmtLogo";
@@ -1327,6 +1329,37 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   </svg>
                   <span>تسجيل الدخول بواسطة Google Workspace</span>
                 </button>
+
+                {/* Legal Trust Notice */}
+                <div className="pt-2 text-center text-[11px] text-slate-400 space-y-1 select-none">
+                  <p>
+                    بتسجيل الدخول، فإنك توافق على{" "}
+                    <button
+                      type="button"
+                      onClick={() => openLegalPolicy("TERMS")}
+                      className="text-sap-secondary hover:underline font-bold"
+                    >
+                      شروط الاستخدام
+                    </button>{" "}
+                    و{" "}
+                    <button
+                      type="button"
+                      onClick={() => openLegalPolicy("PRIVACY")}
+                      className="text-sap-secondary hover:underline font-bold"
+                    >
+                      سياسة الخصوصية
+                    </button>{" "}
+                    و{" "}
+                    <button
+                      type="button"
+                      onClick={() => openLegalPolicy("COOKIES")}
+                      className="text-sap-secondary hover:underline font-bold"
+                    >
+                      ملفات الارتباط
+                    </button>
+                    .
+                  </p>
+                </div>
               </form>
             )}
 
@@ -1643,42 +1676,83 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
           {/* Quick Legal Policy Links */}
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <button
+                type="button"
                 onClick={() => openLegalPolicy("TERMS")}
-                className="hover:text-sap-secondary transition flex items-center gap-1"
+                className="hover:text-sap-secondary transition flex items-center gap-1 cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>شروط الاستخدام والترخيص</span>
+                <span>شروط الاستخدام</span>
               </button>
               <span>•</span>
               <button
-                onClick={() => openLegalPolicy("GTC")}
-                className="hover:text-sap-secondary transition flex items-center gap-1"
+                type="button"
+                onClick={() => openLegalPolicy("PRIVACY")}
+                className="hover:text-emerald-400 transition flex items-center gap-1 cursor-pointer"
               >
-                <Layers className="w-3.5 h-3.5" />
-                <span>الشروط العامة للخدمات السحابية (GTC)</span>
+                <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                <span>سياسة الخصوصية</span>
               </button>
               <span>•</span>
               <button
+                type="button"
+                onClick={() => openLegalPolicy("DISCLAIMER")}
+                className="hover:text-amber-400 transition flex items-center gap-1 cursor-pointer"
+              >
+                <Scale className="w-3.5 h-3.5 text-amber-400" />
+                <span>إخلاء المسؤولية</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => openLegalPolicy("REFUND")}
+                className="hover:text-cyan-400 transition flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                <span>سياسة الاسترداد</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => openLegalPolicy("COOKIES")}
+                className="hover:text-amber-300 transition flex items-center gap-1 cursor-pointer"
+              >
+                <Cookie className="w-3.5 h-3.5 text-amber-300" />
+                <span>ملفات الارتباط</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
                 onClick={() => openLegalPolicy("DPA")}
-                className="hover:text-sap-secondary transition flex items-center gap-1"
+                className="hover:text-sap-secondary transition flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>اتفاقية معالجة البيانات والخصوصية (DPA)</span>
+                <span>اتفاقية معالجة البيانات (DPA)</span>
               </button>
               <span>•</span>
               <button
+                type="button"
+                onClick={() => openLegalPolicy("GTC")}
+                className="hover:text-sap-secondary transition flex items-center gap-1 cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>الشروط العامة (GTC)</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
                 onClick={() => openLegalPolicy("EULA")}
-                className="hover:text-sap-secondary transition flex items-center gap-1"
+                className="hover:text-sap-secondary transition flex items-center gap-1 cursor-pointer"
               >
                 <BadgeCheck className="w-3.5 h-3.5" />
-                <span>ترخيص المستخدم النهائي (EULA)</span>
+                <span>ترخيص (EULA)</span>
               </button>
               <span>•</span>
               <button
+                type="button"
                 onClick={() => openLegalPolicy("SAP_MATRIX")}
-                className="text-sap-secondary hover:underline font-bold flex items-center gap-1"
+                className="text-sap-secondary hover:underline font-bold flex items-center gap-1 cursor-pointer"
               >
                 <Award className="w-3.5 h-3.5" />
                 <span>مصفوفة مطابقة SAP</span>

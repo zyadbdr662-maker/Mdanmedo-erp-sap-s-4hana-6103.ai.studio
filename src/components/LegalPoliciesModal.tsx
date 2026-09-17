@@ -3,6 +3,7 @@ import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { DisclaimerDocument } from "./DisclaimerDocument";
 import { RefundPolicyDocument } from "./RefundPolicyDocument";
+import { CookiesPolicyDocument } from "./CookiesPolicyDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -24,7 +25,8 @@ import {
   FileCheck2,
   Info,
   ExternalLink,
-  RotateCcw
+  RotateCcw,
+  Cookie
 } from "lucide-react";
 
 export type LegalPolicyType = 
@@ -37,6 +39,7 @@ export type LegalPolicyType =
   | "EULA" 
   | "DISCLAIMER" 
   | "REFUND"
+  | "COOKIES"
   | "SAP_MATRIX";
 
 interface LegalPoliciesModalProps {
@@ -86,6 +89,8 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
               {activePolicy === "PRIVACY" && <Lock className="w-6 h-6 text-sap-secondary" />}
               {activePolicy === "EULA" && <Award className="w-6 h-6 text-sap-secondary" />}
               {activePolicy === "DISCLAIMER" && <Scale className="w-6 h-6 text-sap-secondary" />}
+              {activePolicy === "REFUND" && <RotateCcw className="w-6 h-6 text-sap-secondary" />}
+              {activePolicy === "COOKIES" && <Cookie className="w-6 h-6 text-sap-secondary" />}
               {activePolicy === "SAP_MATRIX" && <Layers className="w-6 h-6 text-sap-secondary" />}
             </div>
             <div>
@@ -240,6 +245,19 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
           >
             <span>🔄</span>
             <span>سياسة الاسترداد (Refund)</span>
+          </button>
+
+          <button
+            id="tab-cookies-policy"
+            onClick={() => setActivePolicy("COOKIES")}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
+              activePolicy === "COOKIES"
+                ? "border-amber-400 text-amber-300 bg-amber-950/40 rounded-t-xl shadow-sm"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🍪</span>
+            <span>ملفات الارتباط (Cookies)</span>
           </button>
 
           <button
@@ -715,7 +733,14 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
             </div>
           )}
 
-          {/* 9. SAP Reference Matrix (جدول مطابقة مراجع SAP مع MeDo ERP) */}
+          {/* 9. Cookies Policy (سياسة ملفات الارتباط) */}
+          {activePolicy === "COOKIES" && (
+            <div className="animate-fadeIn">
+              <CookiesPolicyDocument />
+            </div>
+          )}
+
+          {/* 10. SAP Reference Matrix (جدول مطابقة مراجع SAP مع MeDo ERP) */}
           {activePolicy === "SAP_MATRIX" && (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6">
@@ -773,6 +798,12 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
                       <td className="p-3.5 font-bold text-white">سياسة الاسترداد (Refund & Cancellation)</td>
                       <td className="p-3.5 text-sap-secondary font-bold">سياسة الاسترداد لمنصة MeDo ERP</td>
                       <td className="p-3.5 text-slate-300">فترة تجربة 30 يوماً، معالجة في 29 يوماً، واسترداد 100% للأعطال الفنية والتعليق.</td>
+                      <td className="p-3.5"><span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px] font-bold">✅ مطبق ومعتمد</span></td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/50">
+                      <td className="p-3.5 font-bold text-white">سياسة ملفات الارتباط (Cookies & Tracking)</td>
+                      <td className="p-3.5 text-sap-secondary font-bold">سياسة ملفات تعريف الارتباط MeDo ERP</td>
+                      <td className="p-3.5 text-slate-300">الامتثال لـ GDPR و ePrivacy، منع تتبع البيانات المالية، ومركز تحكم تفاعلي بالتفضيلات.</td>
                       <td className="p-3.5"><span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px] font-bold">✅ مطبق ومعتمد</span></td>
                     </tr>
                   </tbody>
