@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { DisclaimerDocument } from "./DisclaimerDocument";
+import { RefundPolicyDocument } from "./RefundPolicyDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -22,7 +23,8 @@ import {
   Layers,
   FileCheck2,
   Info,
-  ExternalLink
+  ExternalLink,
+  RotateCcw
 } from "lucide-react";
 
 export type LegalPolicyType = 
@@ -34,6 +36,7 @@ export type LegalPolicyType =
   | "PRIVACY" 
   | "EULA" 
   | "DISCLAIMER" 
+  | "REFUND"
   | "SAP_MATRIX";
 
 interface LegalPoliciesModalProps {
@@ -224,6 +227,19 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
           >
             <span>⚖️</span>
             <span>إخلاء المسؤولية</span>
+          </button>
+
+          <button
+            id="tab-refund-policy"
+            onClick={() => setActivePolicy("REFUND")}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
+              activePolicy === "REFUND"
+                ? "border-cyan-400 text-cyan-300 bg-cyan-950/40 rounded-t-xl shadow-sm"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>🔄</span>
+            <span>سياسة الاسترداد (Refund)</span>
           </button>
 
           <button
@@ -692,7 +708,14 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
             </div>
           )}
 
-          {/* 8. SAP Reference Matrix (جدول مطابقة مراجع SAP مع MeDo ERP) */}
+          {/* 8. Refund Policy (سياسة الاسترداد) */}
+          {activePolicy === "REFUND" && (
+            <div className="animate-fadeIn">
+              <RefundPolicyDocument />
+            </div>
+          )}
+
+          {/* 9. SAP Reference Matrix (جدول مطابقة مراجع SAP مع MeDo ERP) */}
           {activePolicy === "SAP_MATRIX" && (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6">
@@ -744,6 +767,12 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
                       <td className="p-3.5 font-bold text-white">سياسة الخصوصية (Privacy Policy)</td>
                       <td className="p-3.5 text-sap-secondary font-bold">سياسة الخصوصية وسرية الحسابات</td>
                       <td className="p-3.5 text-slate-300">حظر مشاركة البيانات، حماية الهوية التجارية، وسجلات التدقيق المحاسبي.</td>
+                      <td className="p-3.5"><span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px] font-bold">✅ مطبق ومعتمد</span></td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/50">
+                      <td className="p-3.5 font-bold text-white">سياسة الاسترداد (Refund & Cancellation)</td>
+                      <td className="p-3.5 text-sap-secondary font-bold">سياسة الاسترداد لمنصة MeDo ERP</td>
+                      <td className="p-3.5 text-slate-300">فترة تجربة 30 يوماً، معالجة في 29 يوماً، واسترداد 100% للأعطال الفنية والتعليق.</td>
                       <td className="p-3.5"><span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px] font-bold">✅ مطبق ومعتمد</span></td>
                     </tr>
                   </tbody>

@@ -23,22 +23,24 @@ import {
   Clock,
   Sparkles,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
 import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { DisclaimerDocument } from "./DisclaimerDocument";
+import { RefundPolicyDocument } from "./RefundPolicyDocument";
 
 interface LegalDocumentsPageProps {
   onBack?: () => void;
-  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER";
+  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND";
 }
 
 export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
   onBack,
   initialDoc = "TERMS",
 }) => {
-  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER">(initialDoc);
+  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND">(initialDoc);
   const [activeArticleId, setActiveArticleId] = useState<string>("art-1");
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -207,12 +209,50 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
     },
   ];
 
+  // Article groupings for Refund Policy (12 Articles)
+  const refundCategories = [
+    {
+      category: "الأحكام العامة والمبادئ",
+      items: [
+        { id: "ref-art-1", num: 1, title: "التعريفات والمصطلحات" },
+        { id: "ref-art-2", num: 2, title: "المبادئ العامة لسياسة الاسترداد" },
+        { id: "ref-art-3", num: 3, title: "فترة التجربة المجانية (30 يوماً)" },
+      ],
+    },
+    {
+      category: "حالات الاسترداد الكامل والجزئي",
+      items: [
+        { id: "ref-art-4", num: 4, title: "حالات الاسترداد الكامل (100%)" },
+        { id: "ref-art-5", num: 5, title: "حالات الاسترداد الجزئي (50% - 80%)" },
+      ],
+    },
+    {
+      category: "حالات عدم الاسترداد وإجراءات الطلب",
+      items: [
+        { id: "ref-art-6", num: 6, title: "حالات عدم الاسترداد (8 حالات)" },
+        { id: "ref-art-7", num: 7, title: "آلية تقديم طلب الاسترداد" },
+        { id: "ref-art-8", num: 8, title: "مدة معالجة الطلب (29 يوم عمل)" },
+      ],
+    },
+    {
+      category: "السداد والاستثناءات والقضاء",
+      items: [
+        { id: "ref-art-9", num: 9, title: "طرق وقنوات سداد الاسترداد" },
+        { id: "ref-art-10", num: 10, title: "الاستثناءات والحالات الخاصة" },
+        { id: "ref-art-11", num: 11, title: "القانون المعمول به والنزاعات" },
+        { id: "ref-art-12", num: 12, title: "قنوات التواصل والإشعارات" },
+      ],
+    },
+  ];
+
   const currentCategories =
     activeDoc === "TERMS"
       ? termsCategories
       : activeDoc === "PRIVACY"
       ? privacyCategories
-      : disclaimerCategories;
+      : activeDoc === "DISCLAIMER"
+      ? disclaimerCategories
+      : refundCategories;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20 select-text" dir="rtl">
@@ -237,8 +277,10 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                   <Scale className="w-4 h-4 text-amber-400" />
                 ) : activeDoc === "PRIVACY" ? (
                   <Lock className="w-4 h-4 text-emerald-400" />
-                ) : (
+                ) : activeDoc === "DISCLAIMER" ? (
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <RotateCcw className="w-4 h-4 text-cyan-400" />
                 )}
               </div>
               <div>
@@ -307,6 +349,23 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <span>إخلاء المسؤولية</span>
               <span className="text-[10px] opacity-80">(14 مادة)</span>
             </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("REFUND");
+                setActiveArticleId("ref-art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeDoc === "REFUND"
+                  ? "bg-cyan-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>سياسة الاسترداد</span>
+              <span className="text-[10px] opacity-80">(12 مادة)</span>
+            </button>
           </div>
 
           {/* Quick Actions */}
@@ -330,15 +389,29 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
             </button>
 
             <a
-              href={activeDoc === "PRIVACY" ? "mailto:dpo@medo-erp.com" : "mailto:legal@medo-erp.com"}
+              href={
+                activeDoc === "PRIVACY"
+                  ? "mailto:dpo@medo-erp.com"
+                  : activeDoc === "REFUND"
+                  ? "mailto:billing@medo-erp.com"
+                  : "mailto:legal@medo-erp.com"
+              }
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md text-slate-950 ${
-                activeDoc === "PRIVACY" ? "bg-emerald-400 hover:bg-emerald-300" : "bg-amber-500 hover:bg-amber-400"
+                activeDoc === "PRIVACY"
+                  ? "bg-emerald-400 hover:bg-emerald-300"
+                  : activeDoc === "REFUND"
+                  ? "bg-cyan-400 hover:bg-cyan-300"
+                  : "bg-amber-500 hover:bg-amber-400"
               }`}
               title="التواصل المباشر"
             >
               <Mail className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">
-                {activeDoc === "PRIVACY" ? "مسؤول الحماية (DPO)" : "الإدارة القانونية"}
+                {activeDoc === "PRIVACY"
+                  ? "مسؤول الحماية (DPO)"
+                  : activeDoc === "REFUND"
+                  ? "البريد المالي (Billing)"
+                  : "الإدارة القانونية"}
               </span>
             </a>
           </div>
@@ -356,15 +429,30 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                 <div className="flex items-center gap-2 text-xs font-black text-white">
                   <Layers className="w-4 h-4 text-amber-400" />
                   <span>
-                    فهرس مواد {activeDoc === "TERMS" ? "الشروط (20)" : activeDoc === "PRIVACY" ? "الخصوصية (15)" : "إخلاء المسؤولية (14)"}
+                    فهرس مواد{" "}
+                    {activeDoc === "TERMS"
+                      ? "الشروط (20)"
+                      : activeDoc === "PRIVACY"
+                      ? "الخصوصية (15)"
+                      : activeDoc === "DISCLAIMER"
+                      ? "إخلاء المسؤولية (14)"
+                      : "الاسترداد (12)"}
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
                   activeDoc === "PRIVACY" 
                     ? "bg-emerald-950/80 text-emerald-300 border-emerald-800/60" 
+                    : activeDoc === "REFUND"
+                    ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60"
                     : "bg-amber-950/80 text-amber-300 border-amber-800/60"
                 }`}>
-                  {activeDoc === "PRIVACY" ? "GDPR & Cloud" : activeDoc === "TERMS" ? "IFRS & Law" : "SLA & Audit"}
+                  {activeDoc === "PRIVACY"
+                    ? "GDPR & Cloud"
+                    : activeDoc === "TERMS"
+                    ? "IFRS & Law"
+                    : activeDoc === "DISCLAIMER"
+                    ? "SLA & Audit"
+                    : "SaaS Guarantee"}
                 </span>
               </div>
 
@@ -373,7 +461,13 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                 {currentCategories.map((group, groupIdx) => (
                   <div key={groupIdx} className="space-y-1.5">
                     <h3 className="text-[11px] font-bold text-slate-400 pr-1 flex items-center gap-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${activeDoc === "PRIVACY" ? "bg-emerald-400" : "bg-amber-400"}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        activeDoc === "PRIVACY"
+                          ? "bg-emerald-400"
+                          : activeDoc === "REFUND"
+                          ? "bg-cyan-400"
+                          : "bg-amber-400"
+                      }`} />
                       {group.category}
                     </h3>
                     <div className="space-y-1">
@@ -385,18 +479,30 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                             activeArticleId === art.id
                               ? activeDoc === "PRIVACY"
                                 ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold"
+                                : activeDoc === "REFUND"
+                                ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold"
                                 : "bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold"
                               : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                           }`}
                         >
                           <span className="flex items-center gap-1.5 truncate">
-                            <span className={`font-mono text-[11px] ${activeDoc === "PRIVACY" ? "text-emerald-400" : "text-amber-400"}`}>
+                            <span className={`font-mono text-[11px] ${
+                              activeDoc === "PRIVACY"
+                                ? "text-emerald-400"
+                                : activeDoc === "REFUND"
+                                ? "text-cyan-400"
+                                : "text-amber-400"
+                            }`}>
                               م.{art.num}
                             </span>
                             <span className="truncate">{art.title}</span>
                           </span>
                           <span className={`text-[10px] opacity-0 group-hover:opacity-100 transition-opacity ${
-                            activeDoc === "PRIVACY" ? "text-emerald-400" : "text-amber-400"
+                            activeDoc === "PRIVACY"
+                              ? "text-emerald-400"
+                              : activeDoc === "REFUND"
+                              ? "text-cyan-400"
+                              : "text-amber-400"
                           }`}>
                             ←
                           </span>
@@ -412,14 +518,18 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
                   <div className="font-bold text-slate-200 flex items-center gap-1">
                     <Info className="w-3.5 h-3.5 text-amber-400" />
-                    <span>ضمانات الخصوصية والأمان</span>
+                    <span>
+                      {activeDoc === "REFUND" ? "ضمانات الشفافية والاسترداد" : "ضمانات الخصوصية والأمان"}
+                    </span>
                   </div>
                   <p className="leading-relaxed text-[10px]">
                     {activeDoc === "PRIVACY"
                       ? "نلتزم بعدم بيع أو مشاركة بياناتك، مع تشفير AES-256 وحفظ السجلات المالية لمدة 7 سنوات وفق القانون اليمني."
                       : activeDoc === "TERMS"
                       ? "تخضع هذه الاتفاقية للقوانين السارية بالجمهورية اليمنية، ومحاكم أمانة العاصمة صنعاء هي المختصة بنظر أي نزاع."
-                      : "تعتمد دقة التقارير وفروق الصرف على مدخلات المنشأة، والذكاء الاصطناعي أداة مساعدة تتطلب مراجعة بشرية مستقلة."}
+                      : activeDoc === "DISCLAIMER"
+                      ? "تعتمد دقة التقارير وفروق الصرف على مدخلات المنشأة، والذكاء الاصطناعي أداة مساعدة تتطلب مراجعة بشرية مستقلة."
+                      : "فترة تجربة مجانية 30 يوماً (50 عملية)، مع استرداد 100% للأعطال الفنية ومعالجة منظمة خلال 29 يوم عمل كحد أقصى."}
                   </p>
                   <div className="pt-1 flex items-center gap-2 text-[10px] font-mono text-emerald-400">
                     <Phone className="w-3 h-3" />
@@ -436,8 +546,10 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <TermsOfServiceDocument />
             ) : activeDoc === "PRIVACY" ? (
               <PrivacyPolicyDocument />
-            ) : (
+            ) : activeDoc === "DISCLAIMER" ? (
               <DisclaimerDocument />
+            ) : (
+              <RefundPolicyDocument />
             )}
           </div>
 
@@ -451,6 +563,8 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
           className={`fixed bottom-6 left-6 z-40 p-3 rounded-2xl font-bold shadow-2xl transition-all active:scale-95 flex items-center gap-1.5 text-xs cursor-pointer border text-slate-950 ${
             activeDoc === "PRIVACY" 
               ? "bg-emerald-400 hover:bg-emerald-300 border-emerald-200" 
+              : activeDoc === "REFUND"
+              ? "bg-cyan-400 hover:bg-cyan-300 border-cyan-200"
               : "bg-amber-500 hover:bg-amber-400 border-amber-300"
           }`}
           title="العودة إلى أعلى الصفحة"
