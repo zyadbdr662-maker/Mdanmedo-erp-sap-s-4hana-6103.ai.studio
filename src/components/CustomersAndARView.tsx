@@ -17,6 +17,7 @@ import {
   MapPin,
   QrCode,
   Share2,
+  Upload,
 } from "lucide-react";
 import {
   Account,
@@ -88,7 +89,53 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState(`اسم العميل,الهاتف,المدينة,الحد الائتماني\nشركة الأمل للأدوية,771234567,صنعاء,10000000\nمؤسسة الشفاء الطبية,733456789,تعز,15000000`);
+  const [importSuccessMsg, setImportSuccessMsg] = useState("");
   const [selectedCustomerForStatement, setSelectedCustomerForStatement] = useState<Customer | null>(null);
+
+  const handleImportCustomers = () => {
+    try {
+      const lines = importText.split("\n").filter(l => l.trim() !== "");
+      if (lines.length <= 1) {
+        alert("يرجى إدخال بيانات صحيحة");
+        return;
+      }
+      let count = 0;
+      const startIndex = lines[0].includes("اسم") || lines[0].includes("name") ? 1 : 0;
+      for (let i = startIndex; i < lines.length; i++) {
+        const parts = lines[i].split(",").map(p => p.trim());
+        const nameAr = parts[0] || `عميل مستورد ${i}`;
+        const phone = parts[1] || "770000000";
+        const city = parts[2] || "صنعاء";
+        const creditLimit = parts[3] ? Number(parts[3]) : 10000000;
+
+        const nextCode = `CUST-${(customers.length + count + 1).toString().padStart(4, "0")}`;
+        const newCust: Customer = {
+          id: `cust-imp-${Date.now()}-${i}`,
+          code: nextCode,
+          nameAr,
+          nameEn: "",
+          phone,
+          city,
+          currency: "YER_SANAA",
+          creditLimit,
+          currentBalance: 0,
+          glAccountId: "110301",
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+        onAddCustomer(newCust);
+        count++;
+      }
+      setImportSuccessMsg(`تم استيراد ${count} عميل بنجاح!`);
+      setTimeout(() => {
+        setImportSuccessMsg("");
+        setShowImportModal(false);
+      }, 1500);
+    } catch (err) {
+      alert("حدث خطأ أثناء الاستيراد.");
+    }
+  };
 
   // New Customer Form State
   const [custNameAr, setCustNameAr] = useState("");
@@ -342,6 +389,13 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+          >
+            <Upload className="w-4 h-4 text-emerald-400" />
+            <span>استيراد العملاء</span>
+          </button>
           <button
             onClick={() => setShowAddCustomerModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
@@ -1290,6 +1344,86 @@ export const CustomersAndARView: React.FC<CustomersAndARViewProps> = ({
           </div>
         );
       })()}
+      {/* Import Customers Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl p-6 text-right animate-in zoom-in-95 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">استيراد قائمة العملاء (CSV / لصق سريع)</h3>
+                  <p className="text-[11px] text-slate-400">الصق البيانات بالصيغة: اسم العميل, الهاتف, المدينة, الحد الائتماني</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="text-slate-400 hover:text-white text-xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            {importSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs text-center font-bold">
+                {importSuccessMsg}
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">بيانات العملاء (سطر لكل عميل مفصول بفاصلة):</label>
+                <textarea
+                  rows={6}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500"
+                  placeholder="شركة الأمل, 771234567, صنعاء, 10000000"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob(["اسم العميل,الهاتف,المدينة,الحد الائتماني\nشركة الأمل للأدوية,771234567,صنعاء,10000000\nمؤسسة الشفاء الطبية,733456789,تعز,15000000"], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "customers_template.csv";
+                    a.click();
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5"
+                >
+                  تحميل نموذج CSV جاهز
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowImportModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportCustomers}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg"
+                  >
+                    بدء الاستيراد
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

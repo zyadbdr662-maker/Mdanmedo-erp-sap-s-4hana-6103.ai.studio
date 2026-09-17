@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FormNavigationBar } from "./FormNavigationBar";
 import {
   BookOpenCheck,
   Plus,
@@ -478,32 +479,23 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
 
       {/* Create New Journal Entry Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl shadow-2xl p-6 text-right animate-in zoom-in-95 my-8"
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden my-4 text-right animate-in zoom-in-95 max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                  <BookOpenCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">إنشاء سند قيد محاسبي جديد (Journal Voucher)</h3>
-                  <p className="text-[11px] text-slate-400">تطبيق نظرية القيد المزدوج مع التحقق التلقائي من التوازن</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-white text-xl font-bold"
-              >
-                &times;
-              </button>
-            </div>
+            <FormNavigationBar
+              title="إنشاء سند قيد محاسبي جديد (Journal Voucher)"
+              onBack={() => setShowCreateModal(false)}
+              onSave={() => handleSaveEntry(isBalanced ? "POSTED" : "DRAFT")}
+              onSaveAndPrint={() => handleSaveEntry("POSTED")}
+              onSaveAndNew={() => handleSaveEntry(isBalanced ? "POSTED" : "DRAFT")}
+              hasUnsavedChanges={Boolean(description.trim() !== "" || items.length > 0)}
+            />
 
-            {/* Basic Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs mb-4">
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              {/* Basic Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
               <div>
                 <label className="block text-slate-400 mb-1 font-semibold">تاريخ القيد *</label>
                 <input
@@ -737,6 +729,7 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
                   <span>اعتماد وترحيل القيد للأستاذ العام</span>
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>

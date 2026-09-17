@@ -14,6 +14,7 @@ import {
   Layers,
   Share2,
 } from "lucide-react";
+import { FormNavigationBar } from "./FormNavigationBar";
 import {
   Account,
   BankAccountItem,
@@ -464,36 +465,32 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
 
       {/* Create Voucher Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl p-6 text-right animate-in zoom-in-95"
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden my-4 text-right animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                    createType === "RECEIPT" ? "bg-blue-500/10 text-blue-400" : "bg-amber-500/10 text-amber-400"
-                  }`}
-                >
-                  <ReceiptText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    {createType === "RECEIPT" ? "إنشاء سند قبض مالي جديد (Receipt)" : "إنشاء سند صرف مالي جديد (Payment)"}
-                  </h3>
-                  <p className="text-[11px] text-slate-400">سيتم ترحيل القيد المحاسبي تلقائياً وتحديث أرصدة الخزينة والبنك</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-white text-xl font-bold"
-              >
-                &times;
-              </button>
-            </div>
+            <FormNavigationBar
+              title={createType === "RECEIPT" ? "إنشاء سند قبض مالي جديد (Receipt Voucher)" : "إنشاء سند صرف مالي جديد (Payment Voucher)"}
+              onBack={() => setShowCreateModal(false)}
+              onSave={() => {
+                // Trigger form submission
+                const formEl = document.getElementById("voucher-create-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              onSaveAndPrint={() => {
+                const formEl = document.getElementById("voucher-create-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              onSaveAndNew={() => {
+                const formEl = document.getElementById("voucher-create-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              hasUnsavedChanges={Boolean(amount || beneficiaryOrPayer.trim() || notes.trim())}
+            />
 
-            <form onSubmit={handleSaveVoucher} className="space-y-4 text-xs">
+            <div className="p-6">
+              <form id="voucher-create-form" onSubmit={handleSaveVoucher} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1 font-semibold">تاريخ السند *</label>
@@ -729,6 +726,7 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ import {
   Truck,
   Phone,
   Share2,
+  Upload,
 } from "lucide-react";
 import {
   Account,
@@ -74,6 +75,52 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
   const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState(`اسم المورد,الهاتف,المدينة,التصنيف\nمجموعة هائل سعيد أنعم,770123456,صنعاء,توريد مواد غذائية\nشركة الأدوية الحديثة,733987654,عدن,توريد أدوية`);
+  const [importSuccessMsg, setImportSuccessMsg] = useState("");
+
+  const handleImportVendors = () => {
+    try {
+      const lines = importText.split("\n").filter(l => l.trim() !== "");
+      if (lines.length <= 1) {
+        alert("يرجى إدخال بيانات صحيحة");
+        return;
+      }
+      let count = 0;
+      const startIndex = lines[0].includes("اسم") || lines[0].includes("name") ? 1 : 0;
+      for (let i = startIndex; i < lines.length; i++) {
+        const parts = lines[i].split(",").map(p => p.trim());
+        const nameAr = parts[0] || `مورد مستورد ${i}`;
+        const phone = parts[1] || "770000000";
+        const city = parts[2] || "صنعاء";
+        const category = parts[3] || "توريد عام";
+
+        const nextCode = `VEN-${(vendors.length + count + 1).toString().padStart(4, "0")}`;
+        const newVen: Vendor = {
+          id: `ven-imp-${Date.now()}-${i}`,
+          code: nextCode,
+          nameAr,
+          nameEn: "",
+          phone,
+          city,
+          currency: "USD",
+          category,
+          currentBalance: 0,
+          glAccountId: "210101",
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+        onAddVendor(newVen);
+        count++;
+      }
+      setImportSuccessMsg(`تم استيراد ${count} مورد بنجاح!`);
+      setTimeout(() => {
+        setImportSuccessMsg("");
+        setShowImportModal(false);
+      }, 1500);
+    } catch (err) {
+      alert("حدث خطأ أثناء الاستيراد.");
+    }
+  };
 
   // New Vendor Form State
   const [venNameAr, setVenNameAr] = useState("");
@@ -218,6 +265,13 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+          >
+            <Upload className="w-4 h-4 text-amber-400" />
+            <span>استيراد الموردين</span>
+          </button>
           <button
             onClick={() => setShowAddVendorModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
@@ -688,6 +742,86 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Import Vendors Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl p-6 text-right animate-in zoom-in-95 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">استيراد قائمة الموردين (CSV / لصق سريع)</h3>
+                  <p className="text-[11px] text-slate-400">الصق البيانات بالصيغة: اسم المورد, الهاتف, المدينة, التصنيف</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="text-slate-400 hover:text-white text-xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            {importSuccessMsg && (
+              <div className="p-3 rounded-xl bg-amber-950/80 border border-amber-800 text-amber-300 text-xs text-center font-bold">
+                {importSuccessMsg}
+              </div>
+            )}
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">بيانات الموردين (سطر لكل مورد مفصول بفاصلة):</label>
+                <textarea
+                  rows={6}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
+                  placeholder="مجموعة هائل سعيد أنعم, 770123456, صنعاء, توريد مواد غذائية"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob(["اسم المورد,الهاتف,المدينة,التصنيف\nمجموعة هائل سعيد أنعم,770123456,صنعاء,توريد مواد غذائية\nشركة الأدوية الحديثة,733987654,عدن,توريد أدوية"], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "vendors_template.csv";
+                    a.click();
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5"
+                >
+                  تحميل نموذج CSV جاهز
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowImportModal(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportVendors}
+                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold shadow-lg"
+                  >
+                    بدء الاستيراد
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

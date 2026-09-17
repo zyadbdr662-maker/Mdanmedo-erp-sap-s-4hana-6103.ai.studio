@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FormNavigationBar } from "./FormNavigationBar";
 import {
   ShoppingBag,
   Plus,
@@ -1198,60 +1199,57 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
 
       {/* CREATE INVOICE OR RETURN MODAL */}
       {showAddInvoiceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-in fade-in">
           <div
-            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl p-6 my-8 text-right animate-in zoom-in-95 space-y-5 max-h-[90vh] overflow-y-auto"
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden my-4 text-right animate-in zoom-in-95 max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header & Type Switcher */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  {invType === "SALES" ? (
-                    <>
-                      <ShoppingBag className="w-5 h-5 text-emerald-400" />
-                      <span>إنشاء فاتورة مبيعات جديدة</span>
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="w-5 h-5 text-rose-400" />
-                      <span>تسجيل مرتجع مبيعات (إشعار دائن)</span>
-                    </>
-                  )}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  إدخال بنود الفاتورة، تحديد مصروفات المبيعات والشحن، واختيار وسيلة الدفع (نقد / محافظ / بنك)
-                </p>
-              </div>
+            <FormNavigationBar
+              title={invType === "SALES" ? "إنشاء فاتورة مبيعات جديدة (Sales Invoice)" : "تسجيل مرتجع مبيعات (Sales Return)"}
+              onBack={() => setShowAddInvoiceModal(false)}
+              onSave={() => {
+                const formEl = document.getElementById("sales-invoice-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              onSaveAndPrint={() => {
+                const formEl = document.getElementById("sales-invoice-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              onSaveAndNew={() => {
+                const formEl = document.getElementById("sales-invoice-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }}
+              hasUnsavedChanges={Boolean(invItems.length > 0 || invNotes.trim() !== "")}
+              customActions={
+                <div className="flex p-1 bg-slate-950 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setInvType("SALES")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      invType === "SALES"
+                        ? "bg-emerald-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    فاتورة مبيعات
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInvType("SALES_RETURN")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      invType === "SALES_RETURN"
+                        ? "bg-rose-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    مرتجع مبيعات
+                  </button>
+                </div>
+              }
+            />
 
-              {/* Toggle Sales / Return */}
-              <div className="flex p-1 bg-slate-950 rounded-xl border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setInvType("SALES")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    invType === "SALES"
-                      ? "bg-emerald-600 text-white shadow-md"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  فاتورة مبيعات
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInvType("SALES_RETURN")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    invType === "SALES_RETURN"
-                      ? "bg-rose-600 text-white shadow-md"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  مرتجع مبيعات
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveForm} className="space-y-5">
+            <div className="p-6 overflow-y-auto flex-1">
+              <form id="sales-invoice-form" onSubmit={handleSaveForm} className="space-y-5">
               {/* Customer & Main Meta */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -2145,6 +2143,7 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
