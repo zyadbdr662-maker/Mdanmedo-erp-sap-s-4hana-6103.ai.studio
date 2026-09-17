@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -463,136 +464,8 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
 
           {/* 1. Terms of Use (شروط الاستخدام) */}
           {activePolicy === "TERMS" && (
-            <div className="space-y-6 animate-fadeIn text-right" dir="rtl">
-              <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-                <div className="text-center border-b border-slate-800 pb-6 space-y-2">
-                  <span className="text-xs px-3 py-1 rounded-full bg-sap-secondary/15 text-sap-secondary border border-sap-secondary/30 font-bold">
-                    SAP SE — شركة أوروبية (Societas Europaea)
-                  </span>
-                  <h1 className="text-2xl sm:text-3xl font-black text-white">
-                    📋 شروط الاستخدام لمواقع SAP
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-400">
-                    مراجعة ونشر: 26 فبراير 2026 — معتمدة لتطبيق MeDo ERP والمنظومة الهجينة
-                  </p>
-                </div>
-
-                {/* 1. النطاق */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ١. النطاق (Scope)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    تمتلك شركة SAP SE، وهي شركة أوروبية (Societas Europaea) تأسست بموجب قوانين ألمانيا والاتحاد الأوروبي، وعنوانها التجاري: Dietmar-Hopp-Allee 16, 69190 Walldorf, ألمانيا، بالإضافة إلى شركاتها التابعة (يُشار إليهم مجتمعين باسم "SAP")، وتدير العديد من المواقع الإلكترونية (يُشار إلى كل منها باسم "موقع SAP" وإجمالاً "مواقع SAP").
-                  </p>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    تتيح مواقع SAP لك ("أنت" أو "لك") ولخبراء برمجيات SAP الآخرين والمطورين والمستخدمين والأطراف المعنية إمكانية العثور على المعلومات، وشراء و/أو البحث عن برمجيات وخدمات SAP ذات الصلة، والحصول على دعم لبرمجيات وخدمات SAP، ومشاركة المعلومات، ونشر التعليقات، والتدوين، وتقديم المراجعات، والتصويت على الميزات المحتملة، والمشاركة في المحادثات والأنشطة الأخرى.
-                  </p>
-                </div>
-
-                {/* 2. قبول الشروط */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٢. قبول الشروط (Acceptance of Terms)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    يخضع وصولك واستخدامك لمواقع SAP لهذه الشروط ("شروط الاستخدام" أو "الاتفاقية"). تشكل هذه الاتفاقية اتفاقية ملزمة قانونًا بينك وبين SAP. بالنقر على زر "أوافق" كجزء من عملية التسجيل أو إظهار موافقتك، فإنك تقبل وتوافق على الالتزام بشروط هذه الاتفاقية.
-                  </p>
-                  <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-800/40 text-amber-200 text-xs sm:text-sm">
-                    <strong>ملاحظة:</strong> لا تحكم هذه الاتفاقية استخدام أي حلول سحابية (مثل SAP HANA Cloud Platform، SAP SuccessFactors، SAP Ariba، إلخ) التي تقدمها SAP والتي يُطلب منك إبرام اتفاقية منفصلة لها.
-                  </div>
-                </div>
-
-                {/* 3. محتوى المستخدم */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٣. محتوى المستخدم / الترخيص لـ SAP (User Content / License to SAP)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    لا تدعي SAP ملكية محتوى المستخدم الذي تنشره أو تحمله. من خلال إرسال محتوى مستخدم (مقالات، بيانات، كود، تعليقات، مقترحات)، فإنك تمنح SAP ترخيصًا دائمًا، لا رجعة فيه، غير حصري، عالمي، مدفوع بالكامل وخالٍ من حقوق الملكية لاستخدام محتوى المستخدم دون قيود.
-                  </p>
-                </div>
-
-                {/* 4. الاستخدام المسموح به */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٤. الاستخدام المسموح به لمواقع SAP والمحتوى (Permissible Use)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    مواقع SAP ومواد SAP مخصصة لاستخدامك غير التجاري. يُمنع منعًا باتًا نسخ أو تعديل أو توزيع أو بيع مواقع SAP أو مواد SAP دون إذن. ويحظر استخدام الروبوتات أو برامج الاستخراج أو تقنيات الذكاء الاصطناعي دون تصريح صريح.
-                  </p>
-                </div>
-
-                {/* 5. إنهاء الاستخدام */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٥. إنهاء الاستخدام والإجراءات القانونية (Termination)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    يجوز لـ SAP، وفقًا لتقديرها الخاص وفي أي وقت، إنهاء أو تقييد وصولك إلى مواقع SAP أو حسابك في حال الإخلال بشروط الاستخدام.
-                  </p>
-                </div>
-
-                {/* 6. المعلومات السرية */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٦. المعلومات السرية (Confidential Information)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    باستثناء المنتديات العامة، مواقع SAP مخصصة لتبادل المعلومات المهنية. أنت توافق على عدم تزويد SAP بمعلومات سرية لا تنوي أن تصبح عامة، وحماية أي معلومات سرية يتم الوصول إليها.
-                  </p>
-                </div>
-
-                {/* 7. الخصوصية وحماية البيانات */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٧. الخصوصية وحماية البيانات (Privacy & Data Protection)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    تتطلب بعض الخدمات التسجيل وتزويد SAP ببعض البيانات الشخصية (مثل الاسم والبريد الإلكتروني)، والتي تُعالج وفقاً لبيان خصوصية SAP والقوانين المعمول بها في ألمانيا والاتحاد الأوروبي.
-                  </p>
-                </div>
-
-                {/* 8. حقوق الملكية الفكرية */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٨. حقوق الملكية الفكرية (Intellectual Property Rights)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    جميع حقوق الملكية الفكرية في برامج SAP ومواقع SAP وموادها مملوكة حصرياً لشركة SAP SE. أي تعديلات أو أعمال مشتقة تُنشأ تُعكس ملكيتها تلقائياً لصالح SAP.
-                  </p>
-                </div>
-
-                {/* 9. الذكاء الاصطناعي التوليدي */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٩. استخدام وظائف الذكاء الاصطناعي التوليدي (Generative AI)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    تتضمن المنظومة وظائف ذكاء اصطناعي تُنشئ محتوى ومساعدات ذكية. يجب استخدامها بمسؤولية وفقاً للاستخدام المقبول والقوانين المعمول بها.
-                  </p>
-                </div>
-
-                {/* 10. القانون المعمول به */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ١٠. القانون المعمول به والمكان القانوني (Applicable Law)
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    تخضع شروط الاستخدام هذه لقوانين ألمانيا والاتحاد الأوروبي. المكان الحصري لجميع المنازعات هو المحاكم المختصة في كارلسروه، ألمانيا.
-                  </p>
-                </div>
-
-                {/* Appendix A */}
-                <div className="space-y-3 pt-6 border-t-2 border-dashed border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    📎 الملحق أ - شروط استخدام SAP Store
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    يتضمن SAP Store منصة لتسويق وتوزيع برامج وحلول SAP ومنتجات الشركاء. شراء أو ترخيص البرامج متاح للتجار والشركات (B2B) وليس للمستهلكين الأفراد، ويخضع للشروط الإضافية المحددة أثناء إتمام المعاملة والفاتورة من التاجر المسجل (Merchant of Record).
-                  </p>
-                </div>
-              </div>
+            <div className="animate-fadeIn">
+              <TermsOfServiceDocument />
             </div>
           )}
 
