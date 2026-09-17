@@ -39,7 +39,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
   const [pendingAction, setPendingAction] = useState<() => void | null>(null);
 
   const handleBackAttempt = () => {
-    soundService.playSound("CLICK_SOFT");
+    try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
     if (hasUnsavedChanges) {
       setPendingAction(() => onBack);
       setShowConfirmModal(true);
@@ -49,7 +49,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
   };
 
   const handleHomeAttempt = () => {
-    soundService.playSound("CLICK_SOFT");
+    try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
     if (hasUnsavedChanges && onHome) {
       setPendingAction(() => onHome);
       setShowConfirmModal(true);
@@ -59,7 +59,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
   };
 
   const handleLogoutAttempt = () => {
-    soundService.playSound("CLICK_SOFT");
+    try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
     if (hasUnsavedChanges && onLogout) {
       setPendingAction(() => onLogout);
       setShowConfirmModal(true);
@@ -110,7 +110,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
           {onSaveAndNew && (
             <button
               onClick={() => {
-                soundService.playSound("CLICK_SOFT");
+                try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
                 onSaveAndNew();
               }}
               disabled={isSaving}
@@ -124,7 +124,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
           {onSaveAndPrint && (
             <button
               onClick={() => {
-                soundService.playSound("CLICK_SOFT");
+                try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
                 onSaveAndPrint();
               }}
               disabled={isSaving}
@@ -137,7 +137,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
 
           <button
             onClick={() => {
-              soundService.playSound("SUCCESS_CHIME");
+              try { soundService.playSound("SUCCESS_CHIME" as any); } catch(e) {}
               onSave();
             }}
             disabled={isSaving}
@@ -180,7 +180,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => {
-                  soundService.playSound("CLICK_SOFT");
+                  try { soundService.playSound("CLICK_SOFT" as any); } catch(e) {}
                   setShowConfirmModal(false);
                   setPendingAction(null);
                 }}
@@ -190,7 +190,7 @@ export const FormNavigationBar: React.FC<FormNavigationBarProps> = ({
               </button>
               <button
                 onClick={() => {
-                  soundService.playSound("ROYAL_BANK_CHIME");
+                  try { soundService.playSound("ROYAL_BANK_CHIME" as any); } catch(e) {}
                   setShowConfirmModal(false);
                   if (pendingAction) {
                     pendingAction();

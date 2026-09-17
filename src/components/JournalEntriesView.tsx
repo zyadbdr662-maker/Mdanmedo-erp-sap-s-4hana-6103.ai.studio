@@ -490,7 +490,7 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
               onSave={() => handleSaveEntry(isBalanced ? "POSTED" : "DRAFT")}
               onSaveAndPrint={() => handleSaveEntry("POSTED")}
               onSaveAndNew={() => handleSaveEntry(isBalanced ? "POSTED" : "DRAFT")}
-              hasUnsavedChanges={Boolean(description.trim() !== "" || items.length > 0)}
+              hasUnsavedChanges={Boolean(description.trim() !== "" || lines.length > 0)}
             />
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">

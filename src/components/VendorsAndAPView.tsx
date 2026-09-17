@@ -78,6 +78,64 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
   const [showImportModal, setShowImportModal] = useState(false);
   const [importText, setImportText] = useState(`اسم المورد,الهاتف,المدينة,التصنيف\nمجموعة هائل سعيد أنعم,770123456,صنعاء,توريد مواد غذائية\nشركة الأدوية الحديثة,733987654,عدن,توريد أدوية`);
   const [importSuccessMsg, setImportSuccessMsg] = useState("");
+  const [importValidationError, setImportValidationError] = useState<string | null>(null);
+  const [previewRows, setPreviewRows] = useState<Array<{ name: string; phone: string; city: string; category: string }>>([]);
+  const [isColumnsValidated, setIsColumnsValidated] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setImportText(content);
+        validateAndPreview(content);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  const validateAndPreview = (textData: string) => {
+    setImportValidationError(null);
+    const lines = textData.split("\n").filter(l => l.trim() !== "");
+    if (lines.length === 0) {
+      setImportValidationError("الملف أو النص فارغ.");
+      setIsColumnsValidated(false);
+      setPreviewRows([]);
+      return;
+    }
+
+    const header = lines[0].trim();
+    // Auto-detect delimiter: tab (Excel paste), semicolon (EU CSV), or comma (Standard CSV)
+    const delimiter = header.includes("\t") ? "\t" : (header.includes(";") ? ";" : ",");
+
+    const hasName = header.includes("اسم") || header.toLowerCase().includes("name");
+    const hasPhone = header.includes("هاتف") || header.toLowerCase().includes("phone");
+    const hasCity = header.includes("مدينة") || header.toLowerCase().includes("city");
+
+    if (!hasName || !hasPhone || !hasCity) {
+      setImportValidationError("⚠️ خطأ في الأعمدة: رأس الجدول يجب أن يتضمن أعمدة رئيسية على الأقل مثل (اسم المورد, الهاتف, المدينة). يرجى التأكد من النموذج.");
+      setIsColumnsValidated(false);
+      setPreviewRows([]);
+      return;
+    }
+
+    const parsed: Array<{ name: string; phone: string; city: string; category: string }> = [];
+    for (let i = 1; i < Math.min(lines.length, 6); i++) {
+      const parts = lines[i].split(delimiter).map(p => p.trim());
+      parsed.push({
+        name: parts[0] || `مورد ${i}`,
+        phone: parts[1] || "770000000",
+        city: parts[2] || "صنعاء",
+        category: parts[3] || "توريد عام",
+      });
+    }
+
+    setPreviewRows(parsed);
+    setIsColumnsValidated(true);
+    setImportValidationError("✅ تمت مطابقة الأعمدة بنجاح وجاهز للاستيراد.");
+  };
 
   const handleImportVendors = () => {
     try {
@@ -86,10 +144,18 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
         alert("يرجى إدخال بيانات صحيحة");
         return;
       }
+
+      const header = lines[0].trim();
+      const delimiter = header.includes("\t") ? "\t" : (header.includes(";") ? ";" : ",");
+      if (!header.includes("اسم") && !header.toLowerCase().includes("name")) {
+        alert("تنبيه: أعمدة الملف غير صحيحة. يرجى التحقق من رأس الجدول.");
+        return;
+      }
+
       let count = 0;
       const startIndex = lines[0].includes("اسم") || lines[0].includes("name") ? 1 : 0;
       for (let i = startIndex; i < lines.length; i++) {
-        const parts = lines[i].split(",").map(p => p.trim());
+        const parts = lines[i].split(delimiter).map(p => p.trim());
         const nameAr = parts[0] || `مورد مستورد ${i}`;
         const phone = parts[1] || "770000000";
         const city = parts[2] || "صنعاء";
@@ -777,16 +843,68 @@ export const VendorsAndAPView: React.FC<VendorsAndAPViewProps> = ({
             )}
 
             <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between gap-2 p-3 bg-slate-950 rounded-2xl border border-slate-800">
+                <div>
+                  <span className="font-bold text-white block">رفع ملف (CSV / Excel)</span>
+                  <span className="text-[11px] text-slate-400">اختر ملف من جهازك للتحقق من الأعمدة تلقائياً</span>
+                </div>
+                <label className="cursor-pointer px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs transition-all shadow-md">
+                  <span>اختر ملف...</span>
+                  <input type="file" accept=".csv,.txt,.tsv" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+
+              {importValidationError && (
+                <div className={`p-3 rounded-xl border text-xs font-semibold ${
+                  importValidationError.includes("✅")
+                    ? "bg-amber-950/80 border-amber-800 text-amber-300"
+                    : "bg-rose-950/80 border-rose-800 text-rose-300"
+                }`}>
+                  {importValidationError}
+                </div>
+              )}
+
               <div>
-                <label className="block text-slate-400 mb-1 font-semibold">بيانات الموردين (سطر لكل مورد مفصول بفاصلة):</label>
+                <label className="block text-slate-400 mb-1 font-semibold">أو الصق البيانات مباشرة (سطر لكل مورد مفصول بفاصلة):</label>
                 <textarea
-                  rows={6}
+                  rows={4}
                   value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
+                  onChange={(e) => {
+                    setImportText(e.target.value);
+                    validateAndPreview(e.target.value);
+                  }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
-                  placeholder="مجموعة هائل سعيد أنعم, 770123456, صنعاء, توريد مواد غذائية"
+                  placeholder="اسم المورد, الهاتف, المدينة, التصنيف"
                 />
               </div>
+
+              {previewRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-slate-400 font-semibold block text-[11px]">معاينة البيانات المستخرجة (أول 5 صفوف):</span>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden max-h-36 overflow-y-auto">
+                    <table className="w-full text-right text-[11px]">
+                      <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-2">الاسم</th>
+                          <th className="p-2">الهاتف</th>
+                          <th className="p-2">المدينة</th>
+                          <th className="p-2">التصنيف</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-900 text-slate-300">
+                        {previewRows.map((r, idx) => (
+                          <tr key={idx}>
+                            <td className="p-2 font-medium">{r.name}</td>
+                            <td className="p-2">{r.phone}</td>
+                            <td className="p-2">{r.city}</td>
+                            <td className="p-2">{r.category}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-2">
                 <button

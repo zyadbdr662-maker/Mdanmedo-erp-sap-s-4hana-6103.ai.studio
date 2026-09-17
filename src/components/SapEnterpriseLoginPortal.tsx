@@ -265,6 +265,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [activeTab, setActiveTab] = useState<"CREDENTIALS" | "NEW_TRIAL">("CREDENTIALS");
   const [language, setLanguage] = useState<"AR" | "EN">("AR");
   const [showSaaSOnboarding, setShowSaaSOnboarding] = useState(defaultShowSaaSOnboarding);
+  const [showEnvConfigMobile, setShowEnvConfigMobile] = useState(false);
 
   // Dynamic Tenant Isolation Resolution
   const activeTenantSlug = TenantIsolationService.resolveActiveTenant();
@@ -795,7 +796,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   return (
     <div
       id="sap-enterprise-login-portal"
-      className="min-h-screen w-full bg-[#050B14] text-slate-100 flex flex-col font-sans select-none relative overflow-x-hidden"
+      className="login-screen min-h-screen min-h-[100dvh] w-full bg-[#050B14] text-slate-100 flex flex-col font-sans select-none relative overflow-x-hidden p-0"
       dir="rtl"
       style={{ fontFamily: "'Cairo', sans-serif" }}
     >
@@ -809,25 +810,29 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
       {/* TOP SAP ENTERPRISE BAR */}
       <header
         id="sap-portal-header"
-        className="w-full bg-[#0a2540] backdrop-blur-xl border-b border-[#d4af37]/30 py-3.5 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-4 z-20 shadow-xl"
+        className="login-header w-full bg-[#0a2540] backdrop-blur-xl border-b border-[#d4af37]/30 py-4 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 z-20 shadow-xl"
       >
-        <div className="flex items-center gap-3.5">
-          <BzmtLogo size="md" variant="monogram" />
+        <div className="flex flex-col sm:flex-row items-center text-center sm:text-right gap-3.5">
+          <div className="flex items-center justify-center">
+            <BzmtLogo size="md" variant="monogram" />
+          </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-xl text-white tracking-wide">MeDo ERP</span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] font-bold">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <span className="logo text-[28px] sm:text-[32px] md:text-[38px] lg:text-[48px] font-black text-white tracking-wide leading-tight">
+                MeDo ERP
+              </span>
+              <span className="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] font-bold whitespace-nowrap">
                 SAP S/4HANA & B1 Edition
               </span>
             </div>
-            <p className="text-xs text-slate-300 font-normal">
+            <p className="text-xs sm:text-sm text-slate-300 font-normal mt-0.5">
               بوابة الدخول المؤسسي الموحدة — ميدو تك للحلول السحابية المتقدمة
             </p>
           </div>
         </div>
 
         {/* Real-time system telemetry and quick navigation */}
-        <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs flex-wrap w-full md:w-auto">
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#06182a] border border-blue-900/60 text-slate-300 shadow-inner">
             <Server className="w-3.5 h-3.5 text-[#d4af37]" />
             <span>النظام: <strong className="text-[#d4af37] font-mono">PRD-01 (Online)</strong></span>
@@ -839,49 +844,49 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             <button
               id="sap-portal-trust-btn"
               onClick={onOpenTrustCenter}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900/80 transition cursor-pointer font-medium shadow-sm hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900/80 transition cursor-pointer font-medium shadow-sm hover:scale-[1.02] text-[11px] sm:text-xs"
               title="مركز الثقة والأمان السحابي"
             >
               <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
-              <span>مركز الثقة (Trust Center)</span>
+              <span className="whitespace-nowrap">مركز الثقة (Trust Center)</span>
             </button>
           )}
 
           <button
             id="sap-portal-compliance-btn"
             onClick={() => setComplianceReportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-amber-500/20 text-[#d4af37] border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-amber-500/20 text-[#d4af37] border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02] text-[11px] sm:text-xs"
             title="فحص مطابقة معايير SAP الدولية"
           >
             <Award className="w-4 h-4 text-[#d4af37]" />
-            <span className="hidden sm:inline">تدقيق معايير SAP</span>
+            <span className="whitespace-nowrap">معايير SAP</span>
           </button>
 
           {onOpenCorporateSite && (
             <button
               id="sap-portal-corporate-btn"
               onClick={onOpenCorporateSite}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-amber-200 border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-amber-200 border border-[#d4af37]/40 transition cursor-pointer font-bold shadow-sm hover:scale-[1.02] text-[11px] sm:text-xs"
               title="استعراض موديولات النظام وبوابة المنشأة"
             >
               <Briefcase className="w-4 h-4 text-[#d4af37]" />
-              <span>بوابة المنشأة والموديولات</span>
+              <span className="whitespace-nowrap">الموقع التعريفي</span>
             </button>
           )}
 
           <button
             onClick={() => setShowSaaSOnboarding(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] text-[#0a2540] transition font-black shadow-lg shadow-[0_4px_14px_rgba(212,175,55,0.3)] cursor-pointer hover:scale-[1.02] border border-[#b8860b]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] text-[#0a2540] transition font-black shadow-lg shadow-[0_4px_14px_rgba(212,175,55,0.3)] cursor-pointer hover:scale-[1.02] border border-[#b8860b] text-[11px] sm:text-xs whitespace-nowrap"
             title="تسجيل شركة جديدة والحصول على نسخة تجريبية"
           >
             <Globe2 className="w-4 h-4 text-[#0a2540]" />
-            <span className="hidden sm:inline">إنشاء مساحة عمل سحابية</span>
+            <span>تجربة 30 يوم مجاناً</span>
           </button>
 
           <div className="flex items-center border border-blue-900/80 rounded-xl overflow-hidden bg-[#06182a]">
             <button
               onClick={() => setLanguage("AR")}
-              className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 text-xs font-bold transition cursor-pointer ${
                 language === "AR" ? "bg-[#d4af37] text-[#0a2540]" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -889,7 +894,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </button>
             <button
               onClick={() => setLanguage("EN")}
-              className={`px-3 py-1 text-xs font-bold transition cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 text-xs font-bold transition cursor-pointer ${
                 language === "EN" ? "bg-[#d4af37] text-[#0a2540]" : "text-slate-400 hover:text-white"
               }`}
             >
@@ -929,9 +934,27 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           </div>
         )}
 
+        {/* Mobile/Tablet Quick System Config Toggle */}
+        <div className="lg:hidden w-full max-w-xl mx-auto mb-4">
+          <button
+            type="button"
+            onClick={() => setShowEnvConfigMobile(!showEnvConfigMobile)}
+            className="w-full py-2.5 px-4 rounded-2xl bg-[#0a1525]/90 border border-[#d4af37]/40 text-xs text-amber-200 font-bold flex items-center justify-between shadow-md hover:bg-[#10243d] transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <Database className="w-4 h-4 text-[#d4af37] shrink-0" />
+              <span className="truncate">بيئة النظام: [{currentClient.code}] — {availableBranches.find((b) => b.id === selectedBranchId)?.nameAr || "الفرع الرئيسي"}</span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-slate-300 shrink-0 mr-2">
+              <span>{showEnvConfigMobile ? "إخفاء الإعدادات" : "تغيير العميل/الفرع"}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showEnvConfigMobile ? "rotate-180" : ""}`} />
+            </div>
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT/RIGHT SIDEBAR: SAP CLIENT, BRANCH & WAREHOUSE CONFIG */}
-          <div className="lg:col-span-4 bg-gradient-to-br from-[#0a1525]/80 to-[#040810]/90 backdrop-blur-3xl border border-[#d4af37]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_40px_rgba(212,175,55,0.15)] space-y-5">
+          <div className={`lg:col-span-4 bg-gradient-to-br from-[#0a1525]/80 to-[#040810]/90 backdrop-blur-3xl border border-[#d4af37]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_40px_rgba(212,175,55,0.15)] space-y-5 order-2 lg:order-1 ${showEnvConfigMobile ? "block" : "hidden lg:block"}`}>
             <div className="border-b border-slate-700/60 pb-3">
               <div className="flex items-center gap-2 text-sap-secondary font-bold text-sm">
                 <Database className="w-4 h-4" />
@@ -955,7 +978,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-client-selector"
                   value={selectedClientId}
                   onChange={(e) => setSelectedClientId(e.target.value)}
-                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {allClients.map((c) => (
                     <option key={c.id} value={c.id} className="bg-[#070d18] text-white">
@@ -965,7 +988,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-              <p className="text-xs text-slate-300 bg-[#070d18]/70 p-3 rounded-2xl border border-slate-800 leading-relaxed font-normal">
+              <p className="text-xs text-slate-300 bg-[#070d18]/70 p-3 rounded-xl border border-slate-800 leading-relaxed font-normal">
                 {currentClient.description}
               </p>
             </div>
@@ -983,7 +1006,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     const matchedWh = SAP_WAREHOUSES.find((w) => w.branchId === newBranch);
                     if (matchedWh) setSelectedWarehouseId(matchedWh.id);
                   }}
-                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {availableBranches.map((b) => (
                     <option key={b.id} value={b.id} className="bg-[#070d18] text-white">
@@ -1006,7 +1029,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-warehouse-selector"
                   value={selectedWarehouseId}
                   onChange={(e) => setSelectedWarehouseId(e.target.value)}
-                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                  className="w-full bg-[#070d18] border border-slate-700/90 rounded-xl px-3.5 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
                 >
                   {filteredWarehouses.length > 0 ? (
                     filteredWarehouses.map((w) => (
@@ -1025,7 +1048,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </div>
 
             {/* Security & Isolation Summary Card */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900/60 to-slate-950/80 border border-emerald-800/40 space-y-2">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/40 via-slate-900/60 to-slate-950/80 border border-emerald-800/40 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-sap-secondary">
                 <ShieldCheck className="w-4 h-4 text-[#d4af37]" />
                 <span>أمان الجلسة وعزل البيانات</span>
@@ -1048,7 +1071,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
           </div>
 
           {/* RIGHT/CENTER: INTERACTIVE AUTHENTICATION MODES */}
-          <div className="lg:col-span-8 bg-gradient-to-tl from-[#0a2540]/90 via-[#0a1525]/95 to-[#040810]/95 backdrop-blur-3xl border border-[#d4af37]/40 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(212,175,55,0.2),_inset_0_1px_1px_rgba(255,255,255,0.1)] space-y-6">
+          <div className="login-card lg:col-span-8 w-[92%] sm:w-[88%] md:w-[75%] lg:w-full max-w-[540px] lg:max-w-none mx-auto bg-gradient-to-tl from-[#0a2540]/90 via-[#0a1525]/95 to-[#040810]/95 backdrop-blur-3xl border border-[#d4af37]/40 rounded-[20px] sm:rounded-[24px] p-6 sm:p-8 md:p-[35px] lg:p-[45px] xl:p-[50px] shadow-[0_20px_50px_rgba(212,175,55,0.2),_inset_0_1px_1px_rgba(255,255,255,0.1)] space-y-6 order-1 lg:order-2">
             {/* TABS HEADER */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-5">
               <div className="flex items-center gap-2">
@@ -1106,8 +1129,8 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             {activeTab === "CREDENTIALS" && (
               <form onSubmit={handleCredentialsSubmit} className="space-y-4 max-w-xl mx-auto py-2">
                 <div className="text-center space-y-1 mb-3">
-                  <h3 className="text-base font-bold text-white">تسجيل الدخول بالبيانات المعتمدة</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className="login-title text-[22px] md:text-[26px] lg:text-[28px] font-black text-white leading-tight">تسجيل الدخول بالبيانات المعتمدة</h3>
+                  <p className="login-subtitle text-[14px] md:text-[15px] text-slate-300">
                     أدخل بريدك الإلكتروني المؤسسي أو اسم المستخدم وكلمة المرور الخاصة بمنظومة SAP/MeDO ERP
                   </p>
                 </div>
@@ -1125,7 +1148,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
                     autoComplete="off"
-                    className="w-full bg-[#06182a] border border-blue-900/80 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner"
+                    className="input-field w-full bg-[#06182a] border border-blue-900/80 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner font-sans"
                     required
                   />
                 </div>
@@ -1153,7 +1176,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     autoComplete="new-password"
-                    className="w-full bg-[#06182a] border border-blue-900/80 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner font-mono"
+                    className="input-field w-full bg-[#06182a] border border-blue-900/80 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-2 focus:ring-[#d4af37]/30 transition shadow-inner font-mono"
                     required
                   />
                   {password && (
@@ -1245,7 +1268,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   id="sap-submit-login-btn"
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-sm sm:text-base shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 border border-[#b8860b]"
+                  className="btn-primary w-full min-h-[52px] py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-[15px] sm:text-[16px] shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 border border-[#b8860b] cursor-pointer"
                 >
                   {isLoading ? (
                     <>
@@ -1270,7 +1293,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                 <button
                   type="button"
                   onClick={() => setActiveTab("NEW_TRIAL")}
-                  className="w-full py-3 px-4 rounded-xl bg-[#0a2540]/60 hover:bg-[#0a2540] text-[#d4af37] hover:text-[#f1c40f] border-2 border-[#d4af37] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer hover:shadow-[0_8px_20px_rgba(212,175,55,0.25)]"
+                  className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-[#0a2540]/60 hover:bg-[#0a2540] text-[#d4af37] hover:text-[#f1c40f] border-2 border-[#d4af37] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer hover:shadow-[0_8px_20px_rgba(212,175,55,0.25)]"
                 >
                   <Building2 className="w-4 h-4 text-[#d4af37]" />
                   <span>إنشاء حساب جديد وتفعيل منشأة سحابية مجاناً</span>
@@ -1282,7 +1305,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900 font-bold text-xs flex items-center justify-center gap-3 transition"
+                  className="w-full min-h-[48px] py-2.5 px-4 rounded-xl bg-[#06182a] hover:bg-[#0c2b48] text-slate-200 border border-blue-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition cursor-pointer"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path
@@ -1315,8 +1338,8 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>تسجيل حساب وتفعيل ترخيص مجاني 30 يوماً</span>
                   </div>
-                  <h3 className="text-base font-bold text-white">تسجيل مستخدم وتفعيل منشأة سحابية جديدة</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className="login-title text-[20px] md:text-[24px] lg:text-[26px] font-black text-white leading-tight">تسجيل مستخدم وتفعيل منشأة سحابية جديدة</h3>
+                  <p className="login-subtitle text-[14px] md:text-[15px] text-slate-300">
                     أدخل بياناتك وبيانات منشأتك للتسجيل واجتياز الفحص الأمني للبدء الفوري
                   </p>
                 </div>
@@ -1334,7 +1357,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       value={registrantFullName}
                       onChange={(e) => setRegistrantFullName(e.target.value)}
                       placeholder="مثال: بدر عايض زياد"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                      className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition font-sans"
                     />
                   </div>
 
@@ -1350,7 +1373,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         value={registrantEmail}
                         onChange={(e) => setRegistrantEmail(e.target.value)}
                         placeholder="name@company.com"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition dir-ltr text-right"
+                        className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition dir-ltr text-right font-sans"
                       />
                     </div>
 
@@ -1365,7 +1388,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         value={registrantPhone}
                         onChange={(e) => setRegistrantPhone(e.target.value)}
                         placeholder="+967 773586047"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition dir-ltr text-right"
+                        className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition dir-ltr text-right font-sans"
                       />
                     </div>
                   </div>
@@ -1382,7 +1405,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         value={registrantPassword}
                         onChange={(e) => setRegistrantPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                        className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition font-mono"
                       />
                     </div>
 
@@ -1397,7 +1420,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         value={registrantPasswordConfirm}
                         onChange={(e) => setRegistrantPasswordConfirm(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                        className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition font-mono"
                       />
                     </div>
                   </div>
@@ -1414,7 +1437,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       value={trialCompanyName}
                       onChange={(e) => setTrialCompanyName(e.target.value)}
                       placeholder="مثال: شركة النماء للتوكيلات والتجارة"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition"
+                      className="input-field w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-[16px] min-h-[50px] text-white placeholder-slate-500 focus:outline-none focus:border-sap-secondary transition font-sans"
                     />
                   </div>
 
@@ -1424,7 +1447,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       <select
                         value={trialIndustry}
                         onChange={(e) => setTrialIndustry(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer min-h-[48px]"
                       >
                         <option value="تجارة وتوزيع وإلكترونيات">تجارة وتوزيع وإلكترونيات</option>
                         <option value="تصنيع وتجميع وصناعات تحويلية">تصنيع وتجميع وصناعات تحويلية</option>
@@ -1438,7 +1461,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       <select
                         value={trialCurrency}
                         onChange={(e) => setTrialCurrency(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-sap-secondary transition appearance-none cursor-pointer min-h-[48px]"
                       >
                         <option value="YER">ريال يمني (صنعاء / عدن)</option>
                         <option value="SAR">ريال سعودي (SAR)</option>
@@ -1522,7 +1545,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         value={captchaAnswer}
                         onChange={(e) => setCaptchaAnswer(e.target.value)}
                         placeholder="أدخل الناتج..."
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-center font-bold"
+                        className="input-field flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-[16px] min-h-[48px] text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-center font-bold"
                       />
                     </div>
                   </div>
@@ -1532,7 +1555,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       type="checkbox"
                       checked={trialWithSampleData}
                       onChange={(e) => setTrialWithSampleData(e.target.checked)}
-                      className="rounded border-slate-700 bg-slate-800 text-sap-primary focus:ring-0 focus:ring-offset-0"
+                      className="rounded border-slate-700 bg-slate-800 text-sap-primary focus:ring-0 focus:ring-offset-0 w-4 h-4"
                     />
                     <div className="text-xs">
                       <span className="font-bold text-slate-200">تحميل بيانات افتراضية متكاملة (Sample Data)</span>
@@ -1547,7 +1570,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                       type="checkbox"
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
-                      className="rounded border-slate-700 bg-slate-800 text-sap-primary focus:ring-0 focus:ring-offset-0 mt-0.5"
+                      className="rounded border-slate-700 bg-slate-800 text-sap-primary focus:ring-0 focus:ring-offset-0 mt-0.5 w-4 h-4"
                     />
                     <div className="text-xs text-slate-300">
                       <span>أوافق على <button type="button" onClick={() => openLegalPolicy("TRIAL_TERMS")} className="text-sap-secondary hover:underline font-bold">شروط الاستخدام والترخيص الرسمية (SAP Cloud Trial Terms)</button> و <button type="button" onClick={() => openLegalPolicy("PRIVACY")} className="text-sap-secondary hover:underline font-bold">سياسة الخصوصية وسرية البيانات</button> لاتفاقية SAP Cloud Trial المعتمدة.</span>
@@ -1558,7 +1581,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                     id="sap-create-trial-btn"
                     onClick={handleCreateTrial}
                     disabled={isLoading}
-                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-sm sm:text-base shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer border border-[#b8860b]"
+                    className="btn-primary w-full min-h-[52px] py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] hover:brightness-110 text-[#0a2540] font-black text-[15px] sm:text-[16px] shadow-[0_10px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] transform hover:-translate-y-0.5 flex items-center justify-center gap-2 transition active:scale-98 disabled:opacity-50 cursor-pointer border border-[#b8860b]"
                   >
                     {isLoading ? (
                       <>
@@ -1719,7 +1742,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
               <label className="block text-xs font-semibold text-slate-300 text-center">
                 أدخل رمز الأمان المكون من 7 خانات:
               </label>
-              <div className="flex items-center justify-center gap-2 dir-ltr" dir="ltr">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 dir-ltr" dir="ltr">
                 {entered7Digits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -1758,7 +1781,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                         if (nextEl) (nextEl as HTMLInputElement).focus();
                       }
                     }}
-                    className={`w-11 h-13 text-center text-xl font-mono font-black rounded-xl bg-slate-950 border ${
+                    className={`w-9 sm:w-11 h-11 sm:h-13 text-center text-lg sm:text-xl font-mono font-black rounded-xl bg-slate-950 border ${
                       digit ? "border-[#d4af37] text-[#d4af37] shadow-[0_0_10px_rgba(212,175,55,0.3)]" : "border-slate-700 text-white"
                     } focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition`}
                   />
