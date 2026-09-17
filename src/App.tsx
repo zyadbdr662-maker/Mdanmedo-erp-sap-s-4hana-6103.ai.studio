@@ -37,6 +37,7 @@ import { UserManualView } from "./components/UserManualView";
 import { ExecutiveMasterSystemSuite } from "./components/ExecutiveMasterSystemSuite";
 import { CentralArchiveSection } from "./components/CentralArchiveSection";
 import { SystemFooter } from "./components/SystemFooter";
+import { LegalDocumentsPage } from "./components/LegalDocumentsPage";
 import { TrialLockModal } from "./components/TrialLockModal";
 import { TrialManagerDashboardModal } from "./components/TrialManagerDashboardModal";
 import { ThemeManager } from "./services/themeManager";
@@ -2037,6 +2038,7 @@ export default function App() {
       EXECUTIVE_MASTER_SUITE: "اللوحة السيادية والتحكم المالي المركزي",
       SAAS_PLATFORM: "منصة السحاب وإدارة المنشآت",
       CENTRAL_ARCHIVE: "الأرشيف السحابي المركزي",
+      LEGAL_DOCUMENTS: "الوثائق القانونية وشروط الاستخدام",
     };
     return titles[tab] || "هذه الوحدة المحاسبية";
   };
@@ -2745,6 +2747,9 @@ export default function App() {
                   onUpdateUsersList={handleUpdateUsersList}
                 />
               )}
+              {activeTab === "LEGAL_DOCUMENTS" && (
+                <LegalDocumentsPage onBack={() => setActiveTab("DASHBOARD")} />
+              )}
               {isMasterAdminActive && activeTab === "SCHEDULED_BACKUP" && (
                 <ScheduledBackupView
                   systemSettings={erpState.systemSettings}
@@ -3000,7 +3005,7 @@ export default function App() {
             </main>
 
             {/* Persistent Enterprise Brand Footer */}
-            <SystemFooter />
+            <SystemFooter onOpenLegalDocuments={() => setActiveTab("LEGAL_DOCUMENTS")} />
           </div>
 
           <SapOnboardingModal

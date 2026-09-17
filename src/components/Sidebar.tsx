@@ -39,6 +39,7 @@ import {
   Lock,
   BookMarked,
   Archive,
+  Scale,
 } from "lucide-react";
 import { PWAInstallButton } from "./PWAInstallButton";
 import { BzmtLogo } from "./BzmtLogo";
@@ -79,6 +80,7 @@ export type NavTab =
   | "TRUST_CENTER"
   | "SAAS_PLATFORM"
   | "CENTRAL_ARCHIVE"
+  | "LEGAL_DOCUMENTS"
   | "AI_ASSISTANT";
 
 interface SidebarProps {
@@ -402,6 +404,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       section: "الإعدادات والنظام",
     },
     {
+      id: "LEGAL_DOCUMENTS",
+      labelAr: "الوثائق القانونية وشروط الاستخدام",
+      labelEn: "Legal Documents & Terms",
+      icon: Scale,
+      badge: "الإصدار 2.0",
+      badgeColor: "bg-amber-950 text-amber-300 border border-amber-700/50 font-bold",
+      section: "الإعدادات والنظام",
+    },
+    {
       id: "AI_ASSISTANT",
       labelAr: "المساعد المالي MeDo AI",
       labelEn: "AI Financial Copilot",
@@ -433,6 +444,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
 
   const filteredMenuItems = menuItems.filter((item) => {
+    if (item.id === "LEGAL_DOCUMENTS") return true;
+
     // 1. Strict Role-Based Access Control (RBAC) Isolation
     if (userRole === "CASHIER") {
       const salesAllowedTabs: NavTab[] = [
