@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { TermsOfServiceDocument } from "./TermsOfServiceDocument";
+import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -652,84 +653,8 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
 
           {/* 5. Privacy Policy (سياسة الخصوصية الرسمية - Google & SAP Standards) */}
           {activePolicy === "PRIVACY" && (
-            <div className="space-y-6 animate-fadeIn text-right" dir="rtl">
-              <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
-                <div className="text-center border-b border-slate-800 pb-6 space-y-2">
-                  <span className="text-xs px-3 py-1 rounded-full bg-sap-secondary/15 text-sap-secondary border border-sap-secondary/30 font-bold">
-                    سياسة الخصوصية وحماية البيانات
-                  </span>
-                  <h1 className="text-2xl sm:text-3xl font-black text-white">
-                    🔒 سياسة الخصوصية — Google &amp; SAP Standards
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-400">
-                    عندما تستخدم خدماتنا، فإنك تثق بنا في معلوماتك. سارية اعتباراً من 26 مايو 2026.
-                  </p>
-                </div>
-
-                {/* المقدمة */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ١. نظرة عامة
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    ندرك أن حماية معلوماتك مسؤولية كبيرة ونعمل بجد لحماية معلوماتك ووضعك في السيطرة. تهدف سياسة الخصوصية هذه إلى مساعدتك في فهم المعلومات التي نجمعها، ولماذا نجمعها، وكيف يمكنك تحديث معلوماتك وإدارتها وتصديرها وحذفها.
-                  </p>
-                </div>
-
-                {/* المعلومات التي تجمعها */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٢. المعلومات التي تجمعها المنظومة
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    نقوم بجمع المعلومات لتقديم خدمات أفضل لجميع مستخدمينا — من اكتشاف اللغة التي تتحدث بها، إلى المعاملات المالية، والمحاسبة، والمخازن.
-                  </p>
-                  <ul className="text-sm text-slate-300 space-y-2 list-disc list-inside">
-                    <li><strong>المعلومات التي تزودنا بها:</strong> مثل اسم المنشأة، البريد الإلكتروني، أرقام التواصل، والبيانات المالية والمحاسبية.</li>
-                    <li><strong>معلومات النشاط:</strong> المصطلحات التي تبحث عنها، سجل العمليات، تفاعلاتك مع الفواتير والقيود المحاسبية.</li>
-                    <li><strong>معلومات الأجهزة والمتصفحات:</strong> عناوين IP، نوع المتصفح، نظام التشغيل، ومعرفات الأجهزة المعتمدة لجلسات العمل.</li>
-                    <li><strong>معلومات الموقع:</strong> لتقديم خدمات مخصصة ومعالجة القيود المحاسبية حسب الفروع والعملات الإقليمية.</li>
-                  </ul>
-                </div>
-
-                {/* لماذا تجمع البيانات */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٣. لماذا تجمع المنظومة البيانات
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    نستخدم البيانات للأغراض التالية: تقديم خدماتنا، الحفاظ على النظام وتحسينه، تطوير ميزات جديدة، تقديم تجارب مخصصة، قياس الأداء والتحليلات، وحماية أمان المستخدمين والجمهور من أي احتيال أو إساءة استخدام.
-                  </p>
-                  <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 text-emerald-200 text-xs sm:text-sm">
-                    <strong>تعهد أمني:</strong> لا نعرض إعلانات مخصصة بناءً على المحتوى الخاص بك من المستندات أو الجداول أو الحسابات المالية، ولا نشارك بياناتك مع أطراف ثالثة.
-                  </div>
-                </div>
-
-                {/* عناصر التحكم في الخصوصية */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٤. عناصر التحكم في الخصوصية وحقوقك
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    لديك خيارات كاملة فيما يتعلق بالمعلومات التي نجمعها وكيفية استخدامها:
-                  </p>
-                  <ul className="text-sm text-slate-300 space-y-2 list-disc list-inside">
-                    <li>مراجعة وتحديث وتصدير بياناتك المالية وحسابك في أي وقت.</li>
-                    <li>حذف المحتوى أو السجلات وفقاً للسياسات التنظيمية والاحتفاظ القانوني.</li>
-                    <li>التحكم في إعدادات الأمان والمصادقة الثنائية (2FA) وصلاحيات الموظفين.</li>
-                  </ul>
-                </div>
-
-                {/* مشاركة المعلومات */}
-                <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-lg font-black text-sap-secondary border-r-4 border-sap-secondary pr-3">
-                    ٥. مشاركة المعلومات وحمايتها
-                  </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    لا نشارك معلوماتك الشخصية أو المالية مع الشركات أو الأفراد خارج المنظومة إلا بموافقتك الصريحة، أو لأسباب قانونية ملزمة (مثل الامتثال لأمر قضائي أو حماية حقوق وممتلكات المنشأة).
-                  </p>
-                </div>
-              </div>
+            <div className="animate-fadeIn">
+              <PrivacyPolicyDocument />
             </div>
           )}
 
