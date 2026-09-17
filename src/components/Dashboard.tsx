@@ -989,51 +989,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 3. منظومة عملاء النظام المحاسبي ميدو إرب (المنظومة الرأسية - الإدارة العليا - النقاط الست المركزية) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-[#0A2540] border-2 border-emerald-500/40 p-5 shadow-2xl transition-all hover:border-emerald-400 group">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 flex-shrink-0 border border-emerald-400/40 group-hover:scale-105 transition-transform duration-300">
-              <ShieldCheck className="w-7 h-7 text-emerald-300 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                  <span>منظومة عملاء النظام المحاسبي ميدو إرب</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black">
-                    المنظومة الرأسية - الإدارة العليا
-                  </span>
-                </h2>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-950 text-sap-secondary border border-sap-secondary/40 font-mono font-bold">
-                  النقاط الـ 6 الشاملة
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
-                المركز التنفيذي المخصص للمنظومة الرأسية والإدارة العليا لإدارة وتفعيل المشتركين، توليد قواعد البيانات المستقلة، ترحيل OneX Pro، دورة حياة النسخ التجريبية 30 يوماً، التنبيهات الأمنية اللحظية، والمرشد الإداري الشامل.
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-3 text-[11px] font-bold">
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-emerald-300 text-center">1. إدارة المشتركين</span>
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-purple-300 text-center">2. قواعد بيانات محلية</span>
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-blue-300 text-center">3. ترحيل OneX Pro</span>
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-amber-300 text-center">4. تجربة 30 يوماً والقفل</span>
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-teal-300 text-center">5. إشعارات الدخول</span>
-                <span className="px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-sap-secondary text-center">6. المرشد الإداري</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-shrink-0 self-end md:self-center">
-            <button
-              onClick={() => setActiveTab("EXECUTIVE_MASTER_SUITE")}
-              className="w-full md:w-auto px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-lg shadow-emerald-950/40 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>فتح منظومة العملاء (النقاط الست)</span>
-              <ExternalLink className="w-4 h-4 text-emerald-200" />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Primary KPI Cards Grid (Deep Blue & Gold Identity - Total Assets, Liquidity, Revenues, Expenses) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Total Assets (إجمالي الأصول) */}
@@ -1178,15 +1133,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* 📁 منظومة الأرشيف المركزي والتوثيق الرقمي & وثيقة التسليم والإقرار الفني الشامل */}
-      <div id="central-archive-anchor">
-        <CentralArchiveSection
-          companyName="مجموعة بن زياد التجارية المحدودة"
-          currencies={currencies}
-          displayCurrency={displayCurrency}
-        />
       </div>
 
       {/* Operational Modules & Workflows */}

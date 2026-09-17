@@ -81,7 +81,10 @@ export type NavTab =
   | "SAAS_PLATFORM"
   | "CENTRAL_ARCHIVE"
   | "LEGAL_DOCUMENTS"
-  | "AI_ASSISTANT";
+  | "AI_ASSISTANT"
+  | "HUAWEI_CLOUD"
+  | "ALIBABA_CLOUD"
+  | "QQ_CLOUD";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -386,6 +389,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       section: "الإعدادات والنظام",
     },
     {
+      id: "SCHEDULED_BACKUP",
+      labelAr: "النسخ الاحتياطي السحابي",
+      labelEn: "Cloud Backup",
+      icon: DatabaseBackup,
+      badge: "تلقائي",
+      badgeColor: "bg-blue-950 text-blue-300 border border-blue-500/50 font-bold",
+      section: "الإعدادات والنظام",
+    },
+    {
       id: "CLOUD_SYNC",
       labelAr: "محرك العمل دون اتصال والمزامنة",
       labelEn: "Offline Engine & Sync Center",
@@ -393,6 +405,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: "Offline Ready ⚡",
       badgeColor: "bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold",
       section: "الإعدادات والنظام",
+    },
+    {
+      id: "HUAWEI_CLOUD",
+      labelAr: "قاعدة بيانات هواوي (Huawei)",
+      labelEn: "Huawei Cloud Database",
+      icon: Cloud,
+      badge: "نشط 🟢",
+      badgeColor: "bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold",
+      section: "قواعد البيانات السحابية",
+    },
+    {
+      id: "ALIBABA_CLOUD",
+      labelAr: "قاعدة بيانات علي بابا (Alibaba)",
+      labelEn: "Alibaba Cloud Database",
+      icon: Cloud,
+      badge: "متصل 🟢",
+      badgeColor: "bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold",
+      section: "قواعد البيانات السحابية",
+    },
+    {
+      id: "QQ_CLOUD",
+      labelAr: "قاعدة بيانات كيوكيو (QQ/Tencent)",
+      labelEn: "Tencent/QQ Cloud Database",
+      icon: Cloud,
+      badge: "مزامنة 🟢",
+      badgeColor: "bg-emerald-950 text-emerald-300 border border-emerald-500/50 font-bold",
+      section: "قواعد البيانات السحابية",
     },
     {
       id: "THEME_STUDIO",

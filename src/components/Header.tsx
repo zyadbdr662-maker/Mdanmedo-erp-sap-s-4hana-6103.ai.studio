@@ -28,6 +28,7 @@ import {
   Lock,
   BookMarked,
   Cloud,
+  DatabaseBackup,
 } from "lucide-react";
 import { CurrencyCode, CurrencyInfo, ERPUser, CalendarType } from "../types/erp";
 import { LocalSyncEngine } from "../services/localSyncEngine";
@@ -702,9 +703,17 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
             <button
+              onClick={() => setActiveTab("SCHEDULED_BACKUP")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 hover:border-blue-500 transition-all font-bold text-[11px]"
+              title="إدارة النسخ الاحتياطي السحابي"
+            >
+              <DatabaseBackup className="w-4 h-4" />
+              <span className="hidden lg:inline">النسخ الاحتياطي</span>
+            </button>
+            <button
               onClick={onExportData}
               className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-              title="تصدير نسخة احتياطية من البيانات (JSON)"
+              title="تنزيل نسخة يدوية (JSON)"
             >
               <Download className="w-4 h-4" />
             </button>

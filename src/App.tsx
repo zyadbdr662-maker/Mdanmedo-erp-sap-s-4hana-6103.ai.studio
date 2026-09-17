@@ -60,6 +60,7 @@ import { CorporateWebsite } from "./components/CorporateWebsite";
 import { SapOnboardingModal } from "./components/SapOnboardingModal";
 import { SystemUpdateModal } from "./components/SystemUpdateModal";
 import { LegalPoliciesModal, LegalPolicyType } from "./components/LegalPoliciesModal";
+import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { soundService } from "./services/notificationSoundService";
 import { trialService, TrialState } from "./services/trialService";
 import { trialOperationsService } from "./services/trialOperationsService";
@@ -2754,7 +2755,7 @@ export default function App() {
                   onBack={() => setActiveTab("DASHBOARD")}
                 />
               )}
-              {isMasterAdminActive && activeTab === "SCHEDULED_BACKUP" && (
+              {activeTab === "SCHEDULED_BACKUP" && (
                 <ScheduledBackupView
                   systemSettings={erpState.systemSettings}
                   onUpdateSystemSettings={handleUpdateSystemSettings}
@@ -2838,7 +2839,7 @@ export default function App() {
                   onPrintDocument={handleOpenPrintDoc}
                 />
               )}
-              {activeTab === "CLOUD_SYNC" && (
+              {(activeTab === "CLOUD_SYNC" || activeTab === "HUAWEI_CLOUD" || activeTab === "ALIBABA_CLOUD" || activeTab === "QQ_CLOUD") && (
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-2.5">
                     <div className="flex items-center gap-2">
@@ -3210,6 +3211,14 @@ export default function App() {
             onSwitchRole={handleSwitchRole}
             hasOriginalManagerSession={hasOriginalManagerSession}
             companyName={erpState.systemSettings?.companyNameAr}
+          />
+
+          {/* Cookie Consent Banner */}
+          <CookieConsentBanner
+            onOpenPolicy={() => {
+              setLegalInitialDoc("COOKIES");
+              setActiveTab("LEGAL_DOCUMENTS");
+            }}
           />
         </>
       )}
