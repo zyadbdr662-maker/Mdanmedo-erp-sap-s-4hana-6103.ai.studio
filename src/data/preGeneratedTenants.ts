@@ -443,20 +443,36 @@ export const PRE_GENERATED_200_TENANTS: PreGeneratedTenant[] = Array.from({ leng
 export const preGeneratedTenants = [...MANUAL_VIP_TENANTS, ...PRE_GENERATED_200_TENANTS];
 
 const TENANTS_STORAGE_KEY = "medo_erp_200_tenants_v3";
+const REGISTERED_TENANTS_KEY = "medo_erp_registered_tenants_v1";
 
 /**
- * Retrieves stored 200 tenants from localStorage or defaults to generated list
+ * Retrieves all registered and pre-generated tenants combined
  */
 export function getStored200Tenants(): PreGeneratedTenant[] {
   if (typeof window === "undefined") return PRE_GENERATED_200_TENANTS;
   try {
     const raw = localStorage.getItem(TENANTS_STORAGE_KEY);
+    const selfRegisteredRaw = localStorage.getItem(REGISTERED_TENANTS_KEY);
+    let baseList = PRE_GENERATED_200_TENANTS;
+    
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length >= 200) {
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        baseList = parsed;
       }
     }
+
+    if (selfRegisteredRaw) {
+      const registeredParsed = JSON.parse(selfRegisteredRaw);
+      if (Array.isArray(registeredParsed)) {
+        // Merge without duplicates
+        const existingIds = new Set(baseList.map((t) => t.id));
+        const customToAdd = registeredParsed.filter((t) => !existingIds.has(t.id));
+        return [...customToAdd, ...baseList];
+      }
+    }
+
+    return baseList;
   } catch (e) {
     console.error("Failed to load stored tenants", e);
   }
@@ -475,6 +491,217 @@ export function saveStored200Tenants(tenants: PreGeneratedTenant[]): void {
   }
 }
 
+export interface RegisterTenantInput {
+  nameAr: string;
+  nameEn: string;
+  crNumber: string;
+  taxNumber: string;
+  industry: string;
+  address: string;
+  city?: string;
+  email: string;
+  phone: string;
+  password?: string;
+}
+
+/**
+ * Registers a new Self-Service Tenant dynamically
+ */
+export function registerSelfServiceTenant(input: RegisterTenantInput): PreGeneratedTenant {
+  const allCurrent = getStored200Tenants();
+  const nextIndex = allCurrent.length + 1;
+  
+  // Clean slug generation
+  const cleanBase = (input.nameEn || input.nameAr)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  
+  const randomSuffix = Math.random().toString(36).substring(2, 6);
+  const slug = cleanBase ? `${cleanBase}-${randomSuffix}` : `enterprise-${nextIndex}`;
+  const id = slug;
+  const vercelBase = VERCEL_PRODUCTION_BASE;
+  const masterLink = `${vercelBase}/?tenant=${id}`;
+  const defaultPassword = input.password || "1234";
+  const unlockCode = `MEDO-LOCK-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const roles: PreGeneratedTenant["roles"] = {
+    MANAGER: {
+      token: `AUTH_MGR_${id}`,
+      email: input.email || `manager@${slug}.medo-erp.cloud`,
+      password: defaultPassword,
+      roleNameAr: "المدير العام / المدير المالي",
+      path: "/employee/manager",
+      subLink: `${vercelBase}/?tenant=${id}&role=MANAGER&token=AUTH_MGR_${id}&path=/employee/manager`,
+    },
+    ACCOUNTANT: {
+      token: `AUTH_ACC_${id}`,
+      email: `accountant@${slug}.medo-erp.cloud`,
+      password: defaultPassword,
+      roleNameAr: "المحاسب المالي العام",
+      path: "/employee/accountant",
+      subLink: `${vercelBase}/?tenant=${id}&role=ACCOUNTANT&token=AUTH_ACC_${id}&path=/employee/accountant`,
+    },
+    CASHIER: {
+      token: `AUTH_SALES_${id}`,
+      email: `cashier@${slug}.medo-erp.cloud`,
+      password: defaultPassword,
+      roleNameAr: "كاشير / مسؤول المبيعات ونقاط البيع",
+      path: "/employee/sales",
+      subLink: `${vercelBase}/?tenant=${id}&role=CASHIER&token=AUTH_SALES_${id}&path=/employee/sales`,
+    },
+    PURCHASER: {
+      token: `AUTH_PUR_${id}`,
+      email: `purchaser@${slug}.medo-erp.cloud`,
+      password: defaultPassword,
+      roleNameAr: "مسؤول المشتريات والتوريدات",
+      path: "/employee/purchase",
+      subLink: `${vercelBase}/?tenant=${id}&role=PURCHASER&token=AUTH_PUR_${id}&path=/employee/purchase`,
+    },
+    AUDITOR: {
+      token: `AUTH_AUD_${id}`,
+      email: `auditor@${slug}.medo-erp.cloud`,
+      password: defaultPassword,
+      roleNameAr: "مدقق ومراجع حسابات خارجي",
+      path: "/employee/auditor",
+      subLink: `${vercelBase}/?tenant=${id}&role=AUDITOR&token=AUTH_AUD_${id}&path=/employee/auditor`,
+    },
+  };
+
+  const employees: PreGeneratedTenant["employees"] = [
+    {
+      id: `emp-${id}-mgr`,
+      name: `${input.nameAr} - المدير العام`,
+      roleAr: roles.MANAGER.roleNameAr,
+      roleEn: "MANAGER",
+      subLink: roles.MANAGER.subLink,
+      loginEmail: roles.MANAGER.email,
+      password: roles.MANAGER.password,
+    },
+    {
+      id: `emp-${id}-acc`,
+      name: `المحاسب المالي (${input.nameAr})`,
+      roleAr: roles.ACCOUNTANT.roleNameAr,
+      roleEn: "ACCOUNTANT",
+      subLink: roles.ACCOUNTANT.subLink,
+      loginEmail: roles.ACCOUNTANT.email,
+      password: roles.ACCOUNTANT.password,
+    },
+    {
+      id: `emp-${id}-sales`,
+      name: `مسؤول المبيعات (${input.nameAr})`,
+      roleAr: roles.CASHIER.roleNameAr,
+      roleEn: "CASHIER",
+      subLink: roles.CASHIER.subLink,
+      loginEmail: roles.CASHIER.email,
+      password: roles.CASHIER.password,
+    },
+    {
+      id: `emp-${id}-pur`,
+      name: `مسؤول المشتريات (${input.nameAr})`,
+      roleAr: roles.PURCHASER.roleNameAr,
+      roleEn: "PURCHASER",
+      subLink: roles.PURCHASER.subLink,
+      loginEmail: roles.PURCHASER.email,
+      password: roles.PURCHASER.password,
+    },
+    {
+      id: `emp-${id}-aud`,
+      name: `مدقق الحسابات (${input.nameAr})`,
+      roleAr: roles.AUDITOR.roleNameAr,
+      roleEn: "AUDITOR",
+      subLink: roles.AUDITOR.subLink,
+      loginEmail: roles.AUDITOR.email,
+      password: roles.AUDITOR.password,
+    },
+  ];
+
+  const newTenant: PreGeneratedTenant = {
+    index: nextIndex,
+    id,
+    slug,
+    name: input.nameAr,
+    nameEn: input.nameEn || `${input.nameAr} (En)`,
+    companyNameAr: input.nameAr,
+    companyNameEn: input.nameEn || `${input.nameAr} (En)`,
+    crNumber: input.crNumber || `CR-${Math.floor(100000 + Math.random() * 900000)}`,
+    commercialReg: input.crNumber || `CR-${Math.floor(100000 + Math.random() * 900000)}`,
+    taxNumber: input.taxNumber || `300${Math.floor(100000000000 + Math.random() * 900000000000)}`,
+    phone: input.phone || "+967 773 586 047",
+    address: input.address || "المركز الرئيسي",
+    city: input.city || "صنعاء / عدن",
+    industry: input.industry || "تجارة عامة واستيراد",
+    logo: `/logos/${slug}.png`,
+    masterDomain: masterLink,
+    vercelUrl: masterLink,
+    status: "TRIAL",
+    trialDaysRemaining: 7,
+    operationsCount: 0,
+    maxTrialOperations: 200,
+    assignedAdminName: `${input.nameAr} (مسؤول النظام)`,
+    assignedAdminPhone: input.phone,
+    assignedAdminEmail: input.email,
+    databaseNode: "PostgreSQL Local",
+    unlockCode,
+    roles,
+    employees,
+  };
+
+  // Persist to custom registered list
+  try {
+    if (typeof window !== "undefined") {
+      const existingRaw = localStorage.getItem(REGISTERED_TENANTS_KEY);
+      const existingList: PreGeneratedTenant[] = existingRaw ? JSON.parse(existingRaw) : [];
+      const updatedList = [newTenant, ...existingList];
+      localStorage.setItem(REGISTERED_TENANTS_KEY, JSON.stringify(updatedList));
+
+      // Also ensure main directory list is refreshed
+      const fullList = [newTenant, ...allCurrent];
+      localStorage.setItem(TENANTS_STORAGE_KEY, JSON.stringify(fullList));
+    }
+  } catch (e) {
+    console.error("Failed to persist newly registered tenant", e);
+  }
+
+  return newTenant;
+}
+
+/**
+ * Updates a tenant's status, plan or generates a new unlock code
+ */
+export function updateStoredTenant(
+  tenantId: string,
+  updates: Partial<PreGeneratedTenant>
+): PreGeneratedTenant | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const all = getStored200Tenants();
+    const idx = all.findIndex((t) => t.id === tenantId || t.slug === tenantId);
+    if (idx !== -1) {
+      const updated = { ...all[idx], ...updates };
+      all[idx] = updated;
+      saveStored200Tenants(all);
+
+      // Also update in registered list if present
+      const regRaw = localStorage.getItem(REGISTERED_TENANTS_KEY);
+      if (regRaw) {
+        const regList: PreGeneratedTenant[] = JSON.parse(regRaw);
+        const rIdx = regList.findIndex((t) => t.id === tenantId || t.slug === tenantId);
+        if (rIdx !== -1) {
+          regList[rIdx] = { ...regList[rIdx], ...updates };
+          localStorage.setItem(REGISTERED_TENANTS_KEY, JSON.stringify(regList));
+        }
+      }
+      return updated;
+    }
+  } catch (e) {
+    console.error("Failed to update tenant", e);
+  }
+  return null;
+}
+
 /**
  * Robust tenant lookup by ID, slug, index or standard aliases
  */
@@ -482,11 +709,15 @@ export function findTenantById(tenantIdentifier: string | null | undefined): Pre
   if (!tenantIdentifier) return null;
   const clean = tenantIdentifier.toLowerCase().trim();
 
-  // Check in-memory preGeneratedTenants first
+  // 1. Check stored/registered tenants first (dynamic state)
+  const storedList = getStored200Tenants();
+  let found = storedList.find((t) => t.id.toLowerCase() === clean || t.slug.toLowerCase() === clean);
+  if (found) return found;
+
+  // 2. Check in-memory preGeneratedTenants
   const allTenants = preGeneratedTenants;
 
-  // Exact ID / Slug match
-  let found = allTenants.find((t) => t.id.toLowerCase() === clean || t.slug.toLowerCase() === clean);
+  found = allTenants.find((t) => t.id.toLowerCase() === clean || t.slug.toLowerCase() === clean);
   if (found) return found;
 
   // Check aliases
@@ -512,7 +743,8 @@ export function findTenantById(tenantIdentifier: string | null | undefined): Pre
   // Check numerical pattern e.g. "1" -> "company-1"
   if (/^\d+$/.test(clean)) {
     const num = parseInt(clean, 10);
-    found = allTenants.find((t) => t.index === num || t.id === `company-${num}`);
+    found = storedList.find((t) => t.index === num || t.id === `company-${num}`) ||
+            allTenants.find((t) => t.index === num || t.id === `company-${num}`);
     if (found) return found;
   }
 
@@ -520,10 +752,19 @@ export function findTenantById(tenantIdentifier: string | null | undefined): Pre
   const match = clean.match(/^company[_-]?(\d+)$/);
   if (match) {
     const num = parseInt(match[1], 10);
-    found = allTenants.find((t) => t.index === num || t.id === `company-${num}`);
+    found = storedList.find((t) => t.index === num || t.id === `company-${num}`) ||
+            allTenants.find((t) => t.index === num || t.id === `company-${num}`);
     if (found) return found;
   }
 
   return null;
+}
+
+/**
+ * Generate a deterministic or randomized sovereign unlock code for a tenant
+ */
+export function generateTenantUnlockCode(tenantIdOrSlug: string): string {
+  const clean = (tenantIdOrSlug || "TENANT").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return `MEDO-VIP-ACTIVATE-${clean}-2026`;
 }
 

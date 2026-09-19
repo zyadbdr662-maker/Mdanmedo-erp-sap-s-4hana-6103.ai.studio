@@ -763,33 +763,35 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
     return (
       <SaaSRegistrationPortal
         onCancel={() => setShowSaaSOnboarding(false)}
-        onRegistrationSuccess={(url, formData) => {
-          // Initialize a clean, empty state for the new tenant
+        onRegistrationSuccess={(newTenant: any) => {
+          // Initialize clean empty state for new tenant
           initializeEmptyTenantState();
           
-          // Ensure a fresh 48-hour trial is started for this newly registered enterprise
-          trialService.initialize48HourTrial(formData?.companyName || "المنشأة السحابية الجديدة", formData?.email || "admin@cloud.com");
-          trialOperationsService.resetOperations("client-saas");
+          const companyName = newTenant?.name || newTenant?.companyNameAr || "المنشأة الجديدة";
+          const adminEmail = newTenant?.assignedAdminEmail || newTenant?.roles?.MANAGER?.email || "admin@medo-erp.cloud";
+          
+          trialService.initialize48HourTrial(companyName, adminEmail);
+          trialOperationsService.resetOperations(newTenant?.id || "client-saas");
           
           setTimeout(() => {
             const user: ERPUser = {
-              id: "USR-SAAS-001",
-              name: `${formData?.firstName || 'مدير'} ${formData?.lastName || 'المنظومة'}`,
-              email: formData?.email,
-              phone: formData?.phone,
+              id: `USR-${newTenant?.id || "SAAS-001"}`,
+              name: `مدير ${companyName}`,
+              email: adminEmail,
+              phone: newTenant?.phone || "+967 773 586 047",
               role: "SYSTEM_ADMIN",
               branch: "الفرع الرئيسي",
               branchId: "BR-SANAA-MAIN",
-              avatar: formData?.firstName ? `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.firstName)}&background=0D8ABC&color=fff` : "SA",
+              avatar: "BM",
               status: "ACTIVE",
-              plan: "PRO"
+              plan: "TRIAL"
             };
             onLoginSuccess(user, "BR-SANAA-MAIN", {
-              clientId: "CLIENT-SAAS",
-              clientName: formData?.companyName || "النسخة التجريبية (SaaS)",
+              clientId: newTenant?.id || "CLIENT-SAAS",
+              clientName: companyName,
               warehouseId: "WH-01",
             });
-          }, 1000);
+          }, 800);
         }}
       />
     );
@@ -878,11 +880,11 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
           <button
             onClick={() => setShowSaaSOnboarding(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#f1c40f] to-[#d4af37] text-[#0a2540] transition font-black shadow-lg shadow-[0_4px_14px_rgba(212,175,55,0.3)] cursor-pointer hover:scale-[1.02] border border-[#b8860b] text-[11px] sm:text-xs whitespace-nowrap"
-            title="تسجيل شركة جديدة والحصول على نسخة تجريبية"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white transition font-black shadow-lg shadow-emerald-500/20 cursor-pointer hover:scale-[1.02] border border-emerald-400/40 text-[11px] sm:text-xs whitespace-nowrap"
+            title="تسجيل منشأة جديدة ذاتياً والحصول على الروابط الخمسة الفورية"
           >
-            <Globe2 className="w-4 h-4 text-[#0a2540]" />
-            <span>تجربة 30 يوم مجاناً</span>
+            <Building2 className="w-4 h-4 text-white" />
+            <span>تسجيل منشأة جديدة</span>
           </button>
 
           <div className="flex items-center border border-blue-900/80 rounded-xl overflow-hidden bg-[#06182a]">
