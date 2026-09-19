@@ -96,6 +96,12 @@ export const MarketingLayout = () => {
                 <Link to="/blog" className="hover:text-[#d4af37] transition">المدونة</Link>
                 <Link to="/privacy" className="hover:text-[#d4af37] transition">سياسة الخصوصية</Link>
                 <Link to="/terms" className="hover:text-[#d4af37] transition">الشروط والأحكام</Link>
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent("open_patent_certificate"))}
+                  className="hover:text-[#d4af37] transition text-right cursor-pointer"
+                >
+                  شهادة الابتكار
+                </button>
               </div>
             </div>
           </div>

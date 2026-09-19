@@ -1702,6 +1702,15 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
               <span>•</span>
               <button
                 type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("open_patent_certificate"))}
+                className="hover:text-[#d4af37] transition flex items-center gap-1 cursor-pointer font-bold"
+              >
+                <Award className="w-3.5 h-3.5 text-[#d4af37]" />
+                <span>شهادة الابتكار</span>
+              </button>
+              <span>•</span>
+              <button
+                type="button"
                 onClick={() => openLegalPolicy("COOKIES")}
                 className="hover:text-amber-300 transition flex items-center gap-1 cursor-pointer"
               >

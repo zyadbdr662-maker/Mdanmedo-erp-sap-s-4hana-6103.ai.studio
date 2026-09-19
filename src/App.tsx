@@ -40,6 +40,7 @@ import { ExecutiveMasterSystemSuite } from "./components/ExecutiveMasterSystemSu
 import { CentralArchiveSection } from "./components/CentralArchiveSection";
 import { SystemFooter } from "./components/SystemFooter";
 import { LegalDocumentsPage } from "./components/LegalDocumentsPage";
+import { PatentCertificateView } from "./components/PatentCertificateView";
 import { TrialLockModal } from "./components/TrialLockModal";
 import { TrialManagerDashboardModal } from "./components/TrialManagerDashboardModal";
 import { ThemeManager } from "./services/themeManager";
@@ -160,6 +161,7 @@ export default function App() {
   const [globalLegalPolicy, setGlobalLegalPolicy] = useState<LegalPolicyType>("TRIAL_TERMS");
   const [legalInitialDoc, setLegalInitialDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES">("TERMS");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [showPatent, setShowPatent] = useState(false);
   const [isSelfRegistrationOpen, setIsSelfRegistrationOpen] = useState(false);
   const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState(false);
 
@@ -170,11 +172,16 @@ export default function App() {
     const handleOpenUniversalSearch = () => {
       setIsUniversalSearchOpen(true);
     };
+    const handleOpenPatent = () => {
+      setShowPatent(true);
+    };
     window.addEventListener("open_self_registration", handleOpenSelfReg);
     window.addEventListener("open_universal_search", handleOpenUniversalSearch);
+    window.addEventListener("open_patent_certificate", handleOpenPatent);
     return () => {
       window.removeEventListener("open_self_registration", handleOpenSelfReg);
       window.removeEventListener("open_universal_search", handleOpenUniversalSearch);
+      window.removeEventListener("open_patent_certificate", handleOpenPatent);
     };
   }, []);
   const [isSystemUpdateOpen, setIsSystemUpdateOpen] = useState(false);
@@ -2160,6 +2167,16 @@ export default function App() {
             <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             <span>جاري التحقق من أمان الجلسة والبيئة السحابية...</span>
           </div>
+        </div>
+      ) : showPatent ? (
+        <div className="relative w-full h-full">
+           <PatentCertificateView />
+           <button 
+             onClick={() => setShowPatent(false)}
+             className="fixed top-6 left-6 z-[100] bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-all shadow-xl"
+           >
+             ✕
+           </button>
         </div>
       ) : !isAuthenticated ? (
         <CorporateWebsite

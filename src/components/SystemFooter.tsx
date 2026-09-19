@@ -88,6 +88,12 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
             <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📰 المدونة</button>
             <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">💰 الأسعار</button>
             <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📞 اتصل بنا</button>
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent("open_patent_certificate"))}
+              className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center font-bold"
+            >
+              🏅 شهادة الابتكار
+            </button>
           </div>
         </div>
 
