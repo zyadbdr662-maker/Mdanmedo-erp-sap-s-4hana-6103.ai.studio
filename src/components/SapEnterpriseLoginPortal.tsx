@@ -17,6 +17,8 @@ import { LegalPoliciesModal, LegalPolicyType } from "./LegalPoliciesModal";
 import { SapComplianceReportModal } from "./SapComplianceReportModal";
 import { initializeEmptyTenantState } from "../services/erpStorage";
 import { SaaSRegistrationPortal } from "./SaaSRegistrationPortal";
+import { SapUniversalSearchModal } from "./SapUniversalSearchModal";
+import { PreGeneratedTenant } from "../data/preGeneratedTenants";
 import { soundService } from "../services/notificationSoundService";
 import { trialService } from "../services/trialService";
 import { trialOperationsService } from "../services/trialOperationsService";
@@ -58,6 +60,7 @@ import {
   Bot,
   Cookie,
   RotateCcw,
+  Search,
 } from "lucide-react";
 import { ERPUser } from "../types/erp";
 import { BzmtLogo } from "./BzmtLogo";
@@ -387,6 +390,38 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
   const [selectedLegalPolicy, setSelectedLegalPolicy] = useState<LegalPolicyType>("TERMS");
   const [complianceReportOpen, setComplianceReportOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Handle selecting a company from search
+  const handleSelectCompanyFromSearch = (companyId: string, companyName: string) => {
+    TenantIsolationService.setActiveTenant(companyId);
+    setSelectedClientId(companyId);
+    setMessage(`تم تحديد المنشأة: ${companyName} كبيئة عمل نشطة.`);
+  };
+
+  // Handle fast login for a tenant manager
+  const handleTenantManagerLogin = (tenant: PreGeneratedTenant) => {
+    const roleCred = tenant.roles?.MANAGER;
+    TenantIsolationService.setActiveTenant(tenant.id);
+    setSelectedClientId(tenant.id);
+
+    const user: ERPUser = {
+      id: `MGR-${tenant.id}`,
+      name: `${tenant.assignedAdminName || tenant.name} (المدير العام)`,
+      role: "SYSTEM_ADMIN",
+      branch: `${tenant.city} - المركز الرئيسي`,
+      branchId: "BR-SANAA-MAIN",
+      avatar: "MG",
+      status: "ACTIVE",
+      email: roleCred?.email || tenant.assignedAdminEmail || "admin@medo-cloud.ye",
+      tenantId: tenant.id,
+    };
+
+    onLoginSuccess(user, "BR-SANAA-MAIN", {
+      clientId: tenant.id,
+      clientName: tenant.name,
+      warehouseId: "WH-01",
+    });
+  };
 
   // Current selected client object
   const currentClient = allClients.find((c) => c.id === selectedClientId) || allClients[0];
@@ -784,7 +819,8 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
               branchId: "BR-SANAA-MAIN",
               avatar: "BM",
               status: "ACTIVE",
-              plan: "TRIAL"
+              plan: "TRIAL",
+              tenantId: newTenant?.id,
             };
             onLoginSuccess(user, "BR-SANAA-MAIN", {
               clientId: newTenant?.id || "CLIENT-SAAS",
@@ -856,6 +892,8 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </button>
           )}
 
+          {/* Search for companies and names button has been moved to SecretAdminGatewayModal (Sovereign Higher Administration) */}
+
           <button
             id="sap-portal-compliance-btn"
             onClick={() => setComplianceReportOpen(true)}
@@ -878,14 +916,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
             </button>
           )}
 
-          <button
-            onClick={() => setShowSaaSOnboarding(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white transition font-black shadow-lg shadow-emerald-500/20 cursor-pointer hover:scale-[1.02] border border-emerald-400/40 text-[11px] sm:text-xs whitespace-nowrap"
-            title="تسجيل منشأة جديدة ذاتياً والحصول على الروابط الخمسة الفورية"
-          >
-            <Building2 className="w-4 h-4 text-white" />
-            <span>تسجيل منشأة جديدة</span>
-          </button>
+          {/* SaaS onboarding registration button has been moved to SecretAdminGatewayModal (Sovereign Higher Administration) */}
 
           <div className="flex items-center border border-blue-900/80 rounded-xl overflow-hidden bg-[#06182a]">
             <button
@@ -971,12 +1002,12 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
 
             {/* Client (Mandant) Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>الشركة / العميل (Client):</span>
-                <span className="text-[10px] text-[#d4af37] font-mono bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-800">
-                  {currentClient.code}
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-[#d4af37]" />
+                  <span>الشركة / العميل (Client):</span>
                 </span>
-              </label>
+              </div>
               <div className="relative">
                 <select
                   id="sap-client-selector"
@@ -991,6 +1022,9 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
                   ))}
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
+                <span>الكود: <strong className="text-amber-300 font-mono">{currentClient.code}</strong></span>
               </div>
               <p className="text-xs text-slate-300 bg-[#070d18]/70 p-3 rounded-xl border border-slate-800 leading-relaxed font-normal">
                 {currentClient.description}
@@ -2044,6 +2078,7 @@ export const SapEnterpriseLoginPortal: React.FC<SapEnterpriseLoginPortalProps> =
       )}
 
       {/* MODALS */}
+
       <LegalPoliciesModal
         isOpen={legalModalOpen}
         initialPolicy={selectedLegalPolicy}

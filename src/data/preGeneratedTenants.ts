@@ -449,11 +449,11 @@ const REGISTERED_TENANTS_KEY = "medo_erp_registered_tenants_v1";
  * Retrieves all registered and pre-generated tenants combined
  */
 export function getStored200Tenants(): PreGeneratedTenant[] {
-  if (typeof window === "undefined") return PRE_GENERATED_200_TENANTS;
+  if (typeof window === "undefined") return preGeneratedTenants;
   try {
     const raw = localStorage.getItem(TENANTS_STORAGE_KEY);
     const selfRegisteredRaw = localStorage.getItem(REGISTERED_TENANTS_KEY);
-    let baseList = PRE_GENERATED_200_TENANTS;
+    let baseList = preGeneratedTenants;
     
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -476,7 +476,7 @@ export function getStored200Tenants(): PreGeneratedTenant[] {
   } catch (e) {
     console.error("Failed to load stored tenants", e);
   }
-  return PRE_GENERATED_200_TENANTS;
+  return preGeneratedTenants;
 }
 
 /**

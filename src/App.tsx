@@ -30,6 +30,7 @@ import { ThemeStudioView } from "./components/ThemeStudioView";
 import { EnterpriseCollaborationView } from "./components/EnterpriseCollaborationView";
 import { IntegratedErpSuiteView } from "./components/IntegratedErpSuiteView";
 import { SaaSPlatformView } from "./components/SaaSPlatformView";
+import { SaaSRegistrationPortal } from "./components/SaaSRegistrationPortal";
 import { ClientExchangeView } from "./components/ClientExchangeView";
 import { TrustCenterView } from "./components/TrustCenterView";
 import { MedoErpBrochureView } from "./components/MedoErpBrochureView";
@@ -61,6 +62,7 @@ import { SapOnboardingModal } from "./components/SapOnboardingModal";
 import { SystemUpdateModal } from "./components/SystemUpdateModal";
 import { LegalPoliciesModal, LegalPolicyType } from "./components/LegalPoliciesModal";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
+import { SapUniversalSearchModal } from "./components/SapUniversalSearchModal";
 import { soundService } from "./services/notificationSoundService";
 import { trialService, TrialState } from "./services/trialService";
 import { trialOperationsService } from "./services/trialOperationsService";
@@ -123,6 +125,7 @@ import {
 } from "./services/erpStorage";
 import { NotificationSoundService } from "./services/notificationSoundService";
 import { TenantIsolationService } from "./services/tenantIsolationService";
+import { findTenantById } from "./data/preGeneratedTenants";
 
 const repository: ERPRepository = new PostgresRepository();
 
@@ -156,6 +159,23 @@ export default function App() {
   const [globalLegalPolicy, setGlobalLegalPolicy] = useState<LegalPolicyType>("TRIAL_TERMS");
   const [legalInitialDoc, setLegalInitialDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES">("TERMS");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isSelfRegistrationOpen, setIsSelfRegistrationOpen] = useState(false);
+  const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenSelfReg = () => {
+      setIsSelfRegistrationOpen(true);
+    };
+    const handleOpenUniversalSearch = () => {
+      setIsUniversalSearchOpen(true);
+    };
+    window.addEventListener("open_self_registration", handleOpenSelfReg);
+    window.addEventListener("open_universal_search", handleOpenUniversalSearch);
+    return () => {
+      window.removeEventListener("open_self_registration", handleOpenSelfReg);
+      window.removeEventListener("open_universal_search", handleOpenUniversalSearch);
+    };
+  }, []);
   const [isSystemUpdateOpen, setIsSystemUpdateOpen] = useState(false);
   const [isRefreshingData, setIsRefreshingData] = useState(false);
   const [refreshSuccessMessage, setRefreshSuccessMessage] = useState<string | null>(null);
@@ -163,38 +183,56 @@ export default function App() {
   const [appVersion, setAppVersion] = useState<string>("V1.2.4");
 
   /**
-   * [VIP TENANT LOADER]
-   * Detects tenant change from URL, clears relevant cache, and updates company branding dynamically
+   * [VIP TENANT LOADER & STRICT SESSION ISOLATION]
+   * Detects tenant change from URL, purges conflicting tenant cache, and synchronizes company branding & permissions.
    */
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const tenantId = searchParams.get('tenant') || searchParams.get('client');
+    const tenantParam = searchParams.get('tenant') || searchParams.get('client') || searchParams.get('company');
     
-    if (tenantId) {
-      const activeTenant = TenantIsolationService.resolveActiveTenant();
-      const details = TenantIsolationService.getActiveTenantDetails();
+    if (tenantParam) {
+      const storedSlug = localStorage.getItem("medo_active_tenant_slug");
+      const matched = findTenantById(tenantParam);
+      const targetSlug = matched ? matched.id : tenantParam.toLowerCase().trim();
       
-      // Update global state immediately if already loaded
-      if (erpState) {
-        setErpState(prev => prev ? ({
-          ...prev,
-          systemSettings: {
-            ...prev.systemSettings,
-            companyNameAr: details.nameAr,
-            companyNameEn: details.nameEn,
-            commercialRegisterNumber: details.commercialReg,
-            taxNumber: details.taxNumber,
-            companyPhone: details.phone,
-            companyAddress: details.address,
-          }
-        }) : null);
-      }
-      
-      // Clear specific cache keys requested by user to force refresh
+      // Always clear stale company / header caches on link opening
       localStorage.removeItem('tenantName');
       localStorage.removeItem('companyName');
+      localStorage.removeItem('mdo_print_header_ar');
+      localStorage.removeItem('mdo_print_header_en');
+      localStorage.removeItem('mdo_print_phone');
+      localStorage.removeItem('mdo_print_tax_reg');
+
+      if (storedSlug && storedSlug !== targetSlug) {
+        console.log(`[App] Tenant switch detected: from ${storedSlug} to ${targetSlug}. Resetting session & storage...`);
+        localStorage.removeItem('currentTenant');
+        localStorage.removeItem('currentSession');
+        localStorage.removeItem('medo_erp_state_v1');
+        localStorage.removeItem('medo_erp_current_user_v1');
+        try { sessionStorage.clear(); } catch(e) {}
+      }
+
+      TenantIsolationService.setActiveTenant(targetSlug);
+      if (matched) {
+        localStorage.setItem('currentTenant', JSON.stringify(matched));
+      }
+      const details = TenantIsolationService.getActiveTenantDetails(targetSlug);
+      
+      // Update global state immediately
+      setErpState(prev => prev ? ({
+        ...prev,
+        systemSettings: {
+          ...prev.systemSettings,
+          companyNameAr: details.nameAr,
+          companyNameEn: details.nameEn,
+          commercialRegister: details.commercialReg,
+          taxNumber: details.taxNumber,
+          phone: details.phone,
+          address: details.address,
+        }
+      }) : null);
     }
-  }, [window.location.search]);
+  }, []);
 
   // Sovereign 3-Layer Admin Security Engine States & Dedicated License Activation
   const [isAdminSessionUnlocked, setIsAdminSessionUnlocked] = useState<boolean>(() => {
@@ -281,10 +319,10 @@ export default function App() {
         ...prev.systemSettings,
         companyNameAr: activeTenantDetails.nameAr,
         companyNameEn: activeTenantDetails.nameEn,
-        commercialRegisterNumber: activeTenantDetails.commercialReg,
+        commercialRegister: activeTenantDetails.commercialReg,
         taxNumber: activeTenantDetails.taxNumber,
-        companyPhone: activeTenantDetails.phone,
-        companyAddress: activeTenantDetails.address,
+        phone: activeTenantDetails.phone,
+        address: activeTenantDetails.address,
       },
     }));
 
@@ -539,11 +577,26 @@ export default function App() {
 
   const applyUrlEmployeeToState = (loaded: any): any => {
     if (!loaded) return loaded;
+
+    const activeTenantDetails = TenantIsolationService.getActiveTenantDetails();
+    const stateWithTenantInfo = {
+      ...loaded,
+      systemSettings: {
+        ...(loaded?.systemSettings || {}),
+        companyNameAr: activeTenantDetails.nameAr,
+        companyNameEn: activeTenantDetails.nameEn,
+        commercialRegister: activeTenantDetails.commercialReg,
+        taxNumber: activeTenantDetails.taxNumber,
+        phone: activeTenantDetails.phone,
+        address: activeTenantDetails.address,
+      },
+    };
+
     const empFromUrl = TenantIsolationService.parseEmployeeFromUrl();
-    if (!empFromUrl) return loaded;
+    if (!empFromUrl) return stateWithTenantInfo;
 
     const isTokenValid = TenantIsolationService.validateTokenForRole(empFromUrl.token, empFromUrl.role);
-    if (!isTokenValid) return loaded;
+    if (!isTokenValid) return stateWithTenantInfo;
 
     let mappedRole: "SYSTEM_ADMIN" | "ACCOUNTANT" | "DATA_ENTRY" | "AUDITOR" | "CASHIER" = "CASHIER";
 
@@ -569,7 +622,7 @@ export default function App() {
     };
 
     return {
-      ...loaded,
+      ...stateWithTenantInfo,
       currentUser: employeeUser,
     };
   };
@@ -1675,7 +1728,7 @@ export default function App() {
             id: `l-deb-${asset.id}-${Date.now()}-${idx}`,
             accountId: asset.depExpenseGlAccount || "5204",
             accountCode: asset.depExpenseGlAccount || "5204",
-            accountNameAr: `مصروف إهلاك: ${asset.nameAr || asset.name} [${asset.costCenterName || "مجموعة بن زياد"}]`,
+            accountNameAr: `مصروف إهلاك: ${asset.nameAr || asset.name} [${asset.costCenterName || (erpState?.systemSettings?.companyNameAr || TenantIsolationService.getActiveTenantDetails()?.nameAr || "المركز الرئيسي")}]`,
             debit: depAmt,
             credit: 0,
             currency: asset.currency || "YER_SANAA",
@@ -1709,7 +1762,7 @@ export default function App() {
       date: runDate,
       period: periodStr,
       type: "DEPRECIATION",
-      description: `قيد إهلاك الأصول الثابتة ${periodLabel} الدوري لمجموعة بن زياد وفق المعيار IAS 16`,
+      description: `قيد إهلاك الأصول الثابتة ${periodLabel} الدوري لـ (${erpState?.systemSettings?.companyNameAr || TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}) وفق المعيار IAS 16`,
       status: "POSTED",
       currency: "YER_SANAA",
       totalDebit: totalDepAmount,
@@ -2319,7 +2372,7 @@ export default function App() {
               const opsCount = clientTracking ? clientTracking.operationsCount : 0;
               const isOpsLocked = clientTracking ? opsCount >= 50 : false;
               const tenantMeta = isTrialClient ? TenantIsolationService.getTrialTenantDetails(activeTenant) : null;
-              const companyName = tenantMeta?.nameAr || erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية";
+              const companyName = tenantMeta?.nameAr || erpState.systemSettings?.companyNameAr || TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة";
 
               return (
                 <div className={`bg-gradient-to-r ${isOpsLocked || isExpired ? "from-rose-950 via-slate-900 to-rose-950 border-rose-600/50" : "from-[#170e03] via-slate-900 to-[#170e03] border-amber-600/50"} border-b px-3 sm:px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 text-amber-200 shadow-md`}>
@@ -2474,7 +2527,7 @@ export default function App() {
                     });
                   }}
                   currentUser={erpState.currentUser}
-                  companyName={erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية"}
+                  companyName={erpState.systemSettings?.companyNameAr || TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}
                   isDarkMode={isDarkMode}
                 />
               )}
@@ -3182,7 +3235,7 @@ export default function App() {
             isOpen={isTrialLockModalOpen}
             onClose={() => setIsTrialLockModalOpen(false)}
             currentUser={erpState.currentUser}
-            currentCompany={erpState.systemSettings?.companyNameAr || "شركة البدر للأدوية والمستلزمات الطبية"}
+            currentCompany={erpState.systemSettings?.companyNameAr || TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}
             onActivateWithLicenseKey={(key) => {
               setErpState((prev) =>
                 prev
@@ -3225,6 +3278,18 @@ export default function App() {
             }}
           />
 
+          {/* Self-Service Enterprise Registration Portal Overlay */}
+          {isSelfRegistrationOpen && (
+            <SaaSRegistrationPortal
+              onCancel={() => setIsSelfRegistrationOpen(false)}
+              onRegistrationSuccess={(newTenant) => {
+                setIsSelfRegistrationOpen(false);
+                const targetDomain = newTenant?.masterDomain || `/?tenant=${newTenant?.id || newTenant?.slug}`;
+                window.location.href = targetDomain;
+              }}
+            />
+          )}
+
           {/* Sovereign 3-Layer Admin Gateway Gate Modal (Badr Ayed Ziad Exclusive) */}
           <SecretAdminGatewayModal
             isOpen={isSecretGatewayOpen}
@@ -3245,6 +3310,21 @@ export default function App() {
             onSwitchRole={handleSwitchRole}
             hasOriginalManagerSession={hasOriginalManagerSession}
             companyName={erpState.systemSettings?.companyNameAr}
+          />
+
+          {/* Global Universal Search Engine Modal (200+ Tenants & Users Index) */}
+          <SapUniversalSearchModal
+            isOpen={isUniversalSearchOpen}
+            onClose={() => setIsUniversalSearchOpen(false)}
+            onSelectCompany={(companyId, companyName) => {
+              setIsUniversalSearchOpen(false);
+              window.location.search = `?tenant=${companyId}`;
+            }}
+            onSelectUserDirectLogin={(roleItem) => {
+              setIsUniversalSearchOpen(false);
+              const targetRole = roleItem.role.toLowerCase();
+              window.location.search = `?role=${targetRole}&emp=${encodeURIComponent(roleItem.roleTitleAr || roleItem.name)}`;
+            }}
           />
 
           {/* Cookie Consent Banner */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 import {
   Palette,
   Type,
@@ -1692,7 +1693,7 @@ export const ThemeStudioView: React.FC<ThemeStudioViewProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-bold" style={{ color: currentTheme.colors.textColor }}>
-                        مجموعة بن زياد التجارية
+                        {TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}
                       </div>
                       <div className="text-[10px]" style={{ color: currentTheme.colors.secondaryTextColor }}>
                         نظام MeDo المحاسبي

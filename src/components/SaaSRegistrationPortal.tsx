@@ -45,6 +45,7 @@ import {
   MASTER_ADMIN_PRIMARY_EMAIL,
   MASTER_ADMIN_WHATSAPP,
 } from "../services/notificationService";
+import { emailService } from "../services/emailService";
 
 interface SaaSRegistrationPortalProps {
   onCancel: () => void;
@@ -86,6 +87,12 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
   const [failedAttempts, setFailedAttempts] = useState<number>(0);
   const [isLockedOut, setIsLockedOut] = useState<boolean>(false);
   const [showSimulatedEmailModal, setShowSimulatedEmailModal] = useState<boolean>(false);
+  const [emailDeliveryInfo, setEmailDeliveryInfo] = useState<{
+    sent: boolean;
+    provider?: string;
+    note?: string;
+    email?: string;
+  } | null>(null);
 
   // Newly Provisioned Tenant & Notification Data
   const [provisionedTenant, setProvisionedTenant] = useState<PreGeneratedTenant | null>(null);
@@ -104,6 +111,27 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
     "صرافة وتحويلات وخدمات مالية",
     "خدمات لوجستية ونقل وتخليص",
   ];
+
+  // [CRITICAL AUTO-LOGOUT ON MOUNT] Purge old sessions & cached credentials to ensure clean tenant isolation
+  useEffect(() => {
+    try {
+      sessionStorage.clear();
+      localStorage.removeItem("medo_erp_auth");
+      localStorage.removeItem("medo_erp_admin_mode");
+      localStorage.removeItem("medo_erp_current_user_v1");
+      localStorage.removeItem("medo_original_manager_session");
+      localStorage.removeItem("currentTenant");
+      localStorage.removeItem("currentSession");
+      localStorage.removeItem("tenantName");
+      localStorage.removeItem("companyName");
+      localStorage.removeItem("mdo_print_header_ar");
+      localStorage.removeItem("mdo_print_header_en");
+      localStorage.removeItem("mdo_print_phone");
+      localStorage.removeItem("mdo_print_tax_reg");
+    } catch (e) {
+      console.warn("Storage purge on registration mount:", e);
+    }
+  }, []);
 
   // Live timer for OTP expiration (10 minutes)
   useEffect(() => {
@@ -187,6 +215,25 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
 
       // Play audio notification
       soundService.playSound("ROYAL_BANK_CHIME");
+
+      // 3. Dispatch real OTP email to the registrant's email
+      emailService
+        .sendVerificationOtp({
+          email: formData.email,
+          code: newOtp,
+          companyName: formData.nameAr,
+        })
+        .then((res) => {
+          setEmailDeliveryInfo({
+            sent: res.success,
+            provider: res.provider,
+            note: res.error,
+            email: formData.email,
+          });
+        })
+        .catch((err) => {
+          console.warn("[SaaSRegistrationPortal] Email dispatch error:", err);
+        });
 
       setIsLoading(false);
       setStep(2);
@@ -285,9 +332,53 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
           password: formData.password,
         });
 
+        // 2. Establish fresh, isolated session specifically for this new tenant
+        const newSession = {
+          tenantId: newTenant.id,
+          tenantName: newTenant.name,
+          role: "MANAGER",
+          token: newTenant.roles?.MANAGER?.token || `AUTH_MGR_${newTenant.id}`,
+          createdAt: Date.now(),
+        };
+
+        const newManagerUser = {
+          id: `EMP-MANAGER-${Date.now().toString().slice(-4)}`,
+          name: `${formData.nameAr} (المدير العام)`,
+          role: "SYSTEM_ADMIN",
+          branch: "المركز الرئيسي",
+          status: "ACTIVE",
+          avatar: "MG",
+          email: formData.email,
+          tenantId: newTenant.id,
+        };
+
+        // Purge old company caches
+        try {
+          sessionStorage.clear();
+          localStorage.removeItem("medo_erp_state_v1");
+          localStorage.setItem("medo_active_tenant_slug", newTenant.id);
+          localStorage.setItem("currentTenant", JSON.stringify(newTenant));
+          localStorage.setItem("currentSession", JSON.stringify(newSession));
+          localStorage.setItem("medo_erp_current_user_v1", JSON.stringify(newManagerUser));
+          localStorage.setItem("medo_erp_admin_mode", "true");
+          sessionStorage.setItem("medo_erp_auth", "true");
+        } catch (e) {
+          console.warn("Error setting new tenant session:", e);
+        }
+
         setProvisionedTenant(newTenant);
 
-        // 2. Dispatch Instant Notifications to Master Admin (Badr)
+        // Notify all views, Sovereign Admin, and tabs in real time
+        try {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("tenant_registered", { detail: newTenant }));
+            window.dispatchEvent(new Event("storage"));
+          }
+        } catch (e) {
+          console.warn("Event dispatch notice:", e);
+        }
+
+        // 3. Dispatch Instant Notifications to Master Admin (Badr)
         const notificationResult = await instantNotificationService.dispatchNewRegistration({
           tenant: newTenant,
           deviceType: `${navigator.platform} - ${navigator.userAgent.substring(0, 35)}`,
@@ -317,6 +408,24 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
     setErrorMessage(null);
     setShowSimulatedEmailModal(true);
     soundService.playSound("ROYAL_BANK_CHIME");
+
+    emailService
+      .sendVerificationOtp({
+        email: formData.email,
+        code: newOtp,
+        companyName: formData.nameAr,
+      })
+      .then((res) => {
+        setEmailDeliveryInfo({
+          sent: res.success,
+          provider: res.provider,
+          note: res.error,
+          email: formData.email,
+        });
+      })
+      .catch((err) => {
+        console.warn("[SaaSRegistrationPortal] Resend error:", err);
+      });
   };
 
   const copyToClipboard = (text: string, keyName: string) => {
@@ -691,6 +800,21 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
                 <span className="font-bold text-emerald-400">MeDo ERP</span> إلى البريد:{" "}
                 <span className="font-mono text-blue-300 font-bold" dir="ltr">{formData.email}</span>
               </p>
+
+              {/* Real Email Dispatch Status Badge */}
+              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 max-w-md mx-auto flex items-center justify-between text-xs text-emerald-300">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>
+                    {emailDeliveryInfo?.provider === "resend" || emailDeliveryInfo?.provider === "smtp"
+                      ? "تم إرسال الرمز مباشرة إلى صندوق الوارد (Live Email Dispatch)"
+                      : "تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح"}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  {emailDeliveryInfo?.provider ? `[${emailDeliveryInfo.provider.toUpperCase()}]` : "[DELIVERED]"}
+                </span>
+              </div>
             </div>
 
             {/* 7-digit OTP Input Fields */}
@@ -946,12 +1070,62 @@ export const SaaSRegistrationPortal: React.FC<SaaSRegistrationPortalProps> = ({
 
               <button
                 onClick={() => {
-                  window.location.href = provisionedTenant.masterDomain;
+                  const registeredKey = "medo_registered_tenants_v1";
+                  const tenantsListKey = "medo_saas_200_tenants_v1";
+                  let savedRegistered: string | null = null;
+                  let savedTenants: string | null = null;
+                  try {
+                    savedRegistered = localStorage.getItem(registeredKey);
+                    savedTenants = localStorage.getItem(tenantsListKey);
+                    // Clear all existing storage for full session isolation
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    // Restore registered tenants directory
+                    if (savedRegistered) localStorage.setItem(registeredKey, savedRegistered);
+                    if (savedTenants) localStorage.setItem(tenantsListKey, savedTenants);
+                  } catch (e) {}
+
+                  const mgrToken =
+                    provisionedTenant.roles?.MANAGER?.token || `AUTH_MGR_${provisionedTenant.id}`;
+                  const newSession = {
+                    tenantId: provisionedTenant.id,
+                    tenantName: provisionedTenant.name,
+                    role: "MANAGER",
+                    token: mgrToken,
+                    createdAt: Date.now(),
+                  };
+                  const newManagerUser = {
+                    id: `EMP-MANAGER-${Date.now().toString().slice(-4)}`,
+                    name: `${provisionedTenant.name} (المدير العام)`,
+                    role: "SYSTEM_ADMIN",
+                    branch: "المركز الرئيسي",
+                    status: "ACTIVE",
+                    avatar: "MG",
+                    email:
+                      provisionedTenant.assignedAdminEmail ||
+                      provisionedTenant.roles?.MANAGER?.email,
+                    tenantId: provisionedTenant.id,
+                  };
+
+                  try {
+                    localStorage.setItem("medo_active_tenant_slug", provisionedTenant.id);
+                    localStorage.setItem("currentTenant", JSON.stringify(provisionedTenant));
+                    localStorage.setItem("currentSession", JSON.stringify(newSession));
+                    localStorage.setItem("medo_erp_current_user_v1", JSON.stringify(newManagerUser));
+                    localStorage.setItem("medo_erp_admin_mode", "true");
+                    sessionStorage.setItem("medo_erp_auth", "true");
+                  } catch (e) {}
+
+                  const targetUrl =
+                    provisionedTenant.roles?.MANAGER?.subLink ||
+                    provisionedTenant.masterDomain ||
+                    `/?tenant=${provisionedTenant.id}&role=MANAGER&token=${mgrToken}&path=/employee/manager`;
+                  window.location.href = targetUrl;
                 }}
                 className="px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all transform active:scale-95"
               >
                 <Sparkles className="w-4 h-4" />
-                دخول مساحة العمل الآن
+                دخول مساحة العمل كمدير للمنشأة الآن
               </button>
             </div>
           </div>

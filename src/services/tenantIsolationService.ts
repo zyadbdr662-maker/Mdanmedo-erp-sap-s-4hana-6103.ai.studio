@@ -714,54 +714,60 @@ export class TenantIsolationService {
       const clientParam = urlParams.get("tenant") || urlParams.get("client") || urlParams.get("company");
       if (clientParam) {
         const cleanSlug = clientParam.toLowerCase().trim();
-
-        // Check if there is a match in preGeneratedTenants / VIP
         const matched = findTenantById(cleanSlug);
         const resolvedSlug = matched ? matched.id : cleanSlug;
 
-        // [CRITICAL CACHE CLEARING] - When opening a new link with tenant query, purge stale header/company cache
-        const storedTenant = localStorage.getItem(this.ACTIVE_TENANT_KEY);
-        if (storedTenant !== resolvedSlug) {
-          console.log(`[TenantIsolation] Tenant switched to ${resolvedSlug}. Resetting tenant cache...`);
-          localStorage.removeItem('tenantName');
-          localStorage.removeItem('companyName');
-          localStorage.removeItem('currentTenant');
-          localStorage.removeItem('mdo_print_header_ar');
-          localStorage.removeItem('mdo_print_header_en');
-          localStorage.removeItem('mdo_print_phone');
-          localStorage.removeItem('mdo_print_tax_reg');
-          localStorage.removeItem('medo_erp_state_v1');
+        // [Requirement #3] Always clear localStorage and sessionStorage cache when opening a link with tenant query
+        try {
+          localStorage.clear();
           sessionStorage.clear();
-        }
+        } catch (e) {}
+
+        this.setActiveTenant(resolvedSlug);
 
         if (matched) {
-          this.setActiveTenant(matched.id);
+          const tenantName = matched.name || matched.companyNameAr;
           localStorage.setItem('currentTenant', JSON.stringify(matched));
+          localStorage.setItem('companyName', tenantName);
+          localStorage.setItem('tenantName', tenantName);
+          localStorage.setItem('mdo_print_header_ar', tenantName);
+          localStorage.setItem('mdo_print_header_en', matched.nameEn || matched.companyNameEn || matched.name);
+          localStorage.setItem('mdo_print_phone', matched.phone || matched.assignedAdminPhone || "+967 773 586 047");
+          localStorage.setItem('mdo_print_tax_reg', `س.ت: ${matched.crNumber || matched.commercialReg || "CR-2026"} | ضريبي: ${matched.taxNumber || "300748291000003"}`);
           return matched.id;
         }
 
-        this.setActiveTenant(resolvedSlug);
+        localStorage.setItem('companyName', 'شركة جديدة');
+        localStorage.setItem('tenantName', 'شركة جديدة');
         return resolvedSlug;
       }
 
-      // 2. Check current user in storage
-      const rawUser = localStorage.getItem("medo_erp_current_user_v1");
-      if (rawUser) {
+      // 2. Check currentTenant stored in localStorage
+      const storedCurrent = localStorage.getItem("currentTenant");
+      if (storedCurrent) {
         try {
-          const user = JSON.parse(rawUser);
-          if (user.email && (user.email.includes("albadr") || user.id === "ROLE-ALBADR-PHARMA")) {
-            return "albadr-pharma-2026";
-          }
-          if (user.tenantId) {
-            return user.tenantId;
+          const parsed = JSON.parse(storedCurrent);
+          if (parsed && (parsed.id || parsed.slug)) {
+            return parsed.id || parsed.slug;
           }
         } catch (e) {}
       }
 
-      // 3. Check stored tenant key
+      // 3. Check stored active tenant key
       const storedTenant = localStorage.getItem(this.ACTIVE_TENANT_KEY);
       if (storedTenant) {
         return storedTenant;
+      }
+
+      // 4. Check current user in storage
+      const rawUser = localStorage.getItem("medo_erp_current_user_v1");
+      if (rawUser) {
+        try {
+          const user = JSON.parse(rawUser);
+          if (user.tenantId) {
+            return user.tenantId;
+          }
+        } catch (e) {}
       }
     }
 
@@ -951,7 +957,17 @@ export class TenantIsolationService {
     city: string;
     industry: string;
   } {
-    const slug = tenantSlugOverride || this.resolveActiveTenant();
+    let slug = tenantSlugOverride;
+    if (!slug && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search || "");
+      const urlTenant = urlParams.get("tenant") || urlParams.get("client") || urlParams.get("company");
+      if (urlTenant) {
+        slug = urlTenant.toLowerCase().trim();
+      }
+    }
+    if (!slug) {
+      slug = this.resolveActiveTenant();
+    }
 
     // 1. Direct dynamic lookup in preGeneratedTenants (covers alzarqa, bin-ziad, albadr, and all 200 companies)
     const matched = findTenantById(slug);
@@ -1128,7 +1144,7 @@ export class TenantIsolationService {
    * Returns tenant name by ID
    */
   public static getTenantName(tenantId: string): string {
-    const tenant = preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
+    const tenant = findTenantById(tenantId) || preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
     return tenant?.name || 'شركة جديدة';
   }
 
@@ -1136,7 +1152,7 @@ export class TenantIsolationService {
    * Returns full tenant details object
    */
   public static getTenantDetails(tenantId: string): any {
-    const tenant = preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
+    const tenant = findTenantById(tenantId) || preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
     return tenant || null;
   }
 }

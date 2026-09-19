@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Share2,
 } from "lucide-react";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 import {
   ExchangeAccount,
   ExchangeTransaction,
@@ -358,7 +359,7 @@ export const ClientExchangeView: React.FC<ClientExchangeViewProps> = ({
                 الصرافة والتحويلات الداخلية للعملاء
               </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold font-mono">
-                مجموعة بن زياد
+                {TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">

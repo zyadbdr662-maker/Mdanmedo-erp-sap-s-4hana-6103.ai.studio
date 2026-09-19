@@ -1038,7 +1038,7 @@ export const CashFlowStatementGenerator: React.FC<CashFlowStatementGeneratorProp
           <div>
             <div className="doc-signature font-bold text-slate-200 print:text-black">الختم الرسمي للمؤسسة</div>
             <div className="mt-6 font-bold text-[13px] text-sap-secondary">
-              مجموعة بن زياد التجارية المتحدة
+              {TenantIsolationService.getActiveTenantDetails()?.nameAr || "المنشأة المعتمدة"}
             </div>
           </div>
         </div>

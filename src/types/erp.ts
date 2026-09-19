@@ -422,6 +422,7 @@ export interface ERPUser {
   isActive?: boolean;
   email?: string;
   phone?: string;
+  tenantId?: string;
   customPermissions?: string[];
   plan?: "TRIAL" | "PRO" | "ENTERPRISE";
 }

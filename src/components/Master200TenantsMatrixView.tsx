@@ -36,11 +36,14 @@ import {
   Edit3,
   X,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  FlaskConical,
 } from "lucide-react";
 import { soundService } from "../services/notificationSoundService";
 import { SaaSRegistrationPortal } from "./SaaSRegistrationPortal";
+import { SapUniversalSearchModal } from "./SapUniversalSearchModal";
 import { MASTER_ADMIN_WHATSAPP, MASTER_ADMIN_PRIMARY_EMAIL } from "../services/notificationService";
+import { generate10TestTenantsHelper } from "../services/tenantTestHelper";
 
 interface Master200TenantsMatrixViewProps {
   onClose?: () => void;
@@ -58,6 +61,9 @@ export const Master200TenantsMatrixView: React.FC<Master200TenantsMatrixViewProp
   const [showAddTenantModal, setShowAddTenantModal] = useState(false);
   const [editingTenant, setEditingTenant] = useState<PreGeneratedTenant | null>(null);
   const [generatedUnlockCode, setGeneratedUnlockCode] = useState<{ [tenantId: string]: string }>({});
+  const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
+  const [batchSuccessMsg, setBatchSuccessMsg] = useState<string | null>(null);
+  const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState(false);
   const itemsPerPage = 20;
 
   // Refresh tenants from storage
@@ -65,9 +71,59 @@ export const Master200TenantsMatrixView: React.FC<Master200TenantsMatrixViewProp
     setTenantsList(getStored200Tenants());
   };
 
+  const handleGenerateTestBatch = async () => {
+    try {
+      setIsGeneratingBatch(true);
+      setBatchSuccessMsg(null);
+      soundService.playSound("ROYAL_BANK_CHIME");
+      
+      const created = await generate10TestTenantsHelper();
+      refreshTenants();
+      
+      setBatchSuccessMsg(`✨ تم توليد ${created.length} منشآت تجريبية بنجاح وإرسال الإشعارات إلى ${MASTER_ADMIN_PRIMARY_EMAIL} وواتساب!`);
+      setTimeout(() => setBatchSuccessMsg(null), 8000);
+    } catch (e) {
+      console.error("Failed to generate test tenants batch", e);
+      soundService.playSound("ENCRYPTION_VIOLATION_ALARM");
+    } finally {
+      setIsGeneratingBatch(false);
+    }
+  };
+
   useEffect(() => {
     refreshTenants();
+    const handleTenantUpdate = () => {
+      refreshTenants();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleTenantUpdate);
+      window.addEventListener("tenant_registered", handleTenantUpdate);
+      window.addEventListener("tenants_updated", handleTenantUpdate);
+      window.addEventListener("sovereign_admin_refreshed", handleTenantUpdate);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleTenantUpdate);
+        window.removeEventListener("tenant_registered", handleTenantUpdate);
+        window.removeEventListener("tenants_updated", handleTenantUpdate);
+        window.removeEventListener("sovereign_admin_refreshed", handleTenantUpdate);
+      }
+    };
   }, []);
+
+  // Track IDs of dynamically registered tenants
+  const registeredTenantsIds = useMemo(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const raw = localStorage.getItem("medo_registered_tenants_v1");
+        if (raw) {
+          const list: PreGeneratedTenant[] = JSON.parse(raw);
+          return new Set(list.map((t) => t.id || t.slug));
+        }
+      }
+    } catch (e) {}
+    return new Set<string>();
+  }, [tenantsList]);
 
   // Filtered tenants list
   const filteredTenants = useMemo(() => {
@@ -81,14 +137,22 @@ export const Master200TenantsMatrixView: React.FC<Master200TenantsMatrixViewProp
         tenant.taxNumber.includes(searchQuery) ||
         tenant.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tenant.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tenant.assignedAdminEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tenant.index.toString() === searchQuery.trim();
 
-      const matchesStatus = statusFilter === "ALL" || tenant.status === statusFilter;
+      const isSelfReg = registeredTenantsIds.has(tenant.id || tenant.slug) || (tenant.index && tenant.index > 200);
+      const matchesStatus =
+        statusFilter === "ALL"
+          ? true
+          : statusFilter === "SELF_REGISTERED"
+          ? isSelfReg
+          : tenant.status === statusFilter;
+
       const matchesCity = cityFilter === "ALL" || tenant.city === cityFilter;
 
       return matchesSearch && matchesStatus && matchesCity;
     });
-  }, [tenantsList, searchQuery, statusFilter, cityFilter]);
+  }, [tenantsList, searchQuery, statusFilter, cityFilter, registeredTenantsIds]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -96,8 +160,11 @@ export const Master200TenantsMatrixView: React.FC<Master200TenantsMatrixViewProp
     const active = tenantsList.filter((t) => t.status === "ACTIVE").length;
     const trial = tenantsList.filter((t) => t.status === "TRIAL").length;
     const enterprise = tenantsList.filter((t) => t.status === "PAID_ENTERPRISE").length;
-    return { total, active, trial, enterprise };
-  }, [tenantsList]);
+    const selfRegistered = tenantsList.filter(
+      (t) => registeredTenantsIds.has(t.id || t.slug) || (t.index && t.index > 200)
+    ).length;
+    return { total, active, trial, enterprise, selfRegistered };
+  }, [tenantsList, registeredTenantsIds]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredTenants.length / itemsPerPage) || 1;
@@ -301,6 +368,25 @@ ${cred.subLink}
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setIsUniversalSearchOpen(true)}
+              className="px-5 py-3 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-sm rounded-2xl shadow-lg shadow-amber-950/50 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-amber-300"
+              title="فتح محرك البحث الشامل عن جميع المنشآت والشركات والموظفين والأسماء والمسؤولين"
+            >
+              <Search className="w-5 h-5 text-slate-950" />
+              <span>🔍 محرك البحث الشامل (200+ منشأة ومستخدم)</span>
+            </button>
+
+            <button
+              onClick={handleGenerateTestBatch}
+              disabled={isGeneratingBatch}
+              className="px-5 py-3 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-black rounded-2xl shadow-lg shadow-amber-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
+              title="دالة اختبار: إنشاء 10 منشآت تجريبية تلقائياً وإرسال الإشعارات وعرضها في الجدول"
+            >
+              <FlaskConical className={`w-5 h-5 text-amber-200 ${isGeneratingBatch ? "animate-spin" : "animate-bounce"}`} />
+              <span>{isGeneratingBatch ? "جاري الإنشاء الفوري..." : "🧪 إنشاء 10 منشآت تجريبية (Test Helper)"}</span>
+            </button>
+
+            <button
               onClick={() => setShowAddTenantModal(true)}
               className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-black rounded-2xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
             >
@@ -326,8 +412,24 @@ ${cred.subLink}
           </div>
         </div>
 
-        {/* 4 Live Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800">
+        {/* Batch Success Message Alert */}
+        {batchSuccessMsg && (
+          <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-teal-900/90 to-slate-900 border border-emerald-500/60 text-emerald-200 text-sm font-bold flex items-center justify-between shadow-xl animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+              <span>{batchSuccessMsg}</span>
+            </div>
+            <button
+              onClick={() => setBatchSuccessMsg(null)}
+              className="text-xs bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 px-3 py-1 rounded-xl border border-emerald-700/50"
+            >
+              إغلاق
+            </button>
+          </div>
+        )}
+
+        {/* 5 Live Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6 pt-6 border-t border-slate-800">
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
               <Building2 className="w-5 h-5" />
@@ -335,6 +437,16 @@ ${cred.subLink}
             <div>
               <div className="text-xl font-black text-white">{stats.total}</div>
               <div className="text-[11px] text-slate-400">إجمالي المنشآت</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-emerald-500/40 rounded-2xl p-4 flex items-center gap-3 shadow-inner bg-gradient-to-br from-slate-950/90 to-emerald-950/30">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              <Sparkles className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <div className="text-xl font-black text-emerald-300">{stats.selfRegistered}</div>
+              <div className="text-[11px] text-emerald-400/90 font-bold">مسجلة ذاتياً حديثاً ⚡</div>
             </div>
           </div>
 
@@ -399,20 +511,28 @@ ${cred.subLink}
           {/* Status Filter */}
           <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <span className="text-xs text-slate-400 font-bold shrink-0">الحالة:</span>
-            {["ALL", "ACTIVE", "TRIAL", "ENTERPRISE"].map((st) => (
+            {[
+              { key: "ALL", label: "الكل" },
+              { key: "SELF_REGISTERED", label: `⚡ مسجلة ذاتياً (${stats.selfRegistered})` },
+              { key: "ACTIVE", label: "نشط" },
+              { key: "TRIAL", label: "تجريبي" },
+              { key: "ENTERPRISE", label: "مؤسسي" },
+            ].map((st) => (
               <button
-                key={st}
+                key={st.key}
                 onClick={() => {
-                  setStatusFilter(st);
+                  setStatusFilter(st.key);
                   setCurrentPage(1);
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  statusFilter === st
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  statusFilter === st.key
+                    ? st.key === "SELF_REGISTERED"
+                      ? "bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 font-black shadow-md shadow-amber-500/30"
+                      : "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "bg-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
-                {st === "ALL" ? "الكل" : st === "ACTIVE" ? "نشط" : st === "TRIAL" ? "تجريبي" : "مؤسسي"}
+                {st.label}
               </button>
             ))}
           </div>
@@ -447,23 +567,40 @@ ${cred.subLink}
             </p>
           </div>
         ) : (
-          displayedTenants.map((tenant) => (
+          displayedTenants.map((tenant) => {
+            const isSelfRegistered =
+              registeredTenantsIds.has(tenant.id || tenant.slug) || (tenant.index && tenant.index > 200);
+
+            return (
             <div
               key={tenant.id || tenant.slug}
-              className="bg-slate-900 border border-slate-800 hover:border-indigo-500/60 rounded-3xl p-5 sm:p-6 shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+              className={`bg-slate-900 border ${
+                isSelfRegistered
+                  ? "border-amber-500/60 shadow-amber-500/10 shadow-2xl bg-gradient-to-br from-slate-900 via-[#0a1829] to-slate-900"
+                  : "border-slate-800 hover:border-indigo-500/60"
+              } rounded-3xl p-5 sm:p-6 shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden`}
             >
               {/* Card Header */}
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/20 shrink-0">
+                    <div className={`w-12 h-12 rounded-2xl ${
+                      isSelfRegistered
+                        ? "bg-gradient-to-br from-amber-500 to-emerald-600 text-slate-950 font-black"
+                        : "bg-gradient-to-br from-indigo-600 to-blue-600 text-white font-black"
+                    } flex items-center justify-center text-sm shadow-md shrink-0`}>
                       #{tenant.index}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base font-black text-white group-hover:text-indigo-300 transition-colors">
                           {tenant.name}
                         </h3>
+                        {isSelfRegistered && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                            ⚡ مسجلة ذاتياً حديثاً
+                          </span>
+                        )}
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             tenant.status === "ACTIVE"
@@ -477,14 +614,14 @@ ${cred.subLink}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {tenant.nameEn} • {tenant.city}
+                        {tenant.nameEn} • {tenant.city} {tenant.assignedAdminEmail && `• ${tenant.assignedAdminEmail}`}
                       </p>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setSelectedTenantForDetails(tenant)}
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 shrink-0"
+                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 shrink-0 cursor-pointer"
                     title="معاينة التفاصيل وإدارة الروابط"
                   >
                     <Eye className="w-4 h-4" />
@@ -578,7 +715,8 @@ ${cred.subLink}
                 </button>
               </div>
             </div>
-          ))
+          );
+        })
         )}
       </div>
 
@@ -808,6 +946,21 @@ ${cred.subLink}
           }}
         />
       )}
+
+      {/* Universal Search Modal */}
+      <SapUniversalSearchModal
+        isOpen={isUniversalSearchOpen}
+        onClose={() => setIsUniversalSearchOpen(false)}
+        onSelectCompany={(companyId) => {
+          setIsUniversalSearchOpen(false);
+          const t = tenantsList.find((item) => item.id === companyId || item.id === `tenant-${companyId}`);
+          if (t) setSelectedTenantForDetails(t);
+        }}
+        onSelectTenantManagerLogin={(t) => {
+          setIsUniversalSearchOpen(false);
+          setSelectedTenantForDetails(t);
+        }}
+      />
     </div>
   );
 };

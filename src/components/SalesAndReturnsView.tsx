@@ -114,26 +114,6 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
   // New Invoice Form State
   const [invType, setInvType] = useState<"SALES" | "SALES_RETURN">("SALES");
   const [invCustomerId, setInvCustomerId] = useState(customers[0]?.id || "");
-
-  // Prepare Options for Searchable Selects
-  const customerOptions: ComboboxOption[] = useMemo(() => {
-    return customers.map(c => ({
-      id: c.id,
-      label: c.nameAr,
-      secondaryLabel: c.phone
-    }));
-  }, [customers]);
-
-  const inventoryOptions: ComboboxOption[] = useMemo(() => {
-    return inventoryItems.map(inv => {
-      const p = getItemPricingDetails(inv, invCustomerId);
-      return {
-        id: inv.id,
-        label: inv.nameAr,
-        secondaryLabel: `${inv.code} | بيع: ${p.lastSellingPrice.toLocaleString()} | تكلفة: ${p.costPrice.toLocaleString()}`
-      };
-    });
-  }, [inventoryItems, invCustomerId]);
   const [invOriginalNumber, setInvOriginalNumber] = useState("");
   const [invReturnReason, setInvReturnReason] = useState("عيوب مصنعية / عدم مطابقة للمواصفات");
   const [invDate, setInvDate] = useState(new Date().toISOString().split("T")[0]);
@@ -167,29 +147,6 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
       total: 250000,
     },
   ]);
-
-  // Calculations for Modal
-  const invSubtotal = invItems.reduce((sum, item) => sum + item.total, 0);
-  const invTaxAmount = (invSubtotal * (invTaxRate || 0)) / 100;
-  const rawGrandTotal = invSubtotal + invTaxAmount - (invDiscount || 0) + (Number(invSalesExpense) || 0);
-  const invGrandTotal = Math.max(0, rawGrandTotal);
-  const invRemainingAmount = Math.max(0, invGrandTotal - (Number(invPaidAmount) || 0));
-
-  // Invoice Profitability & Cost calculations
-  const invoiceCOGS = invItems.reduce((sum, item) => {
-    const orig = inventoryItems?.find((inv) => inv.id === item.inventoryItemId);
-    const itemCost = orig ? (orig.costPrice || 0) : 0;
-    return sum + (item.quantity * itemCost);
-  }, 0);
-  const invoiceGrossProfit = invSubtotal - invoiceCOGS;
-  const invoiceMarginPercent = invSubtotal > 0 ? (invoiceGrossProfit / invSubtotal) * 100 : 0;
-
-  // Quick helper to fill full payment or clear
-  const handleSetPaidQuick = (type: "FULL" | "ZERO" | "HALF") => {
-    if (type === "FULL") setInvPaidAmount(invGrandTotal);
-    if (type === "ZERO") setInvPaidAmount(0);
-    if (type === "HALF") setInvPaidAmount(Math.round(invGrandTotal / 2));
-  };
 
   // Helper to extract pricing details: Last Selling Price, Purchase Price, Cost Price
   const getItemPricingDetails = (item: InventoryItem, forCustomerId?: string) => {
@@ -288,6 +245,49 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
       standardSellingPrice,
       currencySymbol,
     };
+  };
+
+  // Prepare Options for Searchable Selects
+  const customerOptions: ComboboxOption[] = useMemo(() => {
+    return customers.map(c => ({
+      id: c.id,
+      label: c.nameAr,
+      secondaryLabel: c.phone
+    }));
+  }, [customers]);
+
+  const inventoryOptions: ComboboxOption[] = useMemo(() => {
+    return inventoryItems.map(inv => {
+      const p = getItemPricingDetails(inv, invCustomerId);
+      return {
+        id: inv.id,
+        label: inv.nameAr,
+        secondaryLabel: `${inv.code} | بيع: ${p.lastSellingPrice.toLocaleString()} | تكلفة: ${p.costPrice.toLocaleString()}`
+      };
+    });
+  }, [inventoryItems, invCustomerId, invCurrency, invoices]);
+
+  // Calculations for Modal
+  const invSubtotal = invItems.reduce((sum, item) => sum + item.total, 0);
+  const invTaxAmount = (invSubtotal * (invTaxRate || 0)) / 100;
+  const rawGrandTotal = invSubtotal + invTaxAmount - (invDiscount || 0) + (Number(invSalesExpense) || 0);
+  const invGrandTotal = Math.max(0, rawGrandTotal);
+  const invRemainingAmount = Math.max(0, invGrandTotal - (Number(invPaidAmount) || 0));
+
+  // Invoice Profitability & Cost calculations
+  const invoiceCOGS = invItems.reduce((sum, item) => {
+    const orig = inventoryItems?.find((inv) => inv.id === item.inventoryItemId);
+    const itemCost = orig ? (orig.costPrice || 0) : 0;
+    return sum + (item.quantity * itemCost);
+  }, 0);
+  const invoiceGrossProfit = invSubtotal - invoiceCOGS;
+  const invoiceMarginPercent = invSubtotal > 0 ? (invoiceGrossProfit / invSubtotal) * 100 : 0;
+
+  // Quick helper to fill full payment or clear
+  const handleSetPaidQuick = (type: "FULL" | "ZERO" | "HALF") => {
+    if (type === "FULL") setInvPaidAmount(invGrandTotal);
+    if (type === "ZERO") setInvPaidAmount(0);
+    if (type === "HALF") setInvPaidAmount(Math.round(invGrandTotal / 2));
   };
 
   const handleOpenAddModal = (presetType: "SALES" | "SALES_RETURN" = "SALES") => {

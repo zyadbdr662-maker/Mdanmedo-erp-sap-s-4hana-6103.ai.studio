@@ -28,6 +28,7 @@ import {
   Lock,
   BookMarked,
   Cloud,
+  Building2,
   DatabaseBackup,
 } from "lucide-react";
 import { CurrencyCode, CurrencyInfo, ERPUser, CalendarType } from "../types/erp";
@@ -316,6 +317,18 @@ export const Header: React.FC<HeaderProps> = ({
             </select>
           </div>
 
+          {/* Universal Search Button (محرك البحث الشامل عن المنشآت والأسماء) */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("open_universal_search"))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs transition-all shadow-md shadow-amber-950/40 border border-amber-300 active:scale-95 cursor-pointer"
+            title="محرك البحث الشامل عن جميع المنشآت والشركات والموظفين والأسماء والمسؤولين (200+ منشأة ومستخدم)"
+            aria-label="محرك البحث الشامل"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-950" />
+            <span className="hidden sm:inline">🔍 البحث الشامل (200+)</span>
+          </button>
+
           {/* Encrypted Cloud Security Direct Button (المنصة السحابية المشفرة) */}
           {IS_ADMIN_ENV && (
             <button
@@ -336,6 +349,18 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </button>
           )}
+
+          {/* Self-Service Enterprise Registration Button (تسجيل منشأة جديدة) */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("open_self_registration"))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/60 text-xs font-black transition-all shadow-md shadow-emerald-950/40 active:scale-95 cursor-pointer"
+            title="تسجيل منشأة جديدة واستلام روابط الوصول المباشرة"
+            aria-label="تسجيل منشأة جديدة"
+          >
+            <Building2 className="w-3.5 h-3.5 text-emerald-200" />
+            <span className="hidden md:inline">+ تسجيل منشأة جديدة</span>
+          </button>
 
           {/* Cloud SaaS Platform & License Management (المنصة السحابية وإدارة التراخيص) */}
           <button

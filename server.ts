@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { db } from './src/db/db';
@@ -1170,6 +1171,285 @@ app.post("/api/security/trial-milestone", async (req, res) => {
   }
 });
 
+// Real OTP Verification Code Email Dispatcher Endpoint
+app.post("/api/auth/send-verification-otp", async (req, res) => {
+  try {
+    const { email, code, companyName = "منشأتك الجديدة" } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ success: false, error: "البريد الإلكتروني والرمز مطلوبان." });
+    }
+
+    const codeStr = String(code).trim();
+    const formattedCode = codeStr.split("").join(" ");
+    const timestamp = new Date().toISOString();
+
+    console.log(`[OTP DISPATCH] 📧 Sending 7-digit OTP (${codeStr}) to recipient: ${email} for company: "${companyName}"`);
+
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #f4f7fc; margin: 0; padding: 20px; direction: rtl; }
+          .card { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+          .header { background: linear-gradient(135deg, #0a2540 0%, #0f3d68 100%); padding: 30px 24px; text-align: center; color: #ffffff; }
+          .logo { font-size: 26px; font-weight: 900; letter-spacing: 1px; color: #38bdf8; margin: 0; }
+          .subtitle { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+          .body { padding: 32px 24px; text-align: right; color: #334155; line-height: 1.7; }
+          .otp-container { background: #f8fafc; border: 2px dashed #0284c7; border-radius: 14px; padding: 24px; text-align: center; margin: 24px 0; }
+          .otp-title { font-size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
+          .otp-code { font-size: 36px; font-weight: 900; color: #0a2540; letter-spacing: 10px; font-family: 'Courier New', monospace; }
+          .badge { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 20px; margin-top: 8px; }
+          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }
+          .warning { font-size: 12px; color: #94a3b8; margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <h1 class="logo">🏢 MeDo ERP Cloud</h1>
+            <div class="subtitle">منظومة الإدارة السحابية الموحدة للمنشآت والمؤسسات</div>
+          </div>
+          <div class="body">
+            <p style="font-size: 16px; font-weight: bold; color: #0f172a; margin: 0 0 12px 0;">مرحباً بك،</p>
+            <p style="margin: 0 0 16px 0;">
+              شكراً لاختيارك منظومة <strong>MeDo ERP</strong> لإدارة وتأمين أعمال منشأة <strong>${companyName}</strong>.
+            </p>
+            <p style="margin: 0;">رمز التحقق السري لتأكيد بريدك الإلكتروني وتفعيل بيئة العمل هو:</p>
+
+            <div class="otp-container">
+              <div class="otp-title">رمز التحقق السري (7 أرقام)</div>
+              <div class="otp-code">${formattedCode}</div>
+              <div class="badge">صالح لمدة 10 دقائق فقط</div>
+            </div>
+
+            <p class="warning">
+              ⚠️ تنبيه أمني: لا تشارك هذا الرمز مع أي شخص. إذا لم تكن أنت من قام بطلب التسجيل، يرجى تجاهل هذه الرسالة بأمان.
+            </p>
+          </div>
+          <div class="footer">
+            <strong>ميدو تك للحلول والمنظومات البرمجية السحابية</strong><br>
+            📞 الدعم الفني: +0967773586047 | 🌐 صنعاء - عدن<br>
+            <span style="color: #94a3b8; font-size: 11px;">تم الإرسال آلياً في: ${new Date().toLocaleString("ar-YE")}</span>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    let emailSent = false;
+    let provider = "NONE";
+    let messageId = `MSG-${Date.now()}`;
+
+    // 1. Try Resend if configured
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const resendResult = await resend.emails.send({
+          from: "MeDo ERP <onboarding@resend.dev>",
+          to: [email],
+          subject: `رمز التحقق - MeDo ERP: ${codeStr}`,
+          html: emailHtml,
+        });
+
+        if (resendResult.data) {
+          emailSent = true;
+          provider = "resend";
+          messageId = resendResult.data.id || messageId;
+          console.log(`[OTP DISPATCH] ✓ Sent via Resend API to ${email}. ID:`, messageId);
+        } else if (resendResult.error) {
+          console.warn("[OTP DISPATCH] Resend API error:", resendResult.error);
+        }
+      } catch (resendErr: any) {
+        console.warn("[OTP DISPATCH] Resend error:", resendErr.message);
+      }
+    }
+
+    // 2. Fallback to Nodemailer SMTP if Resend didn't send
+    if (!emailSent) {
+      const transporter = getEmailTransporter();
+      if (transporter) {
+        try {
+          const fromAddress = process.env.SMTP_FROM || `MeDo ERP <${process.env.SMTP_USER || "zyadbdr925@gmail.com"}>`;
+          const smtpResult = await transporter.sendMail({
+            from: fromAddress,
+            to: email,
+            subject: `رمز التحقق - MeDo ERP: ${codeStr}`,
+            html: emailHtml,
+            text: `مرحباً بك في MeDo ERP. رمز التحقق الخاص بك لمنشأة (${companyName}) هو: ${codeStr} - صالح لمدة 10 دقائق.`,
+          });
+          emailSent = true;
+          provider = "smtp";
+          messageId = smtpResult.messageId || messageId;
+          console.log(`[OTP DISPATCH] ✓ Sent via Nodemailer SMTP to ${email}. ID:`, messageId);
+        } catch (smtpErr: any) {
+          console.warn("[OTP DISPATCH] SMTP error:", smtpErr.message);
+        }
+      }
+    }
+
+    // 3. Fallback response (simulated in development if no API keys are provided)
+    if (!emailSent) {
+      provider = "simulated";
+      console.log(`[OTP DISPATCH] ℹ️ Simulated dispatch for code [${codeStr}] to [${email}]. (Configure RESEND_API_KEY or SMTP_PASS for live production inboxes).`);
+    }
+
+    return res.json({
+      success: true,
+      emailSent,
+      provider,
+      messageId,
+      deliveredTo: email,
+      timestamp,
+      note: emailSent
+        ? `تم إرسال رمز التحقق (${codeStr}) بنجاح إلى بريدك الإلكتروني (${email}).`
+        : `تم توليد الرمز (${codeStr}) وإعداده للإرسال. في بيئة التطوير، يمكنك استخدام الرمز مباشرة أو تعيين RESEND_API_KEY لإيصال فوري لصندوق الوارد الحقيقي.`,
+    });
+  } catch (error: any) {
+    console.error("[OTP DISPATCH] Fatal error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// New Tenant Registration Notification Dispatcher Endpoint
+app.post("/api/notifications/new-tenant", async (req, res) => {
+  try {
+    const { to, backupEmail, subject, message, tenant } = req.body;
+    const recipient = to || "zyadbdr925@gmail.com";
+    const subj = subject || `🏢 [MeDo ERP] منشأة جديدة سجلت: ${tenant?.name || "منشأة جديدة"}`;
+    const timestamp = new Date().toISOString();
+
+    console.log(`[TENANT NOTIFY] 🏢 Dispatching registration notification for "${tenant?.name}" to ${recipient}`);
+
+    const emailHtml = `
+      <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #0b1329; color: #f8fafc; padding: 24px; border-radius: 16px; max-width: 650px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #10b981; padding-bottom: 16px;">
+          <h1 style="color: #38bdf8; font-size: 22px; margin: 0;">🏢 منظومة MeDo ERP - إشعار تسجيل منشأة جديدة</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">إشعار فوري للإدارة السيادية (بدر عائض محمد)</p>
+        </div>
+
+        <div style="background-color: #10b98115; border: 1px solid #10b98140; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h2 style="color: #34d399; font-size: 16px; margin: 0 0 8px 0;">✓ تم تسجيل منشأة جديدة ذاتياً بنجاح</h2>
+          <p style="color: #e2e8f0; font-size: 14px; line-height: 1.6; margin: 0;">
+            المنشأة: <strong>${tenant?.name || "غير محدد"}</strong> (${tenant?.nameEn || ""})
+          </p>
+        </div>
+
+        <pre style="background: #0f172a; border: 1px solid #334155; padding: 16px; border-radius: 10px; color: #38bdf8; font-size: 13px; font-family: monospace; white-space: pre-wrap; line-height: 1.6;" dir="ltr">${message}</pre>
+
+        <div style="margin-top: 20px; text-align: center;">
+          <a href="https://ais-pre-nb2t4ysydt63tbljcawurb-174680061958.europe-west1.run.app/?admin=sovereign&mode=unlock" style="background: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 14px;">
+            فتح لوحة الإدارة السيادية
+          </a>
+        </div>
+
+        <div style="background-color: #0f172a; padding: 12px; border-radius: 8px; text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;">
+          المستلم السيادي: <strong>${recipient}</strong> • التوقيت: <strong>${new Date().toLocaleString("ar-YE")}</strong>
+        </div>
+      </div>
+    `;
+
+    let emailSent = false;
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: "MeDo ERP <onboarding@resend.dev>",
+          to: [recipient],
+          subject: subj,
+          html: emailHtml,
+        });
+        emailSent = true;
+      } catch (err: any) {
+        console.warn("[TENANT NOTIFY] Resend error:", err.message);
+      }
+    }
+
+    if (!emailSent) {
+      const transporter = getEmailTransporter();
+      if (transporter) {
+        try {
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM || `MeDo ERP <${process.env.SMTP_USER || "zyadbdr925@gmail.com"}>`,
+            to: recipient,
+            subject: subj,
+            html: emailHtml,
+            text: message,
+          });
+          emailSent = true;
+        } catch (err: any) {
+          console.warn("[TENANT NOTIFY] SMTP error:", err.message);
+        }
+      }
+    }
+
+    res.json({ success: true, emailSent, recipient, timestamp });
+  } catch (error: any) {
+    console.error("Tenant notification error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generic Email Dispatcher Endpoint
+app.post("/api/send-email", async (req, res) => {
+  try {
+    const { to, subject, html, text } = req.body;
+    if (!to || !subject || (!html && !text)) {
+      return res.status(400).json({ success: false, error: "المستلم والموضوع والمحتوى مطلوبون." });
+    }
+
+    let emailSent = false;
+    let provider = "none";
+    let messageId = `MSG-${Date.now()}`;
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const r = await resend.emails.send({
+          from: "MeDo ERP <onboarding@resend.dev>",
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          html: html || text,
+        });
+        if (r.data) {
+          emailSent = true;
+          provider = "resend";
+          messageId = r.data.id || messageId;
+        }
+      } catch (e: any) {
+        console.warn("[SEND EMAIL] Resend error:", e.message);
+      }
+    }
+
+    if (!emailSent) {
+      const transporter = getEmailTransporter();
+      if (transporter) {
+        try {
+          const r = await transporter.sendMail({
+            from: process.env.SMTP_FROM || `MeDo ERP <${process.env.SMTP_USER || "zyadbdr925@gmail.com"}>`,
+            to,
+            subject,
+            html: html || text,
+            text: text || "",
+          });
+          emailSent = true;
+          provider = "smtp";
+          messageId = r.messageId || messageId;
+        } catch (e: any) {
+          console.warn("[SEND EMAIL] SMTP error:", e.message);
+        }
+      }
+    }
+
+    res.json({ success: true, emailSent, provider, messageId, deliveredTo: to });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Client Local Database Provisioning Endpoint (PostgreSQL / SQLite)
 app.post("/api/saas/provision-local-db", (req, res) => {
   try {
@@ -1178,6 +1458,7 @@ app.post("/api/saas/provision-local-db", (req, res) => {
       clientSlug = "client_db",
       databaseType = "POSTGRES_LOCAL",
       customEncryptionKey,
+
     } = req.body;
 
     const dbKey = customEncryptionKey || `MEDO-ENC-${Math.random().toString(36).substring(2, 10).toUpperCase()}-2026`;

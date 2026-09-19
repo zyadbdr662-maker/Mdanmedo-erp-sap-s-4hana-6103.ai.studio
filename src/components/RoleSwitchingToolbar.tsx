@@ -17,6 +17,7 @@ import {
 import { ERPUser } from "../types/erp";
 import { NavTab } from "./Sidebar";
 import { soundService } from "../services/notificationSoundService";
+import { TenantIsolationService } from "../services/tenantIsolationService";
 
 interface RoleSwitchingToolbarProps {
   currentUser: ERPUser | null;
@@ -37,9 +38,11 @@ export const RoleSwitchingToolbar: React.FC<RoleSwitchingToolbarProps> = ({
   onSwitchBackToManager,
   onSwitchRole,
   hasOriginalManagerSession,
-  companyName = "مجموعة بن زياد التجارية المتحدة",
+  companyName,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const activeDetails = TenantIsolationService.getActiveTenantDetails();
+  const effectiveCompanyName = companyName || activeDetails?.nameAr || "المنشأة المعتمدة";
 
   const currentRole = currentUser?.role || "CASHIER";
   const isManagerCurrently = currentRole === "SYSTEM_ADMIN" || currentRole === "ADMIN" || currentRole === "SUPER_ADMIN";
@@ -82,7 +85,7 @@ export const RoleSwitchingToolbar: React.FC<RoleSwitchingToolbarProps> = ({
                 {getRoleTitleAr(currentRole)}
               </span>
               <span className="text-slate-400 text-xs hidden md:inline mr-2">
-                ({companyName})
+                ({effectiveCompanyName})
               </span>
             </div>
           </div>

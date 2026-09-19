@@ -42,6 +42,8 @@ import { SystemAlertCenterView } from "./SystemAlertCenterView";
 import { AdminDeviceManagerView } from "./AdminDeviceManagerView";
 import { SystemPromptsHistoryDashboard } from "./SystemPromptsHistoryDashboard";
 import { SystemAuditReportView } from "./SystemAuditReportView";
+import { SapUniversalSearchModal } from "./SapUniversalSearchModal";
+import { Search } from "lucide-react";
 import { ERPState, SystemSettings } from "../types/erp";
 import { soundService, SoundType, WhatsAppNotificationPayload } from "../services/notificationSoundService";
 
@@ -62,6 +64,7 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
 }) => {
   const [activeTab, setActiveTab] = useState<
     | "SETTINGS"
+    | "UNIVERSAL_SEARCH"
     | "SAAS_LICENSES"
     | "CENTRAL_ARCHIVE"
     | "CLOUD_SECURITY"
@@ -231,7 +234,15 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setActiveTab("UNIVERSAL_SEARCH")}
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-950/50 border border-amber-300 flex items-center gap-2 transition hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Search className="w-4 h-4 text-slate-950" />
+              <span>🔍 محرك البحث الشامل (200+ منشأة ومستخدم)</span>
+            </button>
+
             <div className="text-right font-mono text-xs text-slate-200 bg-[#081220]/90 p-3 rounded-2xl border border-blue-500/30 shadow-inner">
               <div className="text-amber-300 font-bold flex items-center gap-1.5 justify-end">
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
@@ -256,6 +267,19 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
         >
           <ShieldCheck className="w-4 h-4 text-blue-300" />
           <span>1. لوحة التحكم السيادية والتحكم بالنظام 🛡️</span>
+        </button>
+
+        {/* محرك البحث الشامل عن المنشآت والأسماء */}
+        <button
+          onClick={() => setActiveTab("UNIVERSAL_SEARCH")}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            activeTab === "UNIVERSAL_SEARCH"
+              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 shadow-lg shadow-amber-950/60 border border-amber-300 font-bold"
+              : "text-amber-300 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/40"
+          }`}
+        >
+          <Search className="w-4 h-4 text-amber-300" />
+          <span>🔍 محرك البحث الشامل عن المنشآت والأسماء (200+ منشأة)</span>
         </button>
 
         {/* 2. المنصة السحابية المشفرة ومنظومة عملاء النظام 9 */}
@@ -430,6 +454,13 @@ export const ExecutiveMasterSystemSuite: React.FC<ExecutiveMasterSystemSuiteProp
           fullState={fullState}
           onLogout={onLogout}
         />
+      )}
+
+      {/* TAB: UNIVERSAL SEARCH ENGINE (شاشة البحث الشاملة عن المنشآت والأسماء) */}
+      {activeTab === "UNIVERSAL_SEARCH" && (
+        <div className="space-y-4 animate-fadeIn">
+          <SapUniversalSearchModal isEmbedded={true} />
+        </div>
       )}
 
       {/* TAB 2: CLOUD SECURITY CENTER (FIREWALL & ENCRYPTION AT REST) */}
