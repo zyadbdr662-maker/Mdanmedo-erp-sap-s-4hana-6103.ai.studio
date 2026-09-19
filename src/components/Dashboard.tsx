@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import {
   TrendingUp,
   TrendingDown,
@@ -704,7 +705,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-sap-secondary border border-sap-secondary/30 font-extrabold animate-pulse">S/4HANA</span>
                 </h4>
                 <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                  استعرض مواصفات النظام، معايير التكامل، ومحاكاة الذكاء الاصطناعي والمزامنة.
+                  استعرض مواصفات النظام، معايير التكامل، ومحاكاة الذكاء المالي المتقدم والمزامنة.
                 </p>
               </div>
             </div>
@@ -992,87 +993,76 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Primary KPI Cards Grid (Deep Blue & Gold Identity - Total Assets, Liquidity, Revenues, Expenses) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Total Assets (إجمالي الأصول) */}
-        <div className="bg-[#0A2540] border border-slate-800/50 hover:border-sap-secondary/80 rounded-3xl p-4.5 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">إجمالي الأصول (Assets)</span>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sap-secondary/25 to-amber-500/10 text-sap-secondary border border-sap-secondary/40 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-sap-secondary/30 transition-all">
-              <Landmark className="w-5 h-5 text-sap-secondary" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.03 }}
+          transition={{ duration: 0.3 }}
+          className="bg-[#0a2540] border-none rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-white">إجمالي الأصول</span>
+            <div className="bg-white/10 p-2 rounded-full">
+              <Landmark className="w-12 h-12 text-[#d4af37]" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-slate-100 tracking-tight font-mono">
-              {formatMoney(displayTotalAssets, displayCurrency, currencies)}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50 text-[11px]">
-              <span className="flex items-center gap-1 text-sap-secondary font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5 text-sap-secondary" />
-                <span>SAP S/4HANA FI</span>
-              </span>
-              <span className="text-slate-400 font-mono text-[10px]">محدث لحظياً</span>
-            </div>
-          </div>
-        </div>
+          <div className="text-3xl font-black text-white font-mono">{formatNumberOnly(displayTotalAssets)}</div>
+          <div className="text-lg font-bold text-white/80 mt-1">{getCurrencyNameAr(displayCurrency)}</div>
+        </motion.div>
 
-        {/* 2. Total Liquidity (السيولة النقدية والمصرفية) */}
-        <div className="bg-[#0A2540] border border-slate-800/50 hover:border-sap-secondary/80 rounded-3xl p-4.5 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">السيولة (Liquidity & Cash)</span>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sap-secondary/25 to-amber-500/10 text-sap-secondary border border-sap-secondary/40 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-sap-secondary/30 transition-all">
-              <Banknote className="w-5 h-5 text-sap-secondary" />
+        {/* 2. Liquidity */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.03 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-[#0066CC] border-none rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-white">السيولة النقدية</span>
+            <div className="bg-white/10 p-2 rounded-full">
+              <Wallet className="w-12 h-12 text-[#d4af37]" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-emerald-400 tracking-tight font-mono">
-              {formatMoney(displayLiquidity, displayCurrency, currencies)}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-400 font-mono">
-              <span>خزائن: {formatNumberOnly(convertCurrency(totalVaults, "YER_SANAA", displayCurrency, currencies))}</span>
-              <span>بنوك: {formatNumberOnly(convertCurrency(totalBanks, "YER_SANAA", displayCurrency, currencies))}</span>
-            </div>
-          </div>
-        </div>
+          <div className="text-3xl font-black text-white font-mono">{formatNumberOnly(displayLiquidity)}</div>
+          <div className="text-lg font-bold text-white/80 mt-1">{getCurrencyNameAr(displayCurrency)}</div>
+        </motion.div>
 
         {/* 3. Total Revenues (الإيرادات) */}
-        <div className="bg-[#0A2540] border border-slate-800/50 hover:border-sap-secondary/80 rounded-3xl p-4.5 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">إجمالي الإيرادات (Revenues)</span>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sap-secondary/25 to-amber-500/10 text-sap-secondary border border-sap-secondary/40 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-sap-secondary/30 transition-all">
-              <ArrowUpCircle className="w-5 h-5 text-sap-secondary" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.03 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="bg-[#1e7e34] border-none rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-white">إجمالي الإيرادات</span>
+            <div className="bg-white/10 p-2 rounded-full">
+              <ArrowUpCircle className="w-12 h-12 text-[#d4af37]" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-teal-300 tracking-tight font-mono">
-              {formatMoney(displayRevenue, displayCurrency, currencies)}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-400 font-mono">
-              <span className="text-teal-400 font-semibold flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3 text-sap-secondary" /> +14.8% نمو
-              </span>
-              <span className="text-slate-400">مبيعات وخدمات</span>
-            </div>
-          </div>
-        </div>
+          <div className="text-3xl font-black text-white font-mono">{formatNumberOnly(displayRevenue)}</div>
+          <div className="text-lg font-bold text-white/80 mt-1">{getCurrencyNameAr(displayCurrency)}</div>
+        </motion.div>
 
         {/* 4. Total Expenses (المصروفات) */}
-        <div className="bg-[#0A2540] border border-slate-800/50 hover:border-sap-secondary/80 rounded-3xl p-4.5 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300">إجمالي المصروفات (Expenses)</span>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sap-secondary/25 to-amber-500/10 text-sap-secondary border border-sap-secondary/40 flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-sap-secondary/30 transition-all">
-              <ArrowDownCircle className="w-5 h-5 text-sap-secondary" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.03 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="bg-[#8b0000] border-none rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-white">إجمالي المصروفات</span>
+            <div className="bg-white/10 p-2 rounded-full">
+              <ArrowDownCircle className="w-12 h-12 text-[#d4af37]" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-black text-rose-400 tracking-tight font-mono">
-              {formatMoney(displayExpenses, displayCurrency, currencies)}
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-400 font-mono">
-              <span className="text-rose-300 font-semibold flex items-center gap-0.5">
-                <TrendingDown className="w-3 h-3 text-rose-400" /> -3.2% تحكم
-              </span>
-              <span className="text-slate-400">تشغيلي وإداري</span>
-            </div>
-          </div>
-        </div>
+          <div className="text-3xl font-black text-white font-mono">{formatNumberOnly(displayExpenses)}</div>
+          <div className="text-lg font-bold text-white/80 mt-1">{getCurrencyNameAr(displayCurrency)}</div>
+        </motion.div>
       </div>
 
       {/* Secondary Strategic Row: Net Profit & AR/AP Balances */}
@@ -1098,40 +1088,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Accounts Receivable vs Payable (الذمم المدينة والدائنة) */}
-        <div className="bg-[#0A2540] border border-slate-800/50 hover:border-sap-secondary/60 rounded-3xl p-4.5 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-300">الذمم المدينة vs الدائنة (AR vs AP)</span>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sap-secondary/20 to-blue-500/10 text-sap-secondary border border-sap-secondary/30 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-              <Scale className="w-5 h-5 text-sap-secondary" />
+        <div className="bg-[#2980b9] border-none rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xl font-bold text-white">الذمم المدينة والدائنة</span>
+            <div className="bg-white/10 p-2 rounded-full">
+              <Scale className="w-12 h-12 text-[#d4af37]" />
             </div>
           </div>
-          <div className="mt-2">
-            <div className="text-lg font-black text-slate-100 tracking-tight flex items-center justify-between font-mono">
-              <span className="text-emerald-400" title="مدينون (العملاء)">+{formatNumberOnly(displayReceivables)} {currSymbol}</span>
-              <span className="text-slate-500 text-xs">/</span>
-              <span className="text-amber-400" title="دائنون (الموردين)">-{formatNumberOnly(displayPayables)} {currSymbol}</span>
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-400">
-              <span className="text-emerald-400 font-medium">ذمم العملاء (AR)</span>
-              <span className="text-amber-400 font-medium">مستحقات الموردين (AP)</span>
-            </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/40 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setActiveTab("CUSTOMERS_AR")}
-                className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
-              >
-                <span>إدارة العملاء &larr;</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("VENDORS_AP")}
-                className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
-              >
-                <span>إدارة الموردين &larr;</span>
-              </button>
-            </div>
+          <div className="text-3xl font-black text-white font-mono flex gap-4">
+            <span className="text-emerald-300">+{formatNumberOnly(displayReceivables)}</span>
+            <span className="text-white/50">/</span>
+            <span className="text-amber-300">-{formatNumberOnly(displayPayables)}</span>
           </div>
+          <div className="text-lg font-bold text-white/80 mt-1">{getCurrencyNameAr(displayCurrency)}</div>
         </div>
       </div>
 

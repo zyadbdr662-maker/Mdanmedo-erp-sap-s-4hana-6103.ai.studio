@@ -1,21 +1,29 @@
 @import "./styles/theme.css";
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700&family=Inter:wght@400;600;700&display=swap');
 
 @layer base {
-  /* -------------------------------------------------------------
-     1. UNIFIED FONT FAMILY: ALEXANDRIA & CAIRO ACROSS ALL ELEMENTS
-     ------------------------------------------------------------- */
   *, *::before, *::after {
-    font-family: 'Cairo', sans-serif !important;
+    font-family: 'Tajawal', sans-serif !important;
   }
 
   body {
-    font-family: 'Cairo', sans-serif !important;
+    font-family: 'Tajawal', sans-serif !important;
     direction: rtl;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    color: #1a2b4c;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cairo', sans-serif !important;
+    color: #0a2540;
+  }
+  .financial-number {
+    font-family: 'Inter', sans-serif !important;
+  }
+  
+  /* ... existing styles ... */
 
   /* Custom scrollbar for dark/light themes */
   ::-webkit-scrollbar {
@@ -416,7 +424,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .high-contrast,
 .high-contrast body,
 .high-contrast #root {
-  background-color: #000000 !important;
+  background-color: #0A2540 !important;
   color: #ffffff !important;
 }
 
@@ -436,7 +444,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .high-contrast .bg-white,
 .high-contrast .bg-slate-50,
 .high-contrast .bg-slate-100 {
-  background-color: #000000 !important;
+  background-color: #0A2540 !important;
   border: 1px solid #ffffff !important;
 }
 
@@ -453,7 +461,7 @@ aside .text-slate-400, aside .text-slate-500 {
 .high-contrast input,
 .high-contrast select,
 .high-contrast textarea {
-  background-color: #000000 !important;
+  background-color: #0A2540 !important;
   color: #ffffff !important;
   border: 2px solid #ffffff !important;
 }
@@ -469,14 +477,14 @@ aside .text-slate-400, aside .text-slate-500 {
 .high-contrast button,
 .high-contrast .btn {
   border: 2px solid #ffffff !important;
-  background-color: #000000 !important;
+  background-color: #0A2540 !important;
   color: #ffffff !important;
 }
 
 .high-contrast button:hover,
 .high-contrast .btn:hover {
   background-color: #ffffff !important;
-  color: #000000 !important;
+  color: #0A2540 !important;
 }
 
 .high-contrast .text-emerald-400,
@@ -1843,4 +1851,30 @@ body.dark .login-card,
         margin: 10px auto !important;
     }
 }
+
+/* ==============================================================
+   NEON GLOW & 2050 TECHNOLOGICAL EFFECTS (إضافة تأثير التوهج النيوني)
+   ============================================================== */
+.neon-glow-blue {
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.35), inset 0 0 15px rgba(0, 102, 204, 0.25) !important;
+  border-color: rgba(0, 212, 255, 0.6) !important;
+}
+
+.neon-glow-card {
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #0a2540 0%, #06182a 100%);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 102, 204, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.neon-glow-card:hover {
+  box-shadow: 0 0 35px rgba(0, 212, 255, 0.55), 0 0 15px rgba(212, 175, 55, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+  border-color: #00d4ff !important;
+  transform: translateY(-3px);
+}
+
+.tech-blue-gradient {
+  background: linear-gradient(135deg, #0a2540 0%, #0066CC 50%, #0a1525 100%) !important;
+}
+
 

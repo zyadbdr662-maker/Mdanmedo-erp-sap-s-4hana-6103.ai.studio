@@ -50,7 +50,7 @@ export const DisclaimerDocument: React.FC = () => {
               إخلاء المسؤولية لمنظومة MeDo ERP
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed">
-              تحدد هذه الوثيقة حدود مسؤولية شركة <strong>ميدو تك للحلول البرمجية</strong> ومسؤوليات المستخدم لضمان الشفافية وحماية الطرفين، خصوصاً في مجالات أسعار الصرف، التدفقات النقدية، الامتثال الضريبي، والذكاء الاصطناعي.
+              تحدد هذه الوثيقة حدود مسؤولية شركة <strong>ميدو تك للحلول البرمجية</strong> ومسؤوليات المستخدم لضمان الشفافية وحماية الطرفين، خصوصاً في مجالات أسعار الصرف، التدفقات النقدية، الامتثال الضريبي، والذكاء المالي المتقدم.
             </p>
           </div>
 
@@ -86,7 +86,7 @@ export const DisclaimerDocument: React.FC = () => {
           <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/80 space-y-1">
             <div className="text-cyan-400 font-bold text-xs flex items-center justify-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>الذكاء الاصطناعي أداة مساعدة</span>
+              <span>الذكاء المالي المتقدم أداة مساعدة</span>
             </div>
             <p className="text-[11px] text-slate-400">مراجعة بشرية إلزامية للقيود المقترحة</p>
           </div>
@@ -181,7 +181,7 @@ export const DisclaimerDocument: React.FC = () => {
               </tr>
               <tr className="hover:bg-slate-800/30 transition-colors">
                 <td className="p-3.5 font-bold text-white">AI</td>
-                <td className="p-3.5 text-slate-300">نماذج الذكاء الاصطناعي التوليدي والتحليلي (Gemini AI) المدمجة لتقديم اقتراحات ومساعدات ذكية.</td>
+                <td className="p-3.5 text-slate-300">نماذج الذكاء المالي المتقدم التوليدي والتحليلي (Gemini AI) المدمجة لتقديم اقتراحات ومساعدات ذكية.</td>
               </tr>
               <tr className="hover:bg-slate-800/30 transition-colors">
                 <td className="p-3.5 font-bold text-white">SLA</td>
@@ -376,17 +376,17 @@ export const DisclaimerDocument: React.FC = () => {
           </div>
           <div>
             <span className="text-[11px] font-mono text-cyan-400 uppercase font-bold">المادة السادسة</span>
-            <h2 className="text-lg sm:text-xl font-bold text-white">إخلاء المسؤولية عن ميزات الذكاء الاصطناعي (Gemini AI)</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-white">إخلاء المسؤولية عن ميزات الذكاء المالي المتقدم (Gemini AI)</h2>
           </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 space-y-2">
           <h3 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
             <Cpu className="w-4 h-4 text-cyan-400" />
-            6.1. طبيعة الذكاء الاصطناعي التوليدي والتحليلي
+            6.1. طبيعة الذكاء المالي المتقدم التوليدي والتحليلي
           </h3>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            تتضمن المنظومة أدوات ذكاء اصطناعي (Gemini AI) مصممة لمساعدة المحاسب في اقتراح القيود اليومية، تحليل الفواتير، وتلخيص البيانات. يُعد الذكاء الاصطناعي <strong>أداة مساعدة احتمالية (Probabilistic Tool)</strong> وليست مصدراً للفتوى المحاسبية أو القانونية المعصومة، وهو معرض بطبيعته لاحتمال <strong>الخطأ أو الهلوسة الرقمية (AI Hallucination)</strong>.
+            تتضمن المنظومة أدوات ذكاء اصطناعي (Gemini AI) مصممة لمساعدة المحاسب في اقتراح القيود اليومية، تحليل الفواتير، وتلخيص البيانات. يُعد الذكاء المالي المتقدم <strong>أداة مساعدة احتمالية (Probabilistic Tool)</strong> وليست مصدراً للفتوى المحاسبية أو القانونية المعصومة، وهو معرض بطبيعته لاحتمال <strong>الخطأ أو الهلوسة الرقمية (AI Hallucination)</strong>.
           </p>
         </div>
 
@@ -394,7 +394,7 @@ export const DisclaimerDocument: React.FC = () => {
           <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-2xl space-y-2">
             <h4 className="font-bold text-white text-xs sm:text-sm text-cyan-400">6.2. مسؤولية المستخدم</h4>
             <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside leading-relaxed">
-              <li><strong>المراجعة البشرية المستقلة الإلزامية</strong> لكل قيد أو توصية أو تحليل مقترح من الذكاء الاصطناعي قبل الترحيل.</li>
+              <li><strong>المراجعة البشرية المستقلة الإلزامية</strong> لكل قيد أو توصية أو تحليل مقترح من الذكاء المالي المتقدم قبل الترحيل.</li>
               <li>التحقق من صحة الحسابات ومطابقتها للمستندات المؤيدة للمعاملة.</li>
               <li>تحمل نتائج أي قرار مالي أو إداري يتخذ بالاستناد لمخرجات AI.</li>
             </ul>
@@ -403,7 +403,7 @@ export const DisclaimerDocument: React.FC = () => {
           <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-2xl space-y-2">
             <h4 className="font-bold text-white text-xs sm:text-sm text-rose-400">6.3. إخلاء مسؤولية المزود</h4>
             <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside leading-relaxed">
-              <li>لا نضمن خلو مخرجات الذكاء الاصطناعي من الأخطاء الرياضية أو التوجيهية.</li>
+              <li>لا نضمن خلو مخرجات الذكاء المالي المتقدم من الأخطاء الرياضية أو التوجيهية.</li>
               <li>لا نتحمل مسؤولية أي قيد مقترح رُحّل إلى الدفاتر دون تدقيق بشري.</li>
               <li>لا نتحمل مسؤولية أي تحيز في البيانات أو تأويل غير سليم للمستندات المرفوعة.</li>
             </ul>
@@ -413,7 +413,7 @@ export const DisclaimerDocument: React.FC = () => {
         <div className="p-3.5 bg-slate-950/90 rounded-2xl border border-slate-800 text-xs text-slate-300 leading-relaxed flex items-start gap-2.5">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <strong className="text-white">قاعدة المراجعة الرباعية (Four-Eyes Principle - 6.4):</strong> نوصي بعدم ترحيل أي قيد مقترح عبر الذكاء الاصطناعي إلا بعد اعتماده من محاسب مسؤول ومراجع ثانٍ لضمان النزاهة المحاسبية.
+            <strong className="text-white">قاعدة المراجعة الرباعية (Four-Eyes Principle - 6.4):</strong> نوصي بعدم ترحيل أي قيد مقترح عبر الذكاء المالي المتقدم إلا بعد اعتماده من محاسب مسؤول ومراجع ثانٍ لضمان النزاهة المحاسبية.
           </div>
         </div>
       </section>

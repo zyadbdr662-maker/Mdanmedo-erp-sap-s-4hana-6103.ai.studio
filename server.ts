@@ -423,7 +423,7 @@ ${JSON.stringify(context || {})}
   } catch (error: any) {
     console.error("Gemini API Error:", error);
     res.status(500).json({
-      reply: "حدث خطأ أثناء معالجة الاستشارة بواسطة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+      reply: "حدث خطأ أثناء معالجة الاستشارة بواسطة الذكاء المالي المتقدم. يرجى المحاولة مرة أخرى.",
       error: "تعذر الاتصال بالمساعد الذكي حالياً",
       details: error.message || "Unknown error",
     });

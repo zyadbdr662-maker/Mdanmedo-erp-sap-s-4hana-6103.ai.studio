@@ -400,7 +400,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
               className="flex items-center gap-1.5 px-3 py-2 bg-purple-950/80 hover:bg-purple-900 border border-purple-700/50 text-purple-300 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>تحليل الذكاء الاصطناعي</span>
+              <span>تحليل الذكاء المالي المتقدم</span>
             </button>
           )}
         </div>
@@ -880,7 +880,7 @@ export const BranchManagementView: React.FC<BranchManagementViewProps> = ({
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
               <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" />
-                <span>رؤى الذكاء الاصطناعي للإيرادات</span>
+                <span>رؤى الذكاء المالي المتقدم للإيرادات</span>
               </h3>
 
               <div className="space-y-3 text-xs text-slate-300">

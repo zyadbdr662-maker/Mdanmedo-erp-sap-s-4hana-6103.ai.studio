@@ -116,13 +116,63 @@ export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
 };
 
 export function getTenantDefaultSettings(tenantSlug: string): SystemSettings {
+  const cleanSlug = (tenantSlug || "").toLowerCase().trim();
+
+  // 0. Explicit priority for required commercial launch tenants
+  if (cleanSlug === "company-1" || cleanSlug === "client-1" || cleanSlug === "alamal" || cleanSlug === "al-amal" || cleanSlug === "amal") {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: "شركة الأمل",
+      companyNameEn: "Al-Amal Trading & Contracting",
+      commercialRegister: "1010500037",
+      taxNumber: "300748291000003",
+      phone: "+967 777 111 023",
+      address: "صنعاء - شارع الستين",
+      email: "manager@company-1.medo-erp.cloud",
+    };
+  }
+  if (cleanSlug === "company-2" || cleanSlug === "client-2" || cleanSlug === "alnoor" || cleanSlug === "al-noor") {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: "مؤسسة النور",
+      companyNameEn: "Al-Noor Electronics & Supplies",
+      commercialRegister: "1010500074",
+      taxNumber: "300748291000003",
+      phone: "+967 777 111 046",
+      address: "عدن - المعلا",
+      email: "manager@company-2.medo-erp.cloud",
+    };
+  }
+  if (cleanSlug === "alzarqa" || cleanSlug === "zarqa" || cleanSlug === "az") {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: "الزرقاء النبيلة",
+      companyNameEn: "Al-Zarqa Al-Nabeela Company",
+      commercialRegister: "CR-AZ-99201",
+      taxNumber: "300748291000003",
+      phone: "+967 773 586 047",
+      address: "المنطقة الحرة - عدن، اليمن",
+      email: "finance@alzarqa.medo-erp.cloud",
+    };
+  }
+  if (cleanSlug === "bin-ziad" || cleanSlug === "binziyad" || cleanSlug === "binziad" || cleanSlug === "bz") {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: "بن زياد",
+      companyNameEn: "Bin Ziad United Commercial Group",
+      commercialRegister: "3892710",
+      taxNumber: "30074829100003",
+      phone: "+967 773586047 | 715779976",
+      address: "الكندوي، حمر، عمران - اليمن",
+      email: "manager@binziyad.medo-erp.cloud",
+    };
+  }
+
   if (tenantSlug === "albadr-pharma-2026" || tenantSlug === "client-albadr") {
     return TenantIsolationService.getAlBadrIsolatedState().systemSettings || DEFAULT_SYSTEM_SETTINGS;
   }
 
-  const cleanSlug = (tenantSlug || "").toLowerCase().trim();
-
-  // 1. Direct tenant lookup using findTenantById (covers alzarqa, bin-ziad, and all 200 tenants)
+  // 1. Direct tenant lookup using findTenantById (covers all 200 tenants and registered tenants)
   const matched = findTenantById(cleanSlug);
   if (matched) {
     return {
@@ -270,10 +320,38 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
   }
 
   try {
+    const isDefaultWorkspace = !activeTenant || activeTenant === "default";
+
     const rawBranches = localStorage.getItem(getStorageKey("BRANCHES", activeTenant));
-    const branches: Branch[] = rawBranches
-      ? JSON.parse(rawBranches)
-      : (activeTenant === "albadr-pharma-2026" ? (TenantIsolationService.getAlBadrIsolatedState().branches || INITIAL_BRANCHES) : INITIAL_BRANCHES);
+    let branches: Branch[];
+    if (rawBranches) {
+      branches = JSON.parse(rawBranches);
+    } else if (activeTenant === "albadr-pharma-2026") {
+      branches = TenantIsolationService.getAlBadrIsolatedState().branches || INITIAL_BRANCHES;
+    } else if (isDefaultWorkspace) {
+      branches = INITIAL_BRANCHES;
+    } else {
+      const tDetails = TenantIsolationService.getActiveTenantDetails(activeTenant);
+      branches = [
+        {
+          id: `BR-${activeTenant.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10)}-01`,
+          code: "BR-01",
+          nameAr: `المركز الرئيسي - ${tDetails.city || "صنعاء"}`,
+          nameEn: `Headquarters - ${tDetails.city || "Sana'a"}`,
+          city: tDetails.city || "صنعاء",
+          address: tDetails.address || "المركز الرئيسي",
+          phone: tDetails.phone || "+967 773 586 047",
+          email: `${activeTenant}@medo-erp.cloud`,
+          managerName: tDetails.nameAr,
+          currency: "YER_SANAA",
+          isMainBranch: true,
+          status: "ACTIVE",
+          costCenterId: "CC-01",
+          warehouseLocation: "المستودع الرئيسي",
+          createdAt: new Date().toISOString().split("T")[0],
+        },
+      ];
+    }
     const activeBranchId = localStorage.getItem(getStorageKey("ACTIVE_BRANCH_ID", activeTenant)) || branches?.[0]?.id || "ALL";
 
     const rawAccounts = localStorage.getItem(getStorageKey("ACCOUNTS", activeTenant));
@@ -282,25 +360,33 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
       : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().accounts : INITIAL_ACCOUNTS);
 
     const rawJournals = localStorage.getItem(getStorageKey("JOURNAL_ENTRIES", activeTenant));
-    const journalEntries: JournalEntry[] = rawJournals ? JSON.parse(rawJournals) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_JOURNAL_ENTRIES);
+    const journalEntries: JournalEntry[] = rawJournals 
+      ? JSON.parse(rawJournals) 
+      : (isDefaultWorkspace ? INITIAL_JOURNAL_ENTRIES : []);
 
     const rawVouchers = localStorage.getItem(getStorageKey("VOUCHERS", activeTenant));
-    const vouchers: Voucher[] = rawVouchers ? JSON.parse(rawVouchers) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_VOUCHERS);
+    const vouchers: Voucher[] = rawVouchers 
+      ? JSON.parse(rawVouchers) 
+      : (isDefaultWorkspace ? INITIAL_VOUCHERS : []);
 
     const rawCustomers = localStorage.getItem(getStorageKey("CUSTOMERS", activeTenant));
     const customers: Customer[] = rawCustomers
       ? JSON.parse(rawCustomers)
-      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().customers : INITIAL_CUSTOMERS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? TenantIsolationService.getAlBadrIsolatedState().customers 
+          : (isDefaultWorkspace ? INITIAL_CUSTOMERS : []));
 
     const rawVendors = localStorage.getItem(getStorageKey("VENDORS", activeTenant));
     const vendors: Vendor[] = rawVendors
       ? JSON.parse(rawVendors)
-      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().vendors : INITIAL_VENDORS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? TenantIsolationService.getAlBadrIsolatedState().vendors 
+          : (isDefaultWorkspace ? INITIAL_VENDORS : []));
 
     const rawInvoices = localStorage.getItem(getStorageKey("INVOICES", activeTenant));
     let invoices: Invoice[] = rawInvoices
       ? JSON.parse(rawInvoices)
-      : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_INVOICES);
+      : (isDefaultWorkspace ? INITIAL_INVOICES : []);
     
     // Ensure initial purchase bills exist if missing in current state for default dev workspace
     if (activeTenant === "default" && localStorage.getItem("medo_load_sample_data_flag") !== "false") {
@@ -315,22 +401,69 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
     const rawAssets = localStorage.getItem(getStorageKey("FIXED_ASSETS", activeTenant));
     const fixedAssets: FixedAsset[] = rawAssets
       ? JSON.parse(rawAssets)
-      : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_FIXED_ASSETS);
+      : (isDefaultWorkspace ? INITIAL_FIXED_ASSETS : []);
 
     const rawBanks = localStorage.getItem(getStorageKey("BANK_ACCOUNTS", activeTenant));
     const bankAccounts: BankAccountItem[] = rawBanks
       ? JSON.parse(rawBanks)
-      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().bankAccounts : INITIAL_BANK_ACCOUNTS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? TenantIsolationService.getAlBadrIsolatedState().bankAccounts 
+          : (isDefaultWorkspace ? INITIAL_BANK_ACCOUNTS : [
+              {
+                id: `BANK-${activeTenant.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)}-01`,
+                accountNameAr: "الحساب البنكي التجاري الرئيسي",
+                accountNameEn: "Main Commercial Bank Account",
+                bankName: "البنك التجاري اليمني",
+                accountNumber: "2026-001-9988",
+                iban: "YE99BOY00020260019988",
+                currency: "YER_SANAA",
+                glAccountId: "ACC-102",
+                currentBalance: 0,
+                status: "ACTIVE",
+                branchId: branches[0]?.id || "BR-01",
+              }
+            ]));
 
     const rawVaults = localStorage.getItem(getStorageKey("CASH_VAULTS", activeTenant));
     const cashVaults: CashVaultItem[] = rawVaults
       ? JSON.parse(rawVaults)
-      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().cashVaults : INITIAL_CASH_VAULTS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? TenantIsolationService.getAlBadrIsolatedState().cashVaults 
+          : (isDefaultWorkspace ? INITIAL_CASH_VAULTS : [
+              {
+                id: `VAULT-${activeTenant.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)}-01`,
+                nameAr: "خزينة النقدية الرئيسية",
+                nameEn: "Main Cash Vault",
+                vaultType: "MAIN",
+                currency: "YER_SANAA",
+                glAccountId: "ACC-101",
+                currentBalance: 0,
+                status: "ACTIVE",
+                responsibleEmployeeId: "EMP-01",
+                branchId: branches[0]?.id || "BR-01",
+                createdAt: new Date().toISOString().split("T")[0],
+              }
+            ]));
 
     const rawCostCenters = localStorage.getItem(getStorageKey("COST_CENTERS", activeTenant));
     const costCenters: CostCenter[] = rawCostCenters
       ? JSON.parse(rawCostCenters)
-      : (activeTenant === "albadr-pharma-2026" ? TenantIsolationService.getAlBadrIsolatedState().costCenters : INITIAL_COST_CENTERS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? TenantIsolationService.getAlBadrIsolatedState().costCenters 
+          : (isDefaultWorkspace ? INITIAL_COST_CENTERS : [
+              {
+                id: "CC-01",
+                code: "CC-100",
+                nameAr: "مركز التكلفة العام - الإدارة والمبيعات",
+                nameEn: "General Administration & Sales Cost Center",
+                branchId: branches[0]?.id || "BR-01",
+                managerName: "الإدارة المالية",
+                allocatedBudget: 50000000,
+                spentAmount: 0,
+                currency: "YER_SANAA",
+                status: "ACTIVE",
+              }
+            ]));
 
     const rawCurrencies = localStorage.getItem(getStorageKey("CURRENCIES", activeTenant));
     const currencies: CurrencyInfo[] = rawCurrencies ? JSON.parse(rawCurrencies) : INITIAL_CURRENCIES;
@@ -382,7 +515,9 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
     const rawInventory = localStorage.getItem(getStorageKey("INVENTORY_ITEMS", activeTenant));
     let inventoryItems: InventoryItem[] = rawInventory
       ? JSON.parse(rawInventory)
-      : (activeTenant === "albadr-pharma-2026" ? (TenantIsolationService.getAlBadrIsolatedState().inventoryItems || []) : INITIAL_INVENTORY_ITEMS);
+      : (activeTenant === "albadr-pharma-2026" 
+          ? (TenantIsolationService.getAlBadrIsolatedState().inventoryItems || []) 
+          : (isDefaultWorkspace ? INITIAL_INVENTORY_ITEMS : []));
     
     // Auto-inject Tobacco & Moassel if missing ONLY for default development workspace
     if (activeTenant === "default" && localStorage.getItem("medo_load_sample_data_flag") !== "false") {
@@ -401,52 +536,84 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
     }
 
     const rawMovements = localStorage.getItem(getStorageKey("STOCK_MOVEMENTS", activeTenant));
-    const stockMovements: StockMovement[] = rawMovements ? JSON.parse(rawMovements) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_STOCK_MOVEMENTS);
+    const stockMovements: StockMovement[] = rawMovements 
+      ? JSON.parse(rawMovements) 
+      : (isDefaultWorkspace ? INITIAL_STOCK_MOVEMENTS : []);
 
     const rawRequests = localStorage.getItem(getStorageKey("UNAVAILABLE_REQUESTS", activeTenant));
-    const unavailableRequests: UnavailableItemRequest[] = rawRequests ? JSON.parse(rawRequests) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_UNAVAILABLE_REQUESTS);
+    const unavailableRequests: UnavailableItemRequest[] = rawRequests 
+      ? JSON.parse(rawRequests) 
+      : (isDefaultWorkspace ? INITIAL_UNAVAILABLE_REQUESTS : []);
 
     const rawRoles = localStorage.getItem(getStorageKey("ROLES", activeTenant));
     const roles: ERPRole[] = rawRoles ? JSON.parse(rawRoles) : INITIAL_ROLES;
 
     const rawUsersList = localStorage.getItem(getStorageKey("USERS_LIST", activeTenant));
-    const usersList: ERPUser[] = rawUsersList ? JSON.parse(rawUsersList) : (activeTenant === "albadr-pharma-2026" ? [currentUser] : INITIAL_USERS);
+    const usersList: ERPUser[] = rawUsersList 
+      ? JSON.parse(rawUsersList) 
+      : (activeTenant === "albadr-pharma-2026" 
+          ? [currentUser] 
+          : (isDefaultWorkspace ? INITIAL_USERS : [currentUser]));
 
     const rawEmployees = localStorage.getItem(getStorageKey("HR_EMPLOYEES", activeTenant));
-    const hrEmployees: HREmployee[] = rawEmployees ? JSON.parse(rawEmployees) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_EMPLOYEES);
+    const hrEmployees: HREmployee[] = rawEmployees 
+      ? JSON.parse(rawEmployees) 
+      : (isDefaultWorkspace ? INITIAL_HR_EMPLOYEES : []);
 
     const rawDecisions = localStorage.getItem(getStorageKey("HR_DECISIONS", activeTenant));
-    const hrDecisions: HRAdministrativeDecision[] = rawDecisions ? JSON.parse(rawDecisions) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_DECISIONS);
+    const hrDecisions: HRAdministrativeDecision[] = rawDecisions 
+      ? JSON.parse(rawDecisions) 
+      : (isDefaultWorkspace ? INITIAL_HR_DECISIONS : []);
 
     const rawAttendance = localStorage.getItem(getStorageKey("HR_ATTENDANCE", activeTenant));
-    const hrAttendanceRecords: HRAttendanceRecord[] = rawAttendance ? JSON.parse(rawAttendance) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_ATTENDANCE);
+    const hrAttendanceRecords: HRAttendanceRecord[] = rawAttendance 
+      ? JSON.parse(rawAttendance) 
+      : (isDefaultWorkspace ? INITIAL_HR_ATTENDANCE : []);
 
     const rawShifts = localStorage.getItem(getStorageKey("HR_SHIFTS", activeTenant));
-    const hrShifts: HRWorkingShift[] = rawShifts ? JSON.parse(rawShifts) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_SHIFTS);
+    const hrShifts: HRWorkingShift[] = rawShifts 
+      ? JSON.parse(rawShifts) 
+      : (isDefaultWorkspace ? INITIAL_HR_SHIFTS : []);
 
     const rawPayrolls = localStorage.getItem(getStorageKey("HR_PAYROLLS", activeTenant));
-    const hrPayrolls: HRMonthlyPayroll[] = rawPayrolls ? JSON.parse(rawPayrolls) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_HR_PAYROLLS);
+    const hrPayrolls: HRMonthlyPayroll[] = rawPayrolls 
+      ? JSON.parse(rawPayrolls) 
+      : (isDefaultWorkspace ? INITIAL_HR_PAYROLLS : []);
 
     const rawCorr = localStorage.getItem(getStorageKey("CORRESPONDENCES", activeTenant));
-    const correspondences: CorrespondenceDocument[] = rawCorr ? JSON.parse(rawCorr) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CORRESPONDENCES);
+    const correspondences: CorrespondenceDocument[] = rawCorr 
+      ? JSON.parse(rawCorr) 
+      : (isDefaultWorkspace ? INITIAL_CORRESPONDENCES : []);
 
     const rawApr = localStorage.getItem(getStorageKey("APPROVAL_REQUESTS", activeTenant));
-    const approvalRequests: ApprovalRequest[] = rawApr ? JSON.parse(rawApr) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_APPROVAL_REQUESTS);
+    const approvalRequests: ApprovalRequest[] = rawApr 
+      ? JSON.parse(rawApr) 
+      : (isDefaultWorkspace ? INITIAL_APPROVAL_REQUESTS : []);
 
     const rawAudit = localStorage.getItem(getStorageKey("AUDIT_LOGS", activeTenant));
-    const auditLogs: AuditLogEntry[] = rawAudit ? JSON.parse(rawAudit) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_AUDIT_LOGS);
+    const auditLogs: AuditLogEntry[] = rawAudit 
+      ? JSON.parse(rawAudit) 
+      : (isDefaultWorkspace ? INITIAL_AUDIT_LOGS : []);
 
     const rawAlerts = localStorage.getItem(getStorageKey("SYSTEM_ALERTS", activeTenant));
-    const systemAlerts: SystemAlert[] = rawAlerts ? JSON.parse(rawAlerts) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_SYSTEM_ALERTS);
+    const systemAlerts: SystemAlert[] = rawAlerts 
+      ? JSON.parse(rawAlerts) 
+      : (isDefaultWorkspace ? INITIAL_SYSTEM_ALERTS : []);
 
     const rawChannels = localStorage.getItem(getStorageKey("CHAT_CHANNELS", activeTenant));
-    const chatChannels: ChatChannel[] = rawChannels ? JSON.parse(rawChannels) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CHAT_CHANNELS);
+    const chatChannels: ChatChannel[] = rawChannels 
+      ? JSON.parse(rawChannels) 
+      : (isDefaultWorkspace ? INITIAL_CHAT_CHANNELS : []);
 
     const rawMessages = localStorage.getItem(getStorageKey("CHAT_MESSAGES", activeTenant));
-    const chatMessages: ChatMessage[] = rawMessages ? JSON.parse(rawMessages) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_CHAT_MESSAGES);
+    const chatMessages: ChatMessage[] = rawMessages 
+      ? JSON.parse(rawMessages) 
+      : (isDefaultWorkspace ? INITIAL_CHAT_MESSAGES : []);
 
     const rawCirc = localStorage.getItem(getStorageKey("CIRCULARS", activeTenant));
-    const administrativeCirculars: AdministrativeCircular[] = rawCirc ? JSON.parse(rawCirc) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_ADMINISTRATIVE_CIRCULARS);
+    const administrativeCirculars: AdministrativeCircular[] = rawCirc 
+      ? JSON.parse(rawCirc) 
+      : (isDefaultWorkspace ? INITIAL_ADMINISTRATIVE_CIRCULARS : []);
 
     const rawWfRules = localStorage.getItem(getStorageKey("WORKFLOW_RULES", activeTenant));
     const workflowRules: WorkflowRouteRule[] = rawWfRules ? JSON.parse(rawWfRules) : (activeTenant === "albadr-pharma-2026" ? [] : INITIAL_WORKFLOW_RULES);

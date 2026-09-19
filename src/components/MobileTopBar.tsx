@@ -320,7 +320,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             <button
               onClick={onOpenVoiceSearch}
               className="w-8 h-8 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center active:scale-95 shadow-sm"
-              title="بحث صوتي ذكي بالذكاء الاصطناعي"
+              title="بحث صوتي ذكي بالذكاء المالي المتقدم"
               aria-label="بحث صوتي ذكي"
             >
               <Mic className="w-3.5 h-3.5 animate-pulse" />

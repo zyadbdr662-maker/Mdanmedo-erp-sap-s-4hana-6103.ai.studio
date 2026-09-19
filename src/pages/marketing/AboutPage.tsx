@@ -24,7 +24,7 @@ export const AboutPage = () => {
     {
       icon: <Lightbulb className="w-8 h-8 text-[#B8860B]" />,
       title: lang === 'ar' ? 'الابتكار' : 'Innovation',
-      desc: lang === 'ar' ? 'نتبنى أحدث التقنيات السحابية والذكاء الاصطناعي لتقديم حلول أعمال متطورة واستباقية.' : 'Adopting cutting-edge cloud & AI technologies to deliver proactive solutions.'
+      desc: lang === 'ar' ? 'نتبنى أحدث التقنيات السحابية والذكاء المالي المتقدم لتقديم حلول أعمال متطورة واستباقية.' : 'Adopting cutting-edge cloud & AI technologies to deliver proactive solutions.'
     },
     {
       icon: <ShieldCheck className="w-8 h-8 text-[#B8860B]" />,

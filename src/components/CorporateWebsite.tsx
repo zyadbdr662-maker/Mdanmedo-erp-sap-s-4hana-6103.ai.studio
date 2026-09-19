@@ -47,6 +47,28 @@ import { blogData, BlogArticle } from "../data/blogData";
 import { TrustCenterView } from "./TrustCenterView";
 import { soundService } from "../services/notificationSoundService";
 import { BzmtLogo } from "./BzmtLogo";
+import { SystemFooter } from "./SystemFooter";
+
+const ModuleModal = ({ module, onClose }: { module: any; onClose: () => void }) => (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#0a2540] border border-sap-secondary/50 p-8 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 left-4 text-white hover:text-sap-secondary"><X /></button>
+        <div className="flex items-center gap-4 mb-6">
+            <div className="p-4 bg-slate-800 border border-slate-700 rounded-2xl text-sap-secondary">{module.icon}</div>
+            <h2 className="text-2xl font-black text-white">{module.title}</h2>
+        </div>
+        <p className="text-slate-300 mb-6">{module.desc}</p>
+        <div className="space-y-2 mb-8">
+            {module.features.map((f: string, i: number) => <div key={i} className="flex items-center gap-2 text-white"><Check className="text-sap-secondary w-5 h-5" /> {f}</div>)}
+        </div>
+        <div className="flex gap-4">
+            <button className="flex-1 bg-sap-secondary text-[#0A2540] py-3 rounded-full font-black">اطلب عرضاً توضيحياً</button>
+            <button className="flex-1 border border-sap-secondary text-sap-secondary py-3 rounded-full font-black">جرب مجاناً</button>
+        </div>
+      </div>
+    </div>
+  );
 
 interface CorporateWebsiteProps {
   availableBranches?: { id: string; nameAr: string; city: string; code: string }[];
@@ -69,6 +91,9 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
   const [modalEmail, setModalEmail] = useState("");
   const [isActivatingPlan, setIsActivatingPlan] = useState(false);
   const [activationMsg, setActivationMsg] = useState<string | null>(null);
+
+  // Module Modal State
+  const [selectedModule, setSelectedModule] = useState<any | null>(null);
 
   // Legal Policies Modal State
   const [legalModalOpen, setLegalModalOpen] = useState(false);
@@ -161,7 +186,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
       num: "06",
       icon: <Sparkles className="w-7 h-7 text-sap-secondary" />,
       title: "التحليل المالي الذكي (Gemini AI)",
-      desc: "تحليل استباقي لحظي للربحية والسيولة، كشف مبكر للشذوذ ومحاولات التلاعب المالي، وتوقعات تدفقات نقدية ذكية مستندة إلى أحدث نماذج الذكاء الاصطناعي.",
+      desc: "تحليل استباقي لحظي للربحية والسيولة، كشف مبكر للشذوذ ومحاولات التلاعب المالي، وتوقعات تدفقات نقدية ذكية مستندة إلى أحدث نماذج الذكاء المالي المتقدم.",
       badge: "Powered by Gemini 2.5",
       features: [
         "فحص وتدقيق القيود اليومية لكشف المعاملات الشاذة أو المضاعفة آلياً",
@@ -346,7 +371,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                   <h1 className="text-3xl sm:text-5xl lg:text-6xl text-white leading-tight font-black">
                     نظام MeDo ERP المحاسبي السحابي <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-l from-sap-secondary via-amber-200 to-emerald-400">
-                      قوة الذكاء الاصطناعي والدقة المالية بين يديك
+                      قوة الذكاء المالي المتقدم والدقة المالية بين يديك
                     </span>
                   </h1>
 
@@ -492,7 +517,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                 {coreModules.map((mod, i) => (
                   <div 
                     key={i} 
-                    className="bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-sap-secondary/40 rounded-3xl p-6 sm:p-8 transition-all hover:-translate-y-1 shadow-lg group relative overflow-hidden"
+                    className="neon-glow-card rounded-3xl p-6 sm:p-8 group relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-sap-secondary/5 rounded-bl-full pointer-events-none group-hover:bg-sap-secondary/10 transition-colors" />
                     <div className="flex items-center justify-between mb-5">
@@ -510,7 +535,10 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                       {mod.desc}
                     </p>
                     <button
-                      onClick={() => setActiveTab("MODULES")}
+                      onClick={() => {
+                        console.log("Explore module clicked for:", mod.title);
+                        setSelectedModule(mod);
+                      }}
                       className="inline-flex items-center gap-2 text-xs font-bold text-sap-secondary hover:text-amber-300 transition-colors cursor-pointer group-hover:translate-x-1 duration-200"
                     >
                       <span>استكشف تفاصيل الوحدة</span>
@@ -520,6 +548,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                 ))}
               </div>
             </div>
+
+            {selectedModule && <ModuleModal module={selectedModule} onClose={() => setSelectedModule(null)} />}
           </div>
         )}
 
@@ -548,7 +578,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                 </div>
                 <h3 className="text-2xl font-black text-white">رؤيتنا (Our Vision)</h3>
                 <p className="text-slate-300 text-base leading-relaxed">
-                  أن نكون المنظومة السحابية والهجينة الرائدة في اليمن والمنطقة في إدارة وتخطيط الموارد (ERP)، وتمكين المنشآت التجارية والصناعية من اتخاذ قرارات مالية حاسمة مدعومة بالذكاء الاصطناعي بدقة وأمان.
+                  أن نكون المنظومة السحابية والهجينة الرائدة في اليمن والمنطقة في إدارة وتخطيط الموارد (ERP)، وتمكين المنشآت التجارية والصناعية من اتخاذ قرارات مالية حاسمة مدعومة بالذكاء المالي المتقدم بدقة وأمان.
                 </p>
               </div>
 
@@ -574,7 +604,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                   },
                   {
                     title: "الابتكار المستمر",
-                    desc: "دمج الذكاء الاصطناعي التوليدي والتحليلي لاستباق الأخطاء واكتشاف فرص النمو المالي."
+                    desc: "دمج الذكاء المالي المتقدم التوليدي والتحليلي لاستباق الأخطاء واكتشاف فرص النمو المالي."
                   },
                   {
                     title: "المرونة التشغيلية",
@@ -949,7 +979,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-sap-secondary" /> حتى 10 مستخدمين و 5 فروع</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-sap-secondary" /> محرك فوارق العملة اليمنية وتدفقات نقدية</li>
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-sap-secondary" /> إدارة الأصول الثابتة والمخازن</li>
-                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-sap-secondary" /> الذكاء الاصطناعي المالي (AI Advisor)</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-sap-secondary" /> الذكاء المالي المتقدم المالي (AI Advisor)</li>
                   </ul>
                 </div>
                 <button 
@@ -1317,110 +1347,13 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({ availableBra
       </main>
 
       {/* ============================================================== */}
-      {/* FOOTER SECTION                                                 */}
+      {/* FOOTER SECTION (Unified System Footer)                         */}
       {/* ============================================================== */}
-      <footer 
-        id="corporate-footer" 
-        className="marketing-footer-box bg-slate-950 border-t border-slate-800/90 py-8 px-4 text-center mt-12"
-        style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', 'Droid Arabic Naskh', 'Traditional Arabic', sans-serif" }}
-      >
-        <div className="max-w-4xl mx-auto space-y-4">
-          
-          {/* 1. Copyright Line */}
-          <div className="marketing-footer-text text-slate-200 font-bold flex items-center justify-center gap-2 text-sm sm:text-base tracking-wide flex-wrap">
-            <span>🇾🇪</span>
-            <span className="text-slate-100">جميع الحقوق محفوظة ©</span>
-            <span className="text-amber-300 font-sans font-extrabold">Bin Ziyad Group & MeDo Tech (BZMT)</span>
-          </div>
-          <div className="text-xs text-slate-400 font-medium">
-            منظومة SAP/MeDO ERP السحابية المتكاملة | حلول المؤسسات الذكية
-          </div>
-
-          {/* Quick Page Links */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-xs font-semibold text-slate-300 py-1">
-            <button onClick={() => { setActiveTab("HOME"); setSelectedArticle(null); }} className="hover:text-sap-secondary transition-colors cursor-pointer">الرئيسية</button>
-            <span className="text-slate-700 select-none">•</span>
-            <button onClick={() => { setActiveTab("ABOUT"); setSelectedArticle(null); }} className="hover:text-sap-secondary transition-colors cursor-pointer">عن الشركة</button>
-            <span className="text-slate-700 select-none">•</span>
-            <button onClick={() => { setActiveTab("MODULES"); setSelectedArticle(null); }} className="hover:text-sap-secondary transition-colors cursor-pointer">وحدات النظام</button>
-            <span className="text-slate-700 select-none">•</span>
-            <button onClick={() => { setActiveTab("BLOG"); setSelectedArticle(null); }} className="text-sap-secondary hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer">
-              <span>المدونة</span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-sap-secondary rounded-md font-bold">جديد</span>
-            </button>
-            <span className="text-slate-700 select-none">•</span>
-            <button onClick={() => { setActiveTab("PRICING"); setSelectedArticle(null); }} className="hover:text-sap-secondary transition-colors cursor-pointer">الأسعار</button>
-            <span className="text-slate-700 select-none">•</span>
-            <button onClick={() => { setActiveTab("CONTACT"); setSelectedArticle(null); }} className="hover:text-sap-secondary transition-colors cursor-pointer">اتصل بنا</button>
-          </div>
-
-          {/* 2. Legal Policy Interactive Links */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-normal text-slate-400">
-            <button 
-              id="footer-terms-of-service-link"
-              onClick={() => openLegalPolicy("TERMS")} 
-              className="hover:text-sap-secondary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-900"
-            >
-              📄 شروط الاستخدام
-            </button>
-            <span className="text-slate-700 select-none">│</span>
-            <button 
-              id="footer-eula-link"
-              onClick={() => openLegalPolicy("EULA")} 
-              className="hover:text-sap-secondary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-900"
-            >
-              📜 ترخيص المستخدم (EULA)
-            </button>
-            <span className="text-slate-700 select-none">│</span>
-            <button 
-              id="footer-privacy-policy-link"
-              onClick={() => openLegalPolicy("PRIVACY")} 
-              className="hover:text-sap-secondary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-900"
-            >
-              🔒 سياسة الخصوصية
-            </button>
-            <span className="text-slate-700 select-none">│</span>
-            <button 
-              id="footer-dpa-link"
-              onClick={() => openLegalPolicy("DPA")} 
-              className="hover:text-sap-secondary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-900"
-            >
-              🛡️ معالجة البيانات (DPA)
-            </button>
-            <span className="text-slate-700 select-none">│</span>
-            <button 
-              id="footer-disclaimer-link"
-              onClick={() => openLegalPolicy("DISCLAIMER")} 
-              className="hover:text-sap-secondary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-900"
-            >
-              ⚖️ إخلاء المسؤولية
-            </button>
-          </div>
-
-          {/* 3. Contact Email and WhatsApp Links */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-xs text-slate-400 pt-1">
-            <a 
-              id="footer-email-link"
-              href="mailto:bdr.zyad@yandex.com" 
-              className="hover:text-sap-secondary transition-colors"
-            >
-              📧 bdr.zyad@yandex.com
-            </a>
-            <span className="text-slate-700 select-none">│</span>
-            <a 
-              id="footer-whatsapp-link"
-              href="https://wa.me/967773586047" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="hover:text-emerald-400 transition-colors"
-              dir="ltr"
-            >
-              📞 +0967773586047
-            </a>
-          </div>
-
-        </div>
-      </footer>
+      <SystemFooter 
+        onOpenLegalDocuments={(tab) => {
+          if (tab) openLegalPolicy(tab as any);
+        }}
+      />
 
       {/* ============================================================== */}
       {/* LEGAL POLICIES MODAL                                           */}

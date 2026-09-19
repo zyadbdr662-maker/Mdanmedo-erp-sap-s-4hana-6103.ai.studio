@@ -172,7 +172,7 @@ export const SmartAiJournalModal: React.FC<SmartAiJournalModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>توليد القيود المحاسبية بالذكاء الاصطناعي (MeDo Smart Journal AI)</span>
+                <span>توليد القيود المحاسبية بالذكاء المالي المتقدم (MeDo Smart Journal AI)</span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
                 اكتب المعاملة باللغة الطبيعية وسيقوم النموذج بتحليل الحسابات المدينة والدائنة وصياغة قيد متوازن

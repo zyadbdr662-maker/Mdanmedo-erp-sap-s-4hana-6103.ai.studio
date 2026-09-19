@@ -296,11 +296,11 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
         // Hide panel on success so they see the populated form
         setShowOcrPanel(false);
       } else {
-        throw new Error("تنسيق استجابة غير صالح من الذكاء الاصطناعي.");
+        throw new Error("تنسيق استجابة غير صالح من الذكاء المالي المتقدم.");
       }
     } catch (err: any) {
       console.error("OCR API error:", err);
-      setOcrError("فشل استخراج البيانات بالذكاء الاصطناعي: " + (err.message || "خطأ غير معروف"));
+      setOcrError("فشل استخراج البيانات بالذكاء المالي المتقدم: " + (err.message || "خطأ غير معروف"));
     } finally {
       setIsOcrScanning(false);
     }
@@ -1173,16 +1173,16 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
               </div>
             </div>
 
-            {/* القارئ الآلي للفواتير بالذكاء الاصطناعي (OCR) */}
+            {/* القارئ الآلي للفواتير بالذكاء المالي المتقدم (OCR) */}
             <div className="bg-[#1A6B3C]/10 border border-[#1A6B3C]/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-right">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-[#1A6B3C]/20 rounded-xl text-[#1A6B3C]">
                   <Sparkles className="w-5 h-5 text-[#D4AF37] animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">القارئ الآلي للفواتير بالذكاء الاصطناعي (OCR)</h4>
+                  <h4 className="text-sm font-bold text-white">القارئ الآلي للفواتير بالذكاء المالي المتقدم (OCR)</h4>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    التقط صورة للفاتورة الورقية عبر الكاميرا أو ارفعها مباشرة ليقوم الذكاء الاصطناعي باستخراج البنود وتعبئة البيانات في ثوانٍ.
+                    التقط صورة للفاتورة الورقية عبر الكاميرا أو ارفعها مباشرة ليقوم الذكاء المالي المتقدم باستخراج البنود وتعبئة البيانات في ثوانٍ.
                   </p>
                 </div>
               </div>

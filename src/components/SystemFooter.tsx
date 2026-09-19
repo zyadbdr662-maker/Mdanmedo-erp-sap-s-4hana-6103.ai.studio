@@ -17,101 +17,146 @@ export const SystemFooter: React.FC<SystemFooterProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
 
+  if (isCompact) {
+    return (
+      <footer
+        id="system-main-footer"
+        className={`w-full border-t border-slate-800/80 bg-[#0a2540] text-slate-400 select-none transition-colors py-2 px-4 text-[11px] ${className}`}
+      >
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap justify-center lg:justify-start font-medium">
+            <BzmtLogo size="sm" variant="monogram" />
+            <span className="text-slate-200 font-bold tracking-wide">جميع الحقوق محفوظة ©</span>
+            <span className="text-[#d4af37] font-semibold font-sans tracking-wide">Bin Ziyad Group & MeDo Tech (BZMT)</span>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1.5 text-emerald-400/90 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              IFRS / ZATCA
+            </span>
+            <span>|</span>
+            <span>SAP/MeDO ERP Suite {currentYear}</span>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer
       id="system-main-footer"
-      className={`w-full border-t border-slate-800/80 bg-slate-950/95 text-slate-400 select-none transition-colors ${
-        isCompact ? "py-2 px-4 text-[11px]" : "py-3 px-6 text-xs"
-      } ${className}`}
+      className={`w-full border-t border-[#d4af37]/20 bg-[#0a2540] text-white pt-12 pb-6 px-6 select-none transition-colors ${className}`}
+      dir="rtl"
     >
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
-        {/* Brand Copyright with Official BZMT Logo */}
-        <div className="flex items-center gap-2.5 flex-wrap justify-center lg:justify-start font-medium">
-          <BzmtLogo size="sm" variant="monogram" />
-          <span className="text-slate-200 font-bold tracking-wide">
-            جميع الحقوق محفوظة ©
-          </span>
-          <span className="text-amber-300 font-semibold font-sans tracking-wide">
-            Bin Ziyad Group & MeDo Tech (BZMT)
-          </span>
-          <span className="text-slate-600 hidden sm:inline">|</span>
-          <span className="text-slate-400 text-[11px] hidden sm:inline font-mono">
-            SAP/MeDO ERP Suite {currentYear}
-          </span>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 text-center">
+        {/* Section 1: Brand & Contact */}
+        <div className="flex flex-col items-center space-y-6">
+          <div className="flex flex-col items-center gap-3 justify-center">
+            <BzmtLogo size="md" variant="monogram" />
+            <div className="text-center">
+              <span className="text-2xl font-black block text-white leading-tight">MeDo ERP</span>
+              <span className="text-sm text-slate-300 font-medium">ميدو تك للحلول البرمجية</span>
+            </div>
+          </div>
+          <div className="space-y-4 text-[15px] w-full">
+            <p className="flex items-center justify-center gap-3 group">
+              <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-lg group-hover:border-[#d4af37]/50 transition-colors">📞</span>
+              <span className="hover:text-[#d4af37] transition-colors tracking-wide" dir="ltr">+967 773 586 047</span>
+            </p>
+            <p className="flex items-center justify-center gap-3 group">
+              <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-lg group-hover:border-[#d4af37]/50 transition-colors">📧</span>
+              <span className="hover:text-[#d4af37] transition-colors tracking-wide">bdr.zyad@yandex.com</span>
+            </p>
+            <p className="flex items-center justify-center gap-3 group">
+              <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-lg group-hover:border-[#d4af37]/50 transition-colors">🏠</span>
+              <span className="hover:text-[#d4af37] transition-colors tracking-wide">اليمن - صنعاء / عدن</span>
+            </p>
+            <p className="flex items-center justify-center gap-3 group">
+              <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-lg group-hover:border-[#d4af37]/50 transition-colors">🌐</span>
+              <span className="hover:text-[#d4af37] transition-colors tracking-wide">www.medo-erp.com</span>
+            </p>
+          </div>
         </div>
 
-        {/* Legal Documents Direct Links & Standards Badge */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center lg:justify-end text-[11px] text-slate-400 font-medium">
-          {onOpenLegalDocuments && (
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("TERMS")}
-                className="hover:text-amber-400 text-slate-300 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900 cursor-pointer"
-                title="شروط الاستخدام والخدمة (Terms of Service)"
-              >
-                الشروط
-              </button>
-              <span className="text-slate-700">•</span>
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("PRIVACY")}
-                className="hover:text-emerald-400 text-slate-300 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900 cursor-pointer"
-                title="سياسة الخصوصية وسرية البيانات (Privacy Policy)"
-              >
-                الخصوصية
-              </button>
-              <span className="text-slate-700">•</span>
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("DISCLAIMER")}
-                className="hover:text-amber-400 text-slate-300 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900 cursor-pointer"
-                title="إخلاء المسؤولية القانونية (Disclaimer)"
-              >
-                إخلاء المسؤولية
-              </button>
-              <span className="text-slate-700">•</span>
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("REFUND")}
-                className="hover:text-cyan-400 text-slate-300 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900 cursor-pointer"
-                title="سياسة الاسترداد وإلغاء الاشتراك (Refund Policy)"
-              >
-                الاسترداد
-              </button>
-              <span className="text-slate-700">•</span>
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("COOKIES")}
-                className="hover:text-amber-300 text-slate-300 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-900 cursor-pointer"
-                title="سياسة ملفات تعريف الارتباط (Cookies Policy)"
-              >
-                ملفات الارتباط
-              </button>
+        {/* Section 2: Quick Links */}
+        <div className="flex flex-col items-center space-y-5">
+          <h4 className="text-xl font-bold text-[#d4af37] pb-2 border-b border-[#d4af37]/20 inline-block">روابط سريعة</h4>
+          <div className="flex flex-col gap-4 text-[15px] items-center">
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">🏠 الرئيسية</button>
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">🏢 عن الشركة</button>
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📦 وحدات النظام</button>
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📰 المدونة</button>
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">💰 الأسعار</button>
+            <button className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📞 اتصل بنا</button>
+          </div>
+        </div>
 
-              <button
-                type="button"
-                onClick={() => onOpenLegalDocuments("TERMS")}
-                className="flex items-center gap-1 px-2 py-0.5 mr-1 rounded-lg bg-slate-900/90 hover:bg-slate-850 text-amber-300 hover:text-amber-200 border border-amber-500/30 transition-all text-[10px] font-bold cursor-pointer active:scale-95 group shadow-sm"
-                title="عرض كافة الوثائق القانونية والسياسات الرسمية v2.0"
-              >
-                <Scale className="w-3 h-3 text-amber-400 group-hover:scale-110 transition-transform" />
-                <span>الوثائق القانونية</span>
-                <span className="text-[9px] px-1 py-0.1 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 font-mono">v2.0</span>
-              </button>
+        {/* Section 3: Legal Documents */}
+        <div className="flex flex-col items-center space-y-5">
+          <h4 className="text-xl font-bold text-[#d4af37] pb-2 border-b border-[#d4af37]/20 inline-block">الوثائق القانونية</h4>
+          <div className="flex flex-col gap-4 text-[15px] items-center">
+            <button onClick={() => onOpenLegalDocuments?.("TERMS")} className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">📜 شروط الاستخدام</button>
+            <button onClick={() => onOpenLegalDocuments?.("PRIVACY")} className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">🔒 سياسة الخصوصية</button>
+            <button onClick={() => onOpenLegalDocuments?.("DISCLAIMER")} className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">🛡️ إخلاء المسؤولية</button>
+            <button onClick={() => onOpenLegalDocuments?.("REFUND")} className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">💰 سياسة الاسترداد</button>
+            <button onClick={() => onOpenLegalDocuments?.("COOKIES")} className="hover:text-[#d4af37] transition-colors flex items-center gap-2 text-center">🍪 ملفات الارتباط</button>
+          </div>
+        </div>
+
+        {/* Section 4: Security & Standards */}
+        <div className="flex flex-col items-center space-y-5">
+          <h4 className="text-xl font-bold text-[#d4af37] pb-2 border-b border-[#d4af37]/20 inline-block">المعايير والأمان</h4>
+          <div className="space-y-4 w-full">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-[#d4af37]/30 space-y-3 shadow-[0_0_15px_rgba(212,175,55,0.1)]">
+              <div className="flex items-center gap-2 justify-center text-[#d4af37] font-black text-sm uppercase tracking-wider">
+                <Lock className="w-4 h-4 text-[#d4af37] fill-[#d4af37]/20" />
+                <span>نظام مشفر بالكامل</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                تشفير AES-256 GCM عسكري لكافة البيانات المالية والحساسة مع حماية Sovereign Cloud.
+              </p>
             </div>
-          )}
+            <div className="flex flex-col gap-3 items-center">
+              <div className="flex items-center gap-2 text-xs font-bold text-white bg-slate-900/50 p-2 rounded-xl border border-slate-800 justify-center w-full max-w-[240px]">
+                <div className="w-6 h-6 bg-white rounded flex items-center justify-center p-0.5 shrink-0">
+                  <img src="https://zatca.gov.sa/ar/About/LegalRequirements/Fatoora/PublishingImages/FatooraLogo.png" alt="ZATCA" className="w-full h-full object-contain" />
+                </div>
+                <span>متوافق مع هيئة الزكاة والجمارك (ZATCA)</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300 justify-center">
+                <Scale className="w-4 h-4 text-[#d4af37]" />
+                <span>مطابق لمعايير IFRS المحاسبية</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300 justify-center">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>الامتثال لـ ISO, GDPR, SOC2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <span className="text-slate-700 hidden md:inline">|</span>
+      {/* Bottom Copyright Bar */}
+      <div className="max-w-7xl mx-auto mt-12 pt-10 border-t border-slate-800/80 flex flex-col items-center justify-center gap-10">
+        {/* Social Icons - Centered */}
+        <div className="flex items-center justify-center gap-[20px] text-2xl order-1">
+          <span className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900/50 border border-slate-800 hover:border-[#d4af37] hover:scale-110 hover:bg-[#d4af37]/10 transition-all cursor-pointer text-[24px] shadow-lg">📘</span>
+          <span className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900/50 border border-slate-800 hover:border-[#d4af37] hover:scale-110 hover:bg-[#d4af37]/10 transition-all cursor-pointer text-[24px] shadow-lg">💼</span>
+          <span className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900/50 border border-slate-800 hover:border-[#d4af37] hover:scale-110 hover:bg-[#d4af37]/10 transition-all cursor-pointer text-[24px] shadow-lg">𝕏</span>
+          <span className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900/50 border border-slate-800 hover:border-[#d4af37] hover:scale-110 hover:bg-[#d4af37]/10 transition-all cursor-pointer text-[24px] shadow-lg">🎥</span>
+          <span className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900/50 border border-slate-800 hover:border-[#d4af37] hover:scale-110 hover:bg-[#d4af37]/10 transition-all cursor-pointer text-[24px] shadow-lg">💬</span>
+        </div>
 
-          <span className="flex items-center gap-1.5 text-emerald-400/90 font-mono text-[10px] sm:text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            معايير IFRS / ZATCA
-          </span>
-          <span className="text-slate-700 hidden sm:inline">•</span>
-          <span className="text-slate-500 font-mono text-[10px] hidden sm:inline">
-            سحابي مشفر AES-256
-          </span>
+        {/* Copyright & Logo - Centered Stack */}
+        <div className="flex flex-col items-center gap-6 order-2 text-center">
+          <BzmtLogo size="lg" variant="monogram" />
+          <div className="space-y-2">
+            <p className="text-[16px] text-white font-bold tracking-wide">© {currentYear} ميدو تك للحلول البرمجية - MeDo Tech</p>
+            <p className="text-[14px] text-slate-400 font-medium">
+              جميع الحقوق محفوظة - <span className="text-[#d4af37] font-bold">Bin Ziyad Group (BZG)</span>
+            </p>
+            <p className="text-[12px] text-slate-500 font-sans tracking-widest mt-2 uppercase">Advanced Cloud ERP Systems Architecture</p>
+          </div>
         </div>
       </div>
     </footer>

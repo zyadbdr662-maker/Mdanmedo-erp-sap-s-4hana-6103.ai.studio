@@ -321,7 +321,7 @@ export const SystemSettingsView: React.FC<SystemSettingsViewProps> = ({
           }`}
         >
           <Sparkles className="w-4 h-4 text-cyan-400" />
-          إعدادات الذكاء الاصطناعي
+          إعدادات الذكاء المالي المتقدم
         </button>
 
         <button
@@ -834,7 +834,7 @@ export const SystemSettingsView: React.FC<SystemSettingsViewProps> = ({
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">نموذج الذكاء الاصطناعي المعتمد</label>
+                <label className="text-xs font-bold text-slate-300">نموذج الذكاء المالي المتقدم المعتمد</label>
                 <select
                   value={formData.aiModel}
                   onChange={(e) => setFormData({ ...formData, aiModel: e.target.value })}
@@ -856,7 +856,7 @@ export const SystemSettingsView: React.FC<SystemSettingsViewProps> = ({
               />
               <div>
                 <label htmlFor="aiAutoValidation" className="text-sm font-bold text-white cursor-pointer">
-                  التصحيح التلقائي وتدقيق القيود بواسطة الذكاء الاصطناعي
+                  التصحيح التلقائي وتدقيق القيود بواسطة الذكاء المالي المتقدم
                 </label>
                 <p className="text-xs text-slate-400 mt-0.5">
                   توجيه المحاسب عند صياغة أي قيد باللغة الطبيعية لضبط أرصدة المدين والدائن فوراً.

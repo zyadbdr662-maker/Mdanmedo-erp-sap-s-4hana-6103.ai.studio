@@ -459,7 +459,7 @@ export const PrivacyPolicyDocument: React.FC = () => {
             <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-1.5">
               <strong className="text-emerald-300 font-bold text-sm block">7.1. التعهد الصارم بعدم المشاركة أو البيع:</strong>
               <p className="text-slate-200">
-                <strong>لا نبيع بياناتك</strong> لأي جهة تجارية أو إعلانية، و<strong>لا نشارك بياناتك</strong> مع شركات الدعاية، و<strong>لا نستخدم بياناتك المالية أو قيودك المحاسبية لتدريب نماذج الذكاء الاصطناعي العامة</strong>. بياناتك ملك لك وحدك وتبقى سرية ومغلقة.
+                <strong>لا نبيع بياناتك</strong> لأي جهة تجارية أو إعلانية، و<strong>لا نشارك بياناتك</strong> مع شركات الدعاية، و<strong>لا نستخدم بياناتك المالية أو قيودك المحاسبية لتدريب نماذج الذكاء المالي المتقدم العامة</strong>. بياناتك ملك لك وحدك وتبقى سرية ومغلقة.
               </p>
             </div>
 

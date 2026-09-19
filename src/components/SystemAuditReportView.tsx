@@ -44,7 +44,7 @@ export const SystemAuditReportView: React.FC<SystemAuditReportViewProps> = ({
     { id: 2, phase: "المرحلة الأولى: الأساسيات", item: "واجهة تشبه واجهات SAP (T-Code FS00, SPRO)", date: "27/08/2026", status: "SUCCESS", file: "SproConfigurator.tsx, COAManager.tsx", notes: "دعم ميزات SPRO ورموز المعاملات السريعة" },
     { id: 3, phase: "المرحلة الأولى: الأساسيات", item: "دليل حسابات شجري مرن (COA)", date: "27/08/2026", status: "SUCCESS", file: "src/data/initialERPData.ts", notes: "دليل حسابات رباعي المستويات متناسق ومنظم" },
     { id: 4, phase: "المرحلة الأولى: الأساسيات", item: "احتساب إقرارات الزكاة (2.5%) والضريبة (17% و 5%)", date: "27/08/2026", status: "SUCCESS", file: "ZatcaVatReturnGenerator.tsx", notes: "حساب وعاء الزكاة وضرائب القيمة المضافة ديناميكياً" },
-    { id: 5, phase: "المرحلة الأولى: الأساسيات", item: "توليد القيود بالذكاء الاصطناعي (AI Prompt-to-Entry)", date: "27/08/2026", status: "SUCCESS", file: "AIEntryModal.tsx", notes: "تحليل ذكي للموجهات لإنشاء قيود يومية متزنة" },
+    { id: 5, phase: "المرحلة الأولى: الأساسيات", item: "توليد القيود بالذكاء المالي المتقدم (AI Prompt-to-Entry)", date: "27/08/2026", status: "SUCCESS", file: "AIEntryModal.tsx", notes: "تحليل ذكي للموجهات لإنشاء قيود يومية متزنة" },
     { id: 6, phase: "المرحلة الأولى: الأساسيات", item: "الفوترة الإلكترونية مع QR Code (ZATCA)", date: "27/08/2026", status: "SUCCESS", file: "InvoiceManager.tsx", notes: "توليد كود كيو آر متوافق كلياً مع اشتراطات الفاتورة الضريبية" },
     { id: 7, phase: "المرحلة الأولى: الأساسيات", item: "ربط وتكامل خوادم الاستضافة (Huawei, Alibaba, Local)", date: "27/08/2026", status: "SUCCESS", file: "AdminPortal.tsx, SettingsView.tsx", notes: "خيارات الربط السحابي وإدارة البنية الأساسية" },
     

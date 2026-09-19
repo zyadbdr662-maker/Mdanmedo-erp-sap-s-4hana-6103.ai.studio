@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { Lock, ShieldCheck } from "lucide-react";
+import { MobileBottomNav } from "./components/MobileBottomNav";
 import { Sidebar, NavTab } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { IS_ADMIN_ENV } from "./config/env";
@@ -209,6 +210,7 @@ export default function App() {
         localStorage.removeItem('currentSession');
         localStorage.removeItem('medo_erp_state_v1');
         localStorage.removeItem('medo_erp_current_user_v1');
+        localStorage.removeItem('medo_erp_auth');
         try { sessionStorage.clear(); } catch(e) {}
       }
 
@@ -217,12 +219,14 @@ export default function App() {
         localStorage.setItem('currentTenant', JSON.stringify(matched));
       }
       const details = TenantIsolationService.getActiveTenantDetails(targetSlug);
+      document.title = `${details.nameAr} - منظومة MeDo ERP السحابية السيادية`;
       
-      // Update global state immediately
-      setErpState(prev => prev ? ({
-        ...prev,
+      // Update global state immediately with cleanly isolated state
+      const freshIsolatedState = loadERPState(targetSlug);
+      setErpState({
+        ...freshIsolatedState,
         systemSettings: {
-          ...prev.systemSettings,
+          ...freshIsolatedState.systemSettings,
           companyNameAr: details.nameAr,
           companyNameEn: details.nameEn,
           commercialRegister: details.commercialReg,
@@ -230,7 +234,7 @@ export default function App() {
           phone: details.phone,
           address: details.address,
         }
-      }) : null);
+      });
     }
   }, []);
 
@@ -3098,6 +3102,7 @@ export default function App() {
 
             {/* Persistent Enterprise Brand Footer */}
             <SystemFooter
+              isCompact={true}
               onOpenLegalDocuments={(tab) => {
                 if (tab) setLegalInitialDoc(tab);
                 setActiveTab("LEGAL_DOCUMENTS");
@@ -3334,6 +3339,11 @@ export default function App() {
               setActiveTab("LEGAL_DOCUMENTS");
             }}
           />
+          
+          {/* Mobile Bottom Navigation */}
+          <div className="lg:hidden">
+            <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+          </div>
         </>
       )}
     </div>

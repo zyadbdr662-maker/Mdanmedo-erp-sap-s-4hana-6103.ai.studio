@@ -157,7 +157,7 @@ export const MedoErpBrochureView: React.FC<MedoErpBrochureViewProps> = ({
               { id: 7, num: "06", t: "إدارة وتيسير دورة المشتريات والموردين", icon: ShoppingCart },
               { id: 8, num: "07", t: "إدارة المخزون والتسعير الذكي للأصناف", icon: Package },
               { id: 9, num: "08", t: "لوحات البيانات والتقارير التنفيذية", icon: BarChart3 },
-              { id: 10, num: "09", t: "الذكاء الاصطناعي والأتمتة الذكية (OCR)", icon: Sparkles },
+              { id: 10, num: "09", t: "الذكاء المالي المتقدم والأتمتة الذكية (OCR)", icon: Sparkles },
               { id: 11, num: "10", t: "خيارات النشر والمزامنة دون اتصال", icon: CloudLightning },
               { id: 12, num: "11", t: "الامتثال الكامل لـ ZATCA والمعايير", icon: ShieldCheck }
             ].map((item) => {
@@ -739,13 +739,13 @@ export const MedoErpBrochureView: React.FC<MedoErpBrochureViewProps> = ({
     // 11. AI & Automation
     {
       id: "ai_automation",
-      title: "الذكاء الاصطناعي والأتمتة المبتكرة لتقليل الإدخال اليدوي",
+      title: "الذكاء المالي المتقدم والأتمتة المبتكرة لتقليل الإدخال اليدوي",
       subtitle: "Artificial Intelligence and Automation",
       bannerText: "ميزات استخراج وقراءة ذكية تضمن تعبئة الفواتير الورقية في ثوانٍ معدودة عبر كاميرا جوالك",
       content: (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-2">
           <div className="space-y-4 text-right text-xs leading-relaxed text-slate-300">
-            <h3 className="text-base font-black text-white">الذكاء الاصطناعي في خدمة المحاسبة</h3>
+            <h3 className="text-base font-black text-white">الذكاء المالي المتقدم في خدمة المحاسبة</h3>
             <p>
               يتكامل نظام ميدو إرب مع أحدث النماذج الذكية من جوجل (Gemini 2.5) لتوفير تجربة تشغيل مؤتمتة وسريعة:
             </p>
@@ -754,7 +754,7 @@ export const MedoErpBrochureView: React.FC<MedoErpBrochureViewProps> = ({
                 <span>القارئ الآلي للفواتير (OCR AI-Scanner)</span>
                 <Scan className="w-4 h-4 text-cyan-400 animate-pulse" />
               </span>
-              ببساطة التقط صورة للفاتورة الورقية الخاصة بالمورد أو ارفعها، وسيقوم محرك الذكاء الاصطناعي باستخراج رقم الفاتورة، اسم المورد، التاريخ، وقائمة البنود والكميات وتغذيتها تلقائياً بالكامل في شاشة المشتريات.
+              ببساطة التقط صورة للفاتورة الورقية الخاصة بالمورد أو ارفعها، وسيقوم محرك الذكاء المالي المتقدم باستخراج رقم الفاتورة، اسم المورد، التاريخ، وقائمة البنود والكميات وتغذيتها تلقائياً بالكامل في شاشة المشتريات.
             </div>
             <p>
               يوفر لك النظام أيضاً المساعد المالي الذكي (MeDo Financial Copilot) لتحليل قائمة الدخل والتدفقات النقدية وتقديم توصيات تجارية لحماية شركتك من عجز السيولة.
@@ -765,7 +765,7 @@ export const MedoErpBrochureView: React.FC<MedoErpBrochureViewProps> = ({
             {/* Interactive OCR Demo */}
             <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 text-right space-y-3">
               <span className="text-[10px] text-slate-500 font-mono block">محاكاة تشغيل القارئ الذكي (OCR Scanner Demo)</span>
-              <h4 className="text-xs font-black text-white">تجربة قراءة فاتورة مشتريات بالذكاء الاصطناعي</h4>
+              <h4 className="text-xs font-black text-white">تجربة قراءة فاتورة مشتريات بالذكاء المالي المتقدم</h4>
               
               <button
                 onClick={() => {
@@ -917,7 +917,7 @@ export const MedoErpBrochureView: React.FC<MedoErpBrochureViewProps> = ({
           <h3 className="text-2xl font-black text-white">هل أنت مستعد لنقل شركتك للمستوى التالي؟</h3>
           
           <p className="text-xs text-slate-300 leading-relaxed">
-            تمتع بقوة المعايير العالمية المطبقة في نظام <strong>SAP Business One</strong> مع سهولة تشغيل وتكاليف ذكية وملائمة بالكامل للسوق المحلية مدعومة بميزات المزامنة دون إنترنت والذكاء الاصطناعي (MeDo ERP System).
+            تمتع بقوة المعايير العالمية المطبقة في نظام <strong>SAP Business One</strong> مع سهولة تشغيل وتكاليف ذكية وملائمة بالكامل للسوق المحلية مدعومة بميزات المزامنة دون إنترنت والذكاء المالي المتقدم (MeDo ERP System).
           </p>
 
           <div className="flex flex-wrap gap-3 justify-center pt-2">

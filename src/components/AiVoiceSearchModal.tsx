@@ -352,7 +352,7 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
       setAiResponse("تم التعرف على الطلب: فتح التقارير المالية الختامية.");
       setSuggestedAction({ tab: "FINANCIAL_REPORTS", label: "فتح التقارير المالية" });
     } else {
-      setAiResponse(`عذراً، بحثنا بالذكاء الاصطناعي عن "${q}". يمكنك جلب أي قيد بطلب: "إنشاء قيد مصروف إيجار بقيمة 5000 ريال".`);
+      setAiResponse(`عذراً، بحثنا بالذكاء المالي المتقدم عن "${q}". يمكنك جلب أي قيد بطلب: "إنشاء قيد مصروف إيجار بقيمة 5000 ريال".`);
     }
   };
 
@@ -507,7 +507,7 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
           {processing && (
             <div className="flex items-center justify-center gap-2 text-xs text-emerald-400 py-3">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>جاري تحليل القصد واستخراج المبالغ وأطراف القيد بالذكاء الاصطناعي...</span>
+              <span>جاري تحليل القصد واستخراج المبالغ وأطراف القيد بالذكاء المالي المتقدم...</span>
             </div>
           )}
 
@@ -515,7 +515,7 @@ export const AiVoiceSearchModal: React.FC<AiVoiceSearchModalProps> = ({
             <div className="bg-emerald-950/40 border border-emerald-800/60 rounded-2xl p-4 text-right mb-4 space-y-3 animate-fadeIn">
               <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>تحليل الذكاء الاصطناعي:</span>
+                <span>تحليل الذكاء المالي المتقدم:</span>
               </div>
               <p className="text-xs text-slate-200 leading-relaxed">{aiResponse}</p>
 

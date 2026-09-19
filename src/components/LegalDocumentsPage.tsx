@@ -36,6 +36,7 @@ import { DpaPolicyDocument } from "./DpaPolicyDocument";
 import { SlaPolicyDocument } from "./SlaPolicyDocument";
 import { SubscriptionContractDocument } from "./SubscriptionContractDocument";
 import { UserManualDocument } from "./UserManualDocument";
+import { SystemFooter } from "./SystemFooter";
 
 interface LegalDocumentsPageProps {
   onBack?: () => void;
@@ -115,11 +116,11 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
       ],
     },
     {
-      category: "الخدمة والذكاء الاصطناعي",
+      category: "الخدمة والذكاء المالي المتقدم",
       items: [
         { id: "art-9", num: 9, title: "الدعم الفني والصيانة" },
         { id: "art-10", num: 10, title: "مستويات الخدمة (SLA)" },
-        { id: "art-11", num: 11, title: "سياسات الذكاء الاصطناعي" },
+        { id: "art-11", num: 11, title: "سياسات الذكاء المالي المتقدم" },
         { id: "art-12", num: 12, title: "النسخ الاحتياطي والاستعادة" },
         { id: "art-13", num: 13, title: "الأمان والحماية المتقدمة" },
       ],
@@ -187,12 +188,12 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
       ],
     },
     {
-      category: "المحاسبة وسعر الصرف والذكاء الاصطناعي",
+      category: "المحاسبة وسعر الصرف والذكاء المالي المتقدم",
       items: [
         { id: "disc-art-3", num: 3, title: "دقة البيانات والمدخلات المحاسبية" },
         { id: "disc-art-4", num: 4, title: "سعر الصرف وفروق العملات" },
         { id: "disc-art-5", num: 5, title: "قائمة التدفقات النقدية" },
-        { id: "disc-art-6", num: 6, title: "الذكاء الاصطناعي (Gemini AI)" },
+        { id: "disc-art-6", num: 6, title: "الذكاء المالي المتقدم (Gemini AI)" },
       ],
     },
     {
@@ -409,7 +410,7 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
     {
       category: "الميزات المتقدمة والإدارة",
       items: [
-        { id: "man-sec-13", num: 13, title: "13. الذكاء الاصطناعي والتحليل" },
+        { id: "man-sec-13", num: 13, title: "13. الذكاء المالي المتقدم والتحليل" },
         { id: "man-sec-14", num: 14, title: "14. الفوترة الإلكترونية (ZATCA)" },
         { id: "man-sec-19", num: 19, title: "19. إدارة المستخدمين والصلاحيات" },
       ],
@@ -816,7 +817,7 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
                       : activeDoc === "TERMS"
                       ? "تخضع هذه الاتفاقية للقوانين السارية بالجمهورية اليمنية، ومحاكم أمانة العاصمة صنعاء هي المختصة بنظر أي نزاع."
                       : activeDoc === "DISCLAIMER"
-                      ? "تعتمد دقة التقارير وفروق الصرف على مدخلات المنشأة، والذكاء الاصطناعي أداة مساعدة تتطلب مراجعة بشرية مستقلة."
+                      ? "تعتمد دقة التقارير وفروق الصرف على مدخلات المنشأة، والذكاء المالي المتقدم أداة مساعدة تتطلب مراجعة بشرية مستقلة."
                       : activeDoc === "REFUND"
                       ? "فترة تجربة مجانية 30 يوماً (50 عملية)، مع استرداد 100% للأعطال الفنية ومعالجة منظمة خلال 29 يوم عمل كحد أقصى."
                       : "إدارة شفافة لملفات الارتباط، حظر تام لمشاركة أي بيانات مالية مع الشركات الإعلانية، مع تمكين كامل لتعديل التفضيلات."}
@@ -855,6 +856,8 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
 
         </div>
       </main>
+
+      <SystemFooter />
 
       {/* Floating Back to Top Button */}
       {showBackToTop && (

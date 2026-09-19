@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { NavTab } from "./Sidebar";
 import { ERPUser } from "../types/erp";
+import { SystemFooter } from "./SystemFooter";
 
 interface UserManualViewProps {
   onNavigateToModule?: (tab: NavTab) => void;
@@ -2014,6 +2015,7 @@ export const UserManualView: React.FC<UserManualViewProps> = ({
           </div>
         </div>
       )}
+      <SystemFooter />
     </div>
   );
 };

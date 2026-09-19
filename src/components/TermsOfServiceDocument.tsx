@@ -52,7 +52,7 @@ export const TermsOfServiceDocument: React.FC = () => {
 8. حقوق الملكية الفكرية
 9. الدعم الفني والصيانة
 10. مستويات الخدمة (SLA)
-11. الذكاء الاصطناعي
+11. الذكاء المالي المتقدم
 12. النسخ الاحتياطي والاستعادة
 13. الأمان والحماية
 14. حدود المسؤولية
@@ -105,7 +105,7 @@ export const TermsOfServiceDocument: React.FC = () => {
     { id: "art-8", num: 8, title: "حقوق الملكية الفكرية" },
     { id: "art-9", num: 9, title: "الدعم الفني والصيانة" },
     { id: "art-10", num: 10, title: "مستويات الخدمة (SLA)" },
-    { id: "art-11", num: 11, title: "الذكاء الاصطناعي" },
+    { id: "art-11", num: 11, title: "الذكاء المالي المتقدم" },
     { id: "art-12", num: 12, title: "النسخ الاحتياطي والاستعادة" },
     { id: "art-13", num: 13, title: "الأمان والحماية" },
     { id: "art-14", num: 14, title: "حدود المسؤولية" },
@@ -678,7 +678,7 @@ export const TermsOfServiceDocument: React.FC = () => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <h2 className="text-lg sm:text-xl font-black text-sap-secondary flex items-center gap-2">
               <Bot className="w-5 h-5 text-emerald-400" />
-              المادة 11: الذكاء الاصطناعي (AI Policy)
+              المادة 11: الذكاء المالي المتقدم (AI Policy)
             </h2>
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-sap-primary/20 text-sap-secondary border border-sap-secondary/40">Gemini AI</span>
           </div>
@@ -698,7 +698,7 @@ export const TermsOfServiceDocument: React.FC = () => {
                 11.3. عزل البيانات وعدم التدريب العام
               </h4>
               <p className="text-slate-300 leading-relaxed text-xs">
-                نلتزم قطعياً بعدم استخدام بيانات المستخدم المالية أو الشخصية لتدريب النماذج العامة. طلبات الذكاء الاصطناعي معزولة مشفرة ولا يتم مشاركة أي بيانات سرية خارج نطاق جلسة التحليل اللحظية.
+                نلتزم قطعياً بعدم استخدام بيانات المستخدم المالية أو الشخصية لتدريب النماذج العامة. طلبات الذكاء المالي المتقدم معزولة مشفرة ولا يتم مشاركة أي بيانات سرية خارج نطاق جلسة التحليل اللحظية.
               </p>
             </div>
           </div>

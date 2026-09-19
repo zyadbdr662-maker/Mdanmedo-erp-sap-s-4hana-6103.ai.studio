@@ -679,7 +679,7 @@ export class CloudSecurityService {
           suspiciousActivityCount: 4,
           suspendedReason: "رصد محاولة تصدير أرصدة الحسابات البنكية من عنوان IP مجهول خارج النطاق الجغرافي المسموح به.",
           suspendedAt: new Date(Date.now() - 90 * 60000).toISOString(),
-          suspendedBy: "نظام الذكاء الاصطناعي الأمني (Security Sentinel)",
+          suspendedBy: "نظام الذكاء المالي المتقدم الأمني (Security Sentinel)",
           assignedPermissions: ["INVOICING_SALES", "VIEW_CUSTOMER_BALANCES"],
         },
       ];

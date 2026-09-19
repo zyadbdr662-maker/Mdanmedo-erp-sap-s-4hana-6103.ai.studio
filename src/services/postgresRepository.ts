@@ -1,4 +1,4 @@
-import { ERPFullState, loadERPState, saveERPState } from "./erpStorage";
+import { ERPFullState, getTenantDefaultSettings, loadERPState, saveERPState } from "./erpStorage";
 import { ERPRepository } from "./repository";
 import { TenantIsolationService } from "./tenantIsolationService";
 
@@ -20,19 +20,22 @@ export class PostgresRepository implements ERPRepository {
         return localState;
       }
 
-      // Merge local with remote state, preserving tenant identity
+      const tenantSettings = getTenantDefaultSettings(activeTenant);
+      const isKnown = Boolean(activeTenant && activeTenant !== "default");
+
+      // Merge local with remote state, strictly preserving tenant identity
       const merged: ERPFullState = {
         ...localState,
         ...data,
         systemSettings: {
           ...localState.systemSettings,
           ...(data.systemSettings || {}),
-          companyNameAr: localState.systemSettings?.companyNameAr || data.systemSettings?.companyNameAr,
-          companyNameEn: localState.systemSettings?.companyNameEn || data.systemSettings?.companyNameEn,
-          commercialRegister: localState.systemSettings?.commercialRegister || data.systemSettings?.commercialRegister,
-          taxNumber: localState.systemSettings?.taxNumber || data.systemSettings?.taxNumber,
-          phone: localState.systemSettings?.phone || data.systemSettings?.phone,
-          address: localState.systemSettings?.address || data.systemSettings?.address,
+          companyNameAr: isKnown ? (tenantSettings.companyNameAr || localState.systemSettings?.companyNameAr) : (data.systemSettings?.companyNameAr || localState.systemSettings?.companyNameAr),
+          companyNameEn: isKnown ? (tenantSettings.companyNameEn || localState.systemSettings?.companyNameEn) : (data.systemSettings?.companyNameEn || localState.systemSettings?.companyNameEn),
+          commercialRegister: isKnown ? (tenantSettings.commercialRegister || localState.systemSettings?.commercialRegister) : (data.systemSettings?.commercialRegister || localState.systemSettings?.commercialRegister),
+          taxNumber: isKnown ? (tenantSettings.taxNumber || localState.systemSettings?.taxNumber) : (data.systemSettings?.taxNumber || localState.systemSettings?.taxNumber),
+          phone: isKnown ? (tenantSettings.phone || localState.systemSettings?.phone) : (data.systemSettings?.phone || localState.systemSettings?.phone),
+          address: isKnown ? (tenantSettings.address || localState.systemSettings?.address) : (data.systemSettings?.address || localState.systemSettings?.address),
         }
       };
 

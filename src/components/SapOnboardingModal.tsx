@@ -270,7 +270,7 @@ export const SapOnboardingModal: React.FC<SapOnboardingModalProps> = ({
               <div className="text-[11px] text-slate-600">رسوم بيانية لحظية ومؤشرات الأداء المالي الحاسم (KPIs).</div>
             </div>
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="font-bold text-sap-secondary mb-1">✨ الدعم الفوري والذكاء الاصطناعي</div>
+              <div className="font-bold text-sap-secondary mb-1">✨ الدعم الفوري والذكاء المالي المتقدم</div>
               <div className="text-[11px] text-slate-600">مستشار مالي ذكي جاهز لتحليل قوائمك المالية بنقرة واحدة.</div>
             </div>
           </div>

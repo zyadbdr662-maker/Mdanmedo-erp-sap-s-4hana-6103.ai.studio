@@ -90,7 +90,7 @@ const ModuleCard = React.memo<{
               </h3>
               {module.badge && (
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${module.badgeColor} flex-shrink-0`}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border bg-transparent text-slate-100 ${module.badgeColor.replace(/bg-.*?-500\/20/g, '')}`}
                 >
                   {module.badge}
                 </span>
@@ -214,7 +214,7 @@ export const MobileHomeHub: React.FC<MobileHomeHubProps> = ({
         id: "MEDO_BROCHURE" as NavTab,
         title: "كتيب ودليل نظام ميدو إرب (MeDo)",
         shortTitle: "دليل وكتيب النظام",
-        description: "كتيب مواصفات ومعايير النظام ومحاكاة الذكاء الاصطناعي والمزامنة المستوحاة من SAP",
+        description: "كتيب مواصفات ومعايير النظام ومحاكاة الذكاء المالي المتقدم والمزامنة المستوحاة من SAP",
         icon: BookOpen,
         color: "from-amber-600 via-[#D4AF37] to-amber-800",
         textColor: "text-[#D4AF37]",

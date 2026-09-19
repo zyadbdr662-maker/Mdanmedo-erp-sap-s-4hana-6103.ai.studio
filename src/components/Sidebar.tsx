@@ -458,7 +458,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Sparkles,
       badge: "Gemini",
       badgeColor: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium",
-      section: "الذكاء الاصطناعي",
+      section: "الذكاء المالي المتقدم",
     },
   ];
 

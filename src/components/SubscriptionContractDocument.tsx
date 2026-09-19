@@ -446,7 +446,7 @@ export const SubscriptionContractDocument: React.FC = () => {
                 { key: "glReports", label: "الأستاذ العام والقوائم المالية" },
                 { key: "hr", label: "شؤون الموظفين والرواتب" },
                 { key: "wallets", label: "المحافظ والبنوك والصناديق" },
-                { key: "ai", label: "الذكاء الاصطناعي والمساعد المالي" },
+                { key: "ai", label: "الذكاء المالي المتقدم والمساعد المالي" },
                 { key: "multiWallets", label: "دعم تعدد العملات والمحافظ" },
               ].map(item => {
                 const isChecked = features[item.key as keyof typeof features];

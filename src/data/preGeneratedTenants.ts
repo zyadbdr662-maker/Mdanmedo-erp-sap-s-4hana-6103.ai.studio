@@ -60,8 +60,8 @@ export interface PreGeneratedTenant {
 }
 
 const companyNames = [
-  "شركة الأمل للتجارة والمقاولات",
-  "مؤسسة النور للإلكترونيات والتوريدات",
+  "شركة الأمل",
+  "مؤسسة النور",
   "مجموعة الازدهار للاستيراد والتصدير",
   "شركة التقدم للخدمات اللوجستية",
   "رواد الخليج للصناعات التحويلية",
@@ -141,9 +141,9 @@ export const MANUAL_VIP_TENANTS: PreGeneratedTenant[] = [
     index: 0,
     id: 'alzarqa',
     slug: 'alzarqa',
-    name: 'الشركة الزرقاء النبيلة (ش.م.ي)',
+    name: 'الزرقاء النبيلة',
     nameEn: 'Al-Zarqa Al-Nabeela Company',
-    companyNameAr: 'الشركة الزرقاء النبيلة (ش.م.ي)',
+    companyNameAr: 'الزرقاء النبيلة',
     companyNameEn: 'Al-Zarqa Al-Nabeela Company',
     crNumber: 'CR-AZ-99201',
     commercialReg: 'CR-AZ-99201',
@@ -177,9 +177,9 @@ export const MANUAL_VIP_TENANTS: PreGeneratedTenant[] = [
     index: 0,
     id: 'bin-ziad',
     slug: 'bin-ziad',
-    name: 'مجموعة بن زياد التجارية المتحدة',
+    name: 'بن زياد',
     nameEn: 'Bin Ziad United Commercial Group',
-    companyNameAr: 'مجموعة بن زياد التجارية المتحدة',
+    companyNameAr: 'بن زياد',
     companyNameEn: 'Bin Ziad United Commercial Group',
     crNumber: '3892710',
     commercialReg: '3892710',
@@ -213,9 +213,9 @@ export const MANUAL_VIP_TENANTS: PreGeneratedTenant[] = [
     index: 0,
     id: 'binziyad',
     slug: 'binziyad',
-    name: 'مجموعة بن زياد التجارية المتحدة',
+    name: 'بن زياد',
     nameEn: 'Bin Ziad United Commercial Group',
-    companyNameAr: 'مجموعة بن زياد التجارية المتحدة',
+    companyNameAr: 'بن زياد',
     companyNameEn: 'Bin Ziad United Commercial Group',
     crNumber: '3892710',
     commercialReg: '3892710',
@@ -709,7 +709,24 @@ export function findTenantById(tenantIdentifier: string | null | undefined): Pre
   if (!tenantIdentifier) return null;
   const clean = tenantIdentifier.toLowerCase().trim();
 
-  // 1. Check stored/registered tenants first (dynamic state)
+  // 0. High priority checks to prevent stale localStorage cache overrides for core enterprise tenants
+  if (clean === "alzarqa" || clean === "zarqa" || clean === "az") {
+    return preGeneratedTenants.find((t) => t.id === "alzarqa") || null;
+  }
+  if (clean === "bin-ziad" || clean === "binziyad" || clean === "binziad" || clean === "bz") {
+    return preGeneratedTenants.find((t) => t.id === "bin-ziad" || t.id === "binziyad") || null;
+  }
+  if (clean === "company-1" || clean === "client-1" || clean === "alamal" || clean === "al-amal" || clean === "amal") {
+    return preGeneratedTenants.find((t) => t.id === "company-1") || null;
+  }
+  if (clean === "company-2" || clean === "client-2" || clean === "alnoor" || clean === "al-noor") {
+    return preGeneratedTenants.find((t) => t.id === "company-2") || null;
+  }
+  if (clean === "albadr" || clean === "albadr-pharma-2026" || clean === "badr" || clean === "client-albadr") {
+    return preGeneratedTenants.find((t) => t.id === "albadr-pharma-2026") || null;
+  }
+
+  // 1. Check stored/registered tenants (dynamic state for custom user-registered tenants)
   const storedList = getStored200Tenants();
   let found = storedList.find((t) => t.id.toLowerCase() === clean || t.slug.toLowerCase() === clean);
   if (found) return found;

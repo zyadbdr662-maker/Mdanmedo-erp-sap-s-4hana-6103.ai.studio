@@ -220,7 +220,7 @@ const initialDiagnosticModules: DiagnosticModule[] = [
     nameAr: "المستشار المالي ومحلل المخاطر الذكي (MeDo AI)",
     nameEn: "AI Financial Advisor & Audit",
     status: 'PENDING',
-    descriptionAr: "التحقق من جاهزية الذكاء الاصطناعي لتحليل البيانات واكتشاف الأنماط المشبوهة.",
+    descriptionAr: "التحقق من جاهزية الذكاء المالي المتقدم لتحليل البيانات واكتشاف الأنماط المشبوهة.",
     checkDetailsAr: "فحص اتصال Gemini... الخادم مستجيب ومستعد لتحليل المخاطر واكتشاف فروقات أسعار الصرف آلياً."
   },
   {

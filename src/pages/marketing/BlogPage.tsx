@@ -72,7 +72,7 @@ export const BlogPage = () => {
           </h1>
           <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
             {lang === 'ar'
-              ? 'أحدث المقالات والرؤى المتخصصة في أنظمة تخطيط الموارد، تقنيات الذكاء الاصطناعي المالي، إدارة التدفقات النقدية، ونماذج التحول الرقمي.'
+              ? 'أحدث المقالات والرؤى المتخصصة في أنظمة تخطيط الموارد، تقنيات الذكاء المالي المتقدم المالي، إدارة التدفقات النقدية، ونماذج التحول الرقمي.'
               : 'Latest insights and guides on ERP, financial AI, cash flow management, and digital transformation stories.'}
           </p>
         </div>
