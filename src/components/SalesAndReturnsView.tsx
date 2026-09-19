@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { FormNavigationBar } from "./FormNavigationBar";
 import {
   ShoppingBag,
@@ -51,6 +51,7 @@ import { generateZatcaQr } from "../utils/zatca";
 import { QuickAddCustomerModal, QuickAddItemModal } from "./QuickAddModals";
 import { ElectronicInvoicingModule } from "./ElectronicInvoicingModule";
 import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
+import { Combobox, ComboboxOption } from "./Combobox";
 
 interface SalesAndReturnsViewProps {
   invoices: Invoice[];
@@ -113,6 +114,26 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
   // New Invoice Form State
   const [invType, setInvType] = useState<"SALES" | "SALES_RETURN">("SALES");
   const [invCustomerId, setInvCustomerId] = useState(customers[0]?.id || "");
+
+  // Prepare Options for Searchable Selects
+  const customerOptions: ComboboxOption[] = useMemo(() => {
+    return customers.map(c => ({
+      id: c.id,
+      label: c.nameAr,
+      secondaryLabel: c.phone
+    }));
+  }, [customers]);
+
+  const inventoryOptions: ComboboxOption[] = useMemo(() => {
+    return inventoryItems.map(inv => {
+      const p = getItemPricingDetails(inv, invCustomerId);
+      return {
+        id: inv.id,
+        label: inv.nameAr,
+        secondaryLabel: `${inv.code} | بيع: ${p.lastSellingPrice.toLocaleString()} | تكلفة: ${p.costPrice.toLocaleString()}`
+      };
+    });
+  }, [inventoryItems, invCustomerId]);
   const [invOriginalNumber, setInvOriginalNumber] = useState("");
   const [invReturnReason, setInvReturnReason] = useState("عيوب مصنعية / عدم مطابقة للمواصفات");
   const [invDate, setInvDate] = useState(new Date().toISOString().split("T")[0]);
@@ -1268,18 +1289,13 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
                     </button>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <select
+                    <Combobox
+                      options={customerOptions}
                       value={invCustomerId}
-                      onChange={(e) => setInvCustomerId(e.target.value)}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-                      required
-                    >
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nameAr} - ({c.phone})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setInvCustomerId(val)}
+                      placeholder="ابحث عن عميل..."
+                      className="flex-1"
+                    />
                     <button
                       type="button"
                       onClick={() => setShowQuickAddCustomer(true)}
@@ -1456,11 +1472,11 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
                               {/* Inventory Items Dropdown Selector */}
                               {inventoryItems && inventoryItems.length > 0 ? (
-                                <select
+                                <Combobox
+                                  options={inventoryOptions}
                                   value={item.inventoryItemId || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === "__CUSTOM__") {
+                                  onChange={(val) => {
+                                    if (!val) {
                                       updateInvoiceItem(item.id, "inventoryItemId", undefined);
                                       return;
                                     }
@@ -1470,24 +1486,11 @@ export const SalesAndReturnsView: React.FC<SalesAndReturnsViewProps> = ({
                                       updateInvoiceItem(item.id, "inventoryItemId", selected.id);
                                       updateInvoiceItem(item.id, "description", selected.nameAr);
                                       updateInvoiceItem(item.id, "unitPrice", pricing.lastSellingPrice || selected.sellingPrice || selected.costPrice || 0);
-                                    } else {
-                                      updateInvoiceItem(item.id, "inventoryItemId", undefined);
                                     }
                                   }}
-                                  className="flex-1 min-w-[240px] bg-slate-950 border border-emerald-800/80 rounded-lg px-2.5 py-1.5 text-xs text-emerald-200 font-medium focus:outline-none focus:border-emerald-400 shadow-inner"
-                                  title="اختر صنفاً (يعرض: اسم الصنف | آخر سعر بيع | سعر الشراء | سعر التكلفة)"
-                                >
-                                  <option value="">-- اختر صنفاً من المخزون ({inventoryItems.length} صنف متاح) --</option>
-                                  {inventoryItems.map((inv) => {
-                                    const p = getItemPricingDetails(inv, invCustomerId);
-                                    return (
-                                      <option key={inv.id} value={inv.id} className="bg-slate-900 text-slate-100 py-1">
-                                        {inv.nameAr} | آخر بيع: {p.lastSellingPrice.toLocaleString()} | شراء: {p.purchasePrice.toLocaleString()} | تكلفة: {p.costPrice.toLocaleString()}
-                                      </option>
-                                    );
-                                  })}
-                                  <option value="__CUSTOM__">✍️ صنف مخصص / خدمة يدوية...</option>
-                                </select>
+                                  placeholder="ابحث عن صنف..."
+                                  className="flex-1 min-w-[240px]"
+                                />
                               ) : (
                                 <div className="text-amber-400 text-[11px] py-1 px-2 bg-amber-950/40 border border-amber-800/50 rounded-lg flex items-center gap-1">
                                   <span>لا توجد أصناف بالمخزون حالياً</span>

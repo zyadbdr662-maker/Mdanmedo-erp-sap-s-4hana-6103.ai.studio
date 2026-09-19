@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Truck,
   Plus,
@@ -48,6 +48,7 @@ import { formatDate, formatDualDate } from "../utils/formatters";
 import { generateZatcaQr } from "../utils/zatca";
 import { QuickAddVendorModal, QuickAddItemModal } from "./QuickAddModals";
 import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
+import { Combobox, ComboboxOption } from "./Combobox";
 
 interface PurchasesAndReturnsViewProps {
   invoices: Invoice[];
@@ -105,6 +106,23 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
   const [showQuickAddVendor, setShowQuickAddVendor] = useState(false);
   const [showQuickAddItem, setShowQuickAddItem] = useState(false);
   const [activeRowForItemAdd, setActiveRowForItemAdd] = useState<string | null>(null);
+
+  // Prepare Options for Searchable Selects
+  const vendorOptions: ComboboxOption[] = useMemo(() => {
+    return vendors.map(v => ({
+      id: v.id,
+      label: v.nameAr,
+      secondaryLabel: v.phone
+    }));
+  }, [vendors]);
+
+  const inventoryOptions: ComboboxOption[] = useMemo(() => {
+    return inventoryItems.map(inv => ({
+      id: inv.id,
+      label: inv.nameAr,
+      secondaryLabel: `${inv.code} | تكلفة: ${inv.costPrice.toLocaleString()}`
+    }));
+  }, [inventoryItems]);
 
   // New Purchase Form State
   const [purType, setPurType] = useState<"PURCHASE" | "PURCHASE_RETURN">("PURCHASE");
@@ -1321,18 +1339,13 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
                     </button>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <select
+                    <Combobox
+                      options={vendorOptions}
                       value={purVendorId}
-                      onChange={(e) => setPurVendorId(e.target.value)}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                      required
-                    >
-                      {vendors.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.nameAr} - ({v.phone})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setPurVendorId(val)}
+                      placeholder="ابحث عن مورد..."
+                      className="flex-1"
+                    />
                     <button
                       type="button"
                       onClick={() => setShowQuickAddVendor(true)}
@@ -1482,32 +1495,20 @@ export const PurchasesAndReturnsView: React.FC<PurchasesAndReturnsViewProps> = (
                           <td className="p-2">
                             <div className="flex items-center gap-2">
                               {inventoryItems && inventoryItems.length > 0 && (
-                                <select
+                                <Combobox
+                                  options={inventoryOptions}
                                   value={item.inventoryItemId || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
+                                  onChange={(val) => {
                                     const matchedItem = inventoryItems.find((i) => i.id === val);
-                                    updatePurchaseItem(item.id, "inventoryItemId", val);
+                                    updatePurchaseItem(item.id, "inventoryItemId", val || undefined);
                                     if (matchedItem) {
                                       updatePurchaseItem(item.id, "description", matchedItem.nameAr);
                                       updatePurchaseItem(item.id, "unitPrice", matchedItem.purchasePrice || matchedItem.costPrice || 0);
                                     }
                                   }}
-                                  className="w-1/3 min-w-[200px] bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                                  title="اختر صنفاً (اسم الصنف | آخر سعر بيع | سعر الشراء | سعر التكلفة)"
-                                >
-                                  <option value="">-- اختر صنفاً من المخزون --</option>
-                                  {inventoryItems.map((inv) => {
-                                    const lastSale = inv.lastSellingPrice || inv.sellingPrice || 0;
-                                    const purchase = inv.purchasePrice || inv.costPrice || 0;
-                                    const cost = inv.costPrice || purchase || 0;
-                                    return (
-                                      <option key={inv.id} value={inv.id} className="bg-slate-900 text-slate-100">
-                                        {inv.nameAr} | آخر بيع: {lastSale.toLocaleString()} | شراء: {purchase.toLocaleString()} | تكلفة: {cost.toLocaleString()}
-                                      </option>
-                                    );
-                                  })}
-                                </select>
+                                  placeholder="ابحث عن صنف..."
+                                  className="w-1/3 min-w-[200px]"
+                                />
                               )}
                               <input
                                 type="text"

@@ -33,17 +33,20 @@ import { DisclaimerDocument } from "./DisclaimerDocument";
 import { RefundPolicyDocument } from "./RefundPolicyDocument";
 import { CookiesPolicyDocument } from "./CookiesPolicyDocument";
 import { DpaPolicyDocument } from "./DpaPolicyDocument";
+import { SlaPolicyDocument } from "./SlaPolicyDocument";
+import { SubscriptionContractDocument } from "./SubscriptionContractDocument";
+import { UserManualDocument } from "./UserManualDocument";
 
 interface LegalDocumentsPageProps {
   onBack?: () => void;
-  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA";
+  initialDoc?: "TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA" | "SLA" | "CONTRACT" | "MANUAL";
 }
 
 export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
   onBack,
   initialDoc = "TERMS",
 }) => {
-  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA">(initialDoc);
+  const [activeDoc, setActiveDoc] = useState<"TERMS" | "PRIVACY" | "DISCLAIMER" | "REFUND" | "COOKIES" | "DPA" | "SLA" | "CONTRACT" | "MANUAL">(initialDoc);
   const [activeArticleId, setActiveArticleId] = useState<string>("art-1");
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -303,6 +306,124 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
     },
   ];
 
+  // Article groupings for Service Level Agreement (SLA - 12 Articles)
+  const slaCategories = [
+    {
+      category: "التعريفات ونطاق الخدمة والتوفر",
+      items: [
+        { id: "sla-art-1", num: 1, title: "المادة 1: التعريفات" },
+        { id: "sla-art-2", num: 2, title: "المادة 2: نطاق الخدمة والباقات" },
+        { id: "sla-art-3", num: 3, title: "المادة 3: مستويات ونسب التوفر" },
+      ],
+    },
+    {
+      category: "أوقات الاستجابة والحل والأداء",
+      items: [
+        { id: "sla-art-4", num: 4, title: "المادة 4: أوقات الاستجابة" },
+        { id: "sla-art-5", num: 5, title: "المادة 5: أوقات الحل" },
+        { id: "sla-art-6", num: 6, title: "المادة 6: معايير الأداء والسرعة" },
+      ],
+    },
+    {
+      category: "الصيانة والإشعارات والتعويضات",
+      items: [
+        { id: "sla-art-7", num: 7, title: "المادة 7: الصيانة والتحديثات" },
+        { id: "sla-art-8", num: 8, title: "المادة 8: الإشعارات والتقارير" },
+        { id: "sla-art-9", num: 9, title: "المادة 9: نسب وضوابط التعويضات" },
+      ],
+    },
+    {
+      category: "الاستثناءات والمراقبة والتواصل",
+      items: [
+        { id: "sla-art-10", num: 10, title: "المادة 10: الاستثناءات والقوة القاهرة" },
+        { id: "sla-art-11", num: 11, title: "المادة 11: المراقبة ولوحة الحالة" },
+        { id: "sla-art-12", num: 12, title: "المادة 12: قنوات التواصل الرسمية" },
+      ],
+    },
+  ];
+
+  // Article groupings for Subscription Contract (18 Articles)
+  const contractCategories = [
+    {
+      category: "الديباجة وبيانات الطرفين والتعريفات",
+      items: [
+        { id: "cnt-art-1", num: 1, title: "المادة 1: بيانات الطرفين (المزود والعميل)" },
+        { id: "cnt-art-2", num: 2, title: "المادة 2: التعريفات المعتمدة" },
+        { id: "cnt-art-3", num: 3, title: "المادة 3: موضوع العقد ونطاق الخدمة" },
+      ],
+    },
+    {
+      category: "الباقة، المدة، والرسوم المالية",
+      items: [
+        { id: "cnt-art-4", num: 4, title: "المادة 4: الباقة المشترك بها وميزاتها" },
+        { id: "cnt-art-5", num: 5, title: "المادة 5: مدة العقد والتجديد التلقائي" },
+        { id: "cnt-art-6", num: 6, title: "المادة 6: قيمة الاشتراك وطرق السداد" },
+      ],
+    },
+    {
+      category: "الالتزامات والوثائق والملكية الفكرية",
+      items: [
+        { id: "cnt-art-7", num: 7, title: "المادة 7: التزامات المزود" },
+        { id: "cnt-art-8", num: 8, title: "المادة 8: التزامات العميل" },
+        { id: "cnt-art-9", num: 9, title: "المادة 9: الوثائق والسياسات المرتبطة" },
+        { id: "cnt-art-10", num: 10, title: "المادة 10: الاستخدام المسموح والمحظور" },
+        { id: "cnt-art-11", num: 11, title: "المادة 11: الملكية الفكرية" },
+        { id: "cnt-art-12", num: 12, title: "المادة 12: السرية وحماية المعلومات" },
+      ],
+    },
+    {
+      category: "البيانات، المسؤولية، الفض والتوقيعات",
+      items: [
+        { id: "cnt-art-13", num: 13, title: "المادة 13: حماية البيانات والأمان" },
+        { id: "cnt-art-14", num: 14, title: "المادة 14: حدود المسؤولية" },
+        { id: "cnt-art-15", num: 15, title: "المادة 15: إنهاء العقد وآثاره" },
+        { id: "cnt-art-16", num: 16, title: "المادة 16: حل النزاعات والقضاء" },
+        { id: "cnt-art-17", num: 17, title: "المادة 17: أحكام عامة" },
+        { id: "cnt-art-18", num: 18, title: "المادة 18: التوقيعات والاعتماد وملحق الدفع" },
+      ],
+    },
+  ];
+
+  // Sections groupings for User Manual (5 Sections)
+  const manualCategories = [
+    {
+      category: "البدء والمتطلبات",
+      items: [
+        { id: "man-sec-1", num: 1, title: "1. مقدمة عن MeDo ERP" },
+        { id: "man-sec-2", num: 2, title: "2. متطلبات التشغيل" },
+        { id: "man-sec-3", num: 3, title: "3. تسجيل الدخول والوصول" },
+        { id: "man-sec-4", num: 4, title: "4. الإعدادات الأولية للمنشأة" },
+      ],
+    },
+    {
+      category: "الوحدات الأساسية",
+      items: [
+        { id: "man-sec-5", num: 5, title: "5. المبيعات والعملاء" },
+        { id: "man-sec-6", num: 6, title: "6. المشتريات والموردين" },
+        { id: "man-sec-7", num: 7, title: "7. المخزون والمستودعات" },
+        { id: "man-sec-8", num: 8, title: "8. الخزينة والمحافظ" },
+        { id: "man-sec-9", num: 9, title: "9. المحاسبة والأستاذ العام" },
+        { id: "man-sec-10", num: 10, title: "10. التقارير المالية" },
+      ],
+    },
+    {
+      category: "الميزات المتقدمة والإدارة",
+      items: [
+        { id: "man-sec-13", num: 13, title: "13. الذكاء الاصطناعي والتحليل" },
+        { id: "man-sec-14", num: 14, title: "14. الفوترة الإلكترونية (ZATCA)" },
+        { id: "man-sec-19", num: 19, title: "19. إدارة المستخدمين والصلاحيات" },
+      ],
+    },
+    {
+      category: "المساعدة والدعم",
+      items: [
+        { id: "man-sec-21", num: 21, title: "21. الأسئلة الشائعة" },
+        { id: "man-sec-22", num: 22, title: "22. استكشاف الأخطاء وإصلاحها" },
+        { id: "man-sec-23", num: 23, title: "23. التواصل والدعم الفني" },
+      ],
+    },
+  ];
+
   const currentCategories =
     activeDoc === "TERMS"
       ? termsCategories
@@ -314,7 +435,13 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
       ? refundCategories
       : activeDoc === "COOKIES"
       ? cookiesCategories
-      : dpaCategories;
+      : activeDoc === "DPA"
+      ? dpaCategories
+      : activeDoc === "SLA"
+      ? slaCategories
+      : activeDoc === "CONTRACT"
+      ? contractCategories
+      : manualCategories;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-20 select-text" dir="rtl">
@@ -463,6 +590,57 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>معالجة البيانات (DPA)</span>
               <span className="text-[10px] opacity-80">(4 مواد)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("SLA");
+                setActiveArticleId("sla-art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeDoc === "SLA"
+                  ? "bg-indigo-500 text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>مستوى الخدمة (SLA)</span>
+              <span className="text-[10px] opacity-80">(12 مادة)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("CONTRACT");
+                setActiveArticleId("cnt-art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeDoc === "CONTRACT"
+                  ? "bg-amber-500 text-slate-950 font-black shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>عقد الاشتراك الرسمي</span>
+              <span className="text-[10px] opacity-80">(18 مادة)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveDoc("MANUAL");
+                setActiveArticleId("art-1");
+                scrollToTop();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeDoc === "MANUAL"
+                  ? "bg-indigo-500 text-white font-black shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>دليل المستخدم</span>
+              <span className="text-[10px] opacity-80">(23 قسماً)</span>
             </button>
           </div>
 
@@ -664,8 +842,14 @@ export const LegalDocumentsPage: React.FC<LegalDocumentsPageProps> = ({
               <RefundPolicyDocument />
             ) : activeDoc === "COOKIES" ? (
               <CookiesPolicyDocument />
-            ) : (
+            ) : activeDoc === "DPA" ? (
               <DpaPolicyDocument />
+            ) : activeDoc === "SLA" ? (
+              <SlaPolicyDocument />
+            ) : activeDoc === "CONTRACT" ? (
+              <SubscriptionContractDocument />
+            ) : (
+              <UserManualDocument />
             )}
           </div>
 

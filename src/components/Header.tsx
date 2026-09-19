@@ -202,16 +202,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-[6.5px] font-bold text-amber-200/90 tracking-widest">MeDO</span>
               </div>
             </div>
-            <div className="hidden xl:flex flex-col">
+            <div className="flex flex-col max-w-[220px] sm:max-w-xs md:max-w-sm truncate">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-100 tracking-tight">
+                <span className="text-xs font-bold text-slate-100 tracking-tight truncate" title={TenantIsolationService.getActiveTenantDetails()?.nameAr}>
                   {TenantIsolationService.getActiveTenantDetails()?.nameAr || "نظام SAP/MeDO ERP"}
                 </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30 shrink-0">
                   {currentUser?.role === "CASHIER" ? "مبيعات" : currentUser?.role === "DATA_ENTRY" ? "مشتريات" : currentUser?.role === "AUDITOR" ? "تدقيق" : "S/4HANA"}
                 </span>
               </div>
-              <span className="text-[10px] font-medium text-slate-300">منظومة الإدارة السحابية والفوترة الإلكترونية</span>
+              <span className="text-[10px] font-medium text-slate-300 truncate">منظومة الإدارة السحابية والفوترة الإلكترونية</span>
             </div>
           </div>
 

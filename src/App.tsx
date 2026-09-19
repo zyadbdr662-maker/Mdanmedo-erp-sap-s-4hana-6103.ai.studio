@@ -162,6 +162,40 @@ export default function App() {
   const [activatedLicenseBanner, setActivatedLicenseBanner] = useState<{ companyName: string; user: string } | null>(null);
   const [appVersion, setAppVersion] = useState<string>("V1.2.4");
 
+  /**
+   * [VIP TENANT LOADER]
+   * Detects tenant change from URL, clears relevant cache, and updates company branding dynamically
+   */
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tenantId = searchParams.get('tenant') || searchParams.get('client');
+    
+    if (tenantId) {
+      const activeTenant = TenantIsolationService.resolveActiveTenant();
+      const details = TenantIsolationService.getActiveTenantDetails();
+      
+      // Update global state immediately if already loaded
+      if (erpState) {
+        setErpState(prev => prev ? ({
+          ...prev,
+          systemSettings: {
+            ...prev.systemSettings,
+            companyNameAr: details.nameAr,
+            companyNameEn: details.nameEn,
+            commercialRegisterNumber: details.commercialReg,
+            taxNumber: details.taxNumber,
+            companyPhone: details.phone,
+            companyAddress: details.address,
+          }
+        }) : null);
+      }
+      
+      // Clear specific cache keys requested by user to force refresh
+      localStorage.removeItem('tenantName');
+      localStorage.removeItem('companyName');
+    }
+  }, [window.location.search]);
+
   // Sovereign 3-Layer Admin Security Engine States & Dedicated License Activation
   const [isAdminSessionUnlocked, setIsAdminSessionUnlocked] = useState<boolean>(() => {
     return AdminPortalSecurityService.isAdminSessionActive();

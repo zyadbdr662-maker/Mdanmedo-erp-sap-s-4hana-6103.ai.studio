@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ReceiptText,
   Plus,
@@ -34,6 +34,7 @@ import {
   QuickAddVendorModal,
 } from "./QuickAddModals";
 import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
+import { Combobox, ComboboxOption } from "./Combobox";
 
 interface VouchersViewProps {
   vouchers: Voucher[];
@@ -106,6 +107,26 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
   const [showQuickAddVendor, setShowQuickAddVendor] = useState(false);
 
   const nonHeaderAccounts = accounts.filter((a) => !a.isHeader);
+
+  // Prepare Options for Searchable Selects
+  const sourceAccountOptions: ComboboxOption[] = useMemo(() => {
+    const opts: ComboboxOption[] = [];
+    cashVaults.forEach(v => {
+      opts.push({ id: v.glAccountId, label: v.name, secondaryLabel: `خزينة | ${v.currency}` });
+    });
+    bankAccounts.forEach(b => {
+      opts.push({ id: b.glAccountId, label: `${b.bankName} - ${b.accountNumber}`, secondaryLabel: `بنك | ${b.currency}` });
+    });
+    return opts;
+  }, [cashVaults, bankAccounts]);
+
+  const destinationAccountOptions: ComboboxOption[] = useMemo(() => {
+    return nonHeaderAccounts.map(a => ({
+      id: a.id,
+      label: a.nameAr,
+      secondaryLabel: a.code
+    }));
+  }, [nonHeaderAccounts]);
 
   const openCreateModal = (typeToCreate: "RECEIPT" | "PAYMENT") => {
     setCreateType(typeToCreate);
@@ -600,26 +621,12 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
                   <label className="block text-slate-400 mb-1 font-semibold">
                     {createType === "RECEIPT" ? "حساب الخزينة / البنك المودع فيه *" : "حساب الخزينة / البنك المسحوب منه *"}
                   </label>
-                  <select
+                  <Combobox
+                    options={sourceAccountOptions}
                     value={sourceAccountId}
-                    onChange={(e) => setSourceAccountId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
-                  >
-                    <optgroup label="الخزائن النقدية">
-                      {cashVaults.map((v) => (
-                        <option key={v.id} value={v.glAccountId}>
-                          {v.name} ({v.currency})
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="الحسابات البنكية">
-                      {bankAccounts.map((b) => (
-                        <option key={b.id} value={b.glAccountId}>
-                          {b.bankName} - {b.accountNumber} ({b.currency})
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
+                    onChange={(val) => setSourceAccountId(val)}
+                    placeholder="ابحث عن خزينة أو بنك..."
+                  />
                 </div>
 
                 <div>
@@ -636,17 +643,13 @@ export const VouchersView: React.FC<VouchersViewProps> = ({
                     </button>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <select
+                    <Combobox
+                      options={destinationAccountOptions}
                       value={destinationAccountId}
-                      onChange={(e) => setDestinationAccountId(e.target.value)}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
-                    >
-                      {nonHeaderAccounts.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.code} - {a.nameAr}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setDestinationAccountId(val)}
+                      placeholder="ابحث عن حساب..."
+                      className="flex-1"
+                    />
                     <button
                       type="button"
                       onClick={() => setShowQuickAddAccount(true)}

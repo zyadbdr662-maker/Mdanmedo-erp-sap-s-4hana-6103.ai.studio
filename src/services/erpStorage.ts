@@ -74,16 +74,16 @@ import {
 
 import { TenantIsolationService, KNOWN_TENANTS } from "./tenantIsolationService";
 import { getMockTrialState } from "../data/mockTrialData";
-import { getStored200Tenants } from "../data/preGeneratedTenants";
+import { getStored200Tenants, findTenantById } from "../data/preGeneratedTenants";
 
 export const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
-  companyNameAr: "مجموعة مـيـدو التجارية والمالية الذكية (ش.م.ي)",
-  companyNameEn: "MeDo Smart Enterprise & Financial Group Inc.",
-  taxNumber: "30049281040003",
-  commercialRegister: "1010-948271",
-  phone: "+967 770 000 000",
-  address: "صنعاء / عدن - الجمهورية اليمنية",
-  email: "finance@medo-group.ye",
+  companyNameAr: "الشركة الزرقاء النبيلة (ش.م.ي)",
+  companyNameEn: "Al-Zarqa Al-Nabeela Company",
+  taxNumber: "300748291000003",
+  commercialRegister: "CR-AZ-99201",
+  phone: "+967 773 586 047",
+  address: "المنطقة الحرة - عدن، اليمن",
+  email: "finance@alzarqa.medo-erp.cloud",
   baseCurrency: "YER_SANAA",
   defaultBranchId: "BR-SANAA-MAIN",
   fiscalYearStart: "2026-01-01",
@@ -122,7 +122,22 @@ export function getTenantDefaultSettings(tenantSlug: string): SystemSettings {
 
   const cleanSlug = (tenantSlug || "").toLowerCase().trim();
 
-  // 1. Check known trial clients (client-1, client-2, client-3, etc.)
+  // 1. Direct tenant lookup using findTenantById (covers alzarqa, bin-ziad, and all 200 tenants)
+  const matched = findTenantById(cleanSlug);
+  if (matched) {
+    return {
+      ...DEFAULT_SYSTEM_SETTINGS,
+      companyNameAr: matched.name || matched.companyNameAr,
+      companyNameEn: matched.nameEn || matched.companyNameEn,
+      commercialRegister: matched.crNumber || matched.commercialReg,
+      taxNumber: matched.taxNumber,
+      phone: matched.phone || matched.assignedAdminPhone,
+      address: matched.address || `المركز الرئيسي - ${matched.city}`,
+      email: matched.assignedAdminEmail || `${matched.slug}@medo-erp.cloud`,
+    };
+  }
+
+  // 2. Check known trial clients (client-1, client-2, client-3, etc.)
   const known = KNOWN_TENANTS[cleanSlug];
   if (known) {
     return {
@@ -131,29 +146,6 @@ export function getTenantDefaultSettings(tenantSlug: string): SystemSettings {
       companyNameEn: known.nameEn,
       email: known.adminEmail,
     };
-  }
-
-  // 2. Check 200 tenants directory (company-1 to company-200 or custom)
-  try {
-    const storedTenants = getStored200Tenants();
-    const matchedTenant = storedTenants.find(
-      (t) => t.slug.toLowerCase() === cleanSlug || t.id.toLowerCase() === cleanSlug || `company-${t.index}` === cleanSlug
-    );
-
-    if (matchedTenant) {
-      return {
-        ...DEFAULT_SYSTEM_SETTINGS,
-        companyNameAr: matchedTenant.companyNameAr,
-        companyNameEn: matchedTenant.companyNameEn,
-        commercialRegister: matchedTenant.commercialReg,
-        taxNumber: matchedTenant.taxNumber,
-        phone: matchedTenant.assignedAdminPhone,
-        address: `${matchedTenant.city} - الفرع الرئيسي`,
-        email: matchedTenant.assignedAdminEmail,
-      };
-    }
-  } catch (e) {
-    console.error("Error matching tenant settings:", e);
   }
 
   return DEFAULT_SYSTEM_SETTINGS;
@@ -355,26 +347,31 @@ export function loadERPState(overrideTenant?: string): ERPFullState {
     const fallbackSettings = getTenantDefaultSettings(activeTenant);
     const parsedSettings = rawSettings ? JSON.parse(rawSettings) : {};
 
-    const storedNameAr = parsedSettings.companyNameAr || "";
-    const isGenericDefaultName =
-      !storedNameAr ||
-      storedNameAr.includes("مـيـدو التجارية والمالية") ||
-      storedNameAr.includes("ميدو التجارية والمالية");
-
     const systemSettings: SystemSettings = {
       ...fallbackSettings,
       ...parsedSettings,
-      ...(isGenericDefaultName && activeTenant !== "default"
-        ? {
-            companyNameAr: fallbackSettings.companyNameAr,
-            companyNameEn: fallbackSettings.companyNameEn,
-            commercialRegister: fallbackSettings.commercialRegister,
-            taxNumber: fallbackSettings.taxNumber,
-            phone: fallbackSettings.phone,
-            email: fallbackSettings.email,
-            address: fallbackSettings.address,
-          }
-        : {}),
+      // For any isolated tenant (VIP or 200 nodes), ensure official company metadata is strictly prioritized
+      companyNameAr: (activeTenant && activeTenant !== "default" && fallbackSettings.companyNameAr) 
+        ? fallbackSettings.companyNameAr 
+        : (parsedSettings.companyNameAr || fallbackSettings.companyNameAr),
+      companyNameEn: (activeTenant && activeTenant !== "default" && fallbackSettings.companyNameEn) 
+        ? fallbackSettings.companyNameEn 
+        : (parsedSettings.companyNameEn || fallbackSettings.companyNameEn),
+      commercialRegister: (activeTenant && activeTenant !== "default" && fallbackSettings.commercialRegister) 
+        ? fallbackSettings.commercialRegister 
+        : (parsedSettings.commercialRegister || fallbackSettings.commercialRegister),
+      taxNumber: (activeTenant && activeTenant !== "default" && fallbackSettings.taxNumber) 
+        ? fallbackSettings.taxNumber 
+        : (parsedSettings.taxNumber || fallbackSettings.taxNumber),
+      phone: (activeTenant && activeTenant !== "default" && fallbackSettings.phone) 
+        ? fallbackSettings.phone 
+        : (parsedSettings.phone || fallbackSettings.phone),
+      email: (activeTenant && activeTenant !== "default" && fallbackSettings.email) 
+        ? fallbackSettings.email 
+        : (parsedSettings.email || fallbackSettings.email),
+      address: (activeTenant && activeTenant !== "default" && fallbackSettings.address) 
+        ? fallbackSettings.address 
+        : (parsedSettings.address || fallbackSettings.address),
       scheduledBackup: {
         ...fallbackSettings?.scheduledBackup,
         ...(parsedSettings.scheduledBackup || {}),

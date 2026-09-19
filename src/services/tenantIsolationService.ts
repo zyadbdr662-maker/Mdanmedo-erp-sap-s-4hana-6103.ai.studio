@@ -13,7 +13,7 @@ import {
   SystemSettings,
 } from "../types/erp";
 import { INITIAL_CURRENCIES } from "../data/initialERPData";
-import { PRE_GENERATED_200_TENANTS } from "../data/preGeneratedTenants";
+import { PRE_GENERATED_200_TENANTS, preGeneratedTenants, findTenantById } from "../data/preGeneratedTenants";
 
 export interface TenantMetadata {
   id: string;
@@ -707,53 +707,44 @@ export class TenantIsolationService {
    */
   public static resolveActiveTenant(): string {
     if (typeof window !== "undefined" && window.location) {
-      const pathname = window.location.pathname || "";
-      const hash = window.location.hash || "";
       const search = window.location.search || "";
-      const hostname = window.location.hostname || "";
       const urlParams = new URLSearchParams(search);
 
-      // 0. Check hostname for subdomains e.g. company-201.medo-erp.us.ci or company-201.vercel.app
-      const hostMatch = hostname.match(/^([a-zA-Z0-9_-]+)\.(?:medo-erp\.us\.ci|vercel\.app|medo-erp\.cloud)$/i);
-      if (hostMatch && hostMatch[1] && !["mdanmedo-erp-sap-s-4hana-6103-ai-st-iota", "localhost", "www", "ais-dev-nb2t4ysydt63tbljcawurb-174680061958", "ais-pre-nb2t4ysydt63tbljcawurb-174680061958"].includes(hostMatch[1].toLowerCase())) {
-        const cleanSlug = hostMatch[1].toLowerCase().trim();
-        this.setActiveTenant(cleanSlug);
-        return cleanSlug;
-      }
-
-      // 1. Check path format: /client/client-1 or /tenant/company-201 or /company-201
-      const pathMatch = pathname.match(/\/(?:client|tenant|company)\/([a-zA-Z0-9_-]+)/i) || pathname.match(/\/(company-\d+)/i);
-      if (pathMatch && pathMatch[1]) {
-        const cleanSlug = pathMatch[1].toLowerCase().trim();
-        this.setActiveTenant(cleanSlug);
-        return cleanSlug;
-      }
-
-      // 2. Check hash format: #/client/client-1 or #client=client-1
-      const hashMatch = hash.match(/(?:client|tenant)[=/]([a-zA-Z0-9_-]+)/i);
-      if (hashMatch && hashMatch[1]) {
-        const cleanSlug = hashMatch[1].toLowerCase().trim();
-        this.setActiveTenant(cleanSlug);
-        return cleanSlug;
-      }
-
-      // 3. Check query param: ?client=client-1 or ?tenant=company-201 or ?company=company-1
-      const clientParam = urlParams.get("client") || urlParams.get("tenant") || urlParams.get("company");
+      // 1. Check query param: ?tenant=company-1 or ?client=alzarqa or ?company=bin-ziad
+      const clientParam = urlParams.get("tenant") || urlParams.get("client") || urlParams.get("company");
       if (clientParam) {
         const cleanSlug = clientParam.toLowerCase().trim();
-        if (cleanSlug.includes("albadr") || cleanSlug.includes("badr")) {
-          this.setActiveTenant("albadr-pharma-2026");
-          return "albadr-pharma-2026";
+
+        // Check if there is a match in preGeneratedTenants / VIP
+        const matched = findTenantById(cleanSlug);
+        const resolvedSlug = matched ? matched.id : cleanSlug;
+
+        // [CRITICAL CACHE CLEARING] - When opening a new link with tenant query, purge stale header/company cache
+        const storedTenant = localStorage.getItem(this.ACTIVE_TENANT_KEY);
+        if (storedTenant !== resolvedSlug) {
+          console.log(`[TenantIsolation] Tenant switched to ${resolvedSlug}. Resetting tenant cache...`);
+          localStorage.removeItem('tenantName');
+          localStorage.removeItem('companyName');
+          localStorage.removeItem('currentTenant');
+          localStorage.removeItem('mdo_print_header_ar');
+          localStorage.removeItem('mdo_print_header_en');
+          localStorage.removeItem('mdo_print_phone');
+          localStorage.removeItem('mdo_print_tax_reg');
+          localStorage.removeItem('medo_erp_state_v1');
+          sessionStorage.clear();
         }
-        if (cleanSlug === "alamal" || cleanSlug === "al-amal" || cleanSlug === "amal" || cleanSlug === "company-1") {
-          this.setActiveTenant("client-1");
-          return "client-1";
+
+        if (matched) {
+          this.setActiveTenant(matched.id);
+          localStorage.setItem('currentTenant', JSON.stringify(matched));
+          return matched.id;
         }
-        this.setActiveTenant(cleanSlug);
-        return cleanSlug;
+
+        this.setActiveTenant(resolvedSlug);
+        return resolvedSlug;
       }
 
-      // Check current user in storage
+      // 2. Check current user in storage
       const rawUser = localStorage.getItem("medo_erp_current_user_v1");
       if (rawUser) {
         try {
@@ -761,17 +752,20 @@ export class TenantIsolationService {
           if (user.email && (user.email.includes("albadr") || user.id === "ROLE-ALBADR-PHARMA")) {
             return "albadr-pharma-2026";
           }
+          if (user.tenantId) {
+            return user.tenantId;
+          }
         } catch (e) {}
       }
 
-      // Check stored tenant key
+      // 3. Check stored tenant key
       const storedTenant = localStorage.getItem(this.ACTIVE_TENANT_KEY);
       if (storedTenant) {
         return storedTenant;
       }
     }
 
-    return "default";
+    return "alzarqa";
   }
 
   /**
@@ -791,13 +785,19 @@ export class TenantIsolationService {
       const pathname = window.location.pathname || "";
       const urlParams = new URLSearchParams(search);
 
-      const tenantParam = urlParams.get("tenant") || urlParams.get("client") || "";
+      const tenantParam = urlParams.get("tenant") || urlParams.get("client") || urlParams.get("company") || "";
       let role = urlParams.get("role");
       const token = urlParams.get("token");
       const path = urlParams.get("path") || pathname;
 
       if (tenantParam) {
-        this.setActiveTenant(tenantParam);
+        const matched = findTenantById(tenantParam);
+        if (matched) {
+          this.setActiveTenant(matched.id);
+          localStorage.setItem('currentTenant', JSON.stringify(matched));
+        } else {
+          this.setActiveTenant(tenantParam);
+        }
       }
 
       if (!role && path) {
@@ -811,18 +811,16 @@ export class TenantIsolationService {
       if (role || token) {
         const roleUpper = (role || "SALES").toUpperCase();
         
-        // Lookup dynamic tenant metadata if from 200 matrix
+        // Lookup dynamic tenant metadata
         let companyName = "";
         let specificEmployeeName = "";
 
-        if (tenantParam.startsWith("company-")) {
-          const matchedTenant = PRE_GENERATED_200_TENANTS.find((t) => t.slug === tenantParam || t.id === tenantParam);
-          if (matchedTenant) {
-            companyName = matchedTenant.name;
-            const roleKey = roleUpper === "SALES" ? "CASHIER" : roleUpper === "PURCHASER" ? "PURCHASER" : (roleUpper as keyof typeof matchedTenant.roles);
-            if (matchedTenant.roles && matchedTenant.roles[roleKey]) {
-              specificEmployeeName = `${matchedTenant.roles[roleKey].roleNameAr} - ${matchedTenant.name}`;
-            }
+        const matchedTenant = findTenantById(tenantParam);
+        if (matchedTenant) {
+          companyName = matchedTenant.name;
+          const roleKey = roleUpper === "SALES" ? "CASHIER" : roleUpper === "PURCHASER" ? "PURCHASER" : (roleUpper as keyof typeof matchedTenant.roles);
+          if (matchedTenant.roles && matchedTenant.roles[roleKey]) {
+            specificEmployeeName = `${matchedTenant.roles[roleKey].roleNameAr} - ${matchedTenant.name}`;
           }
         }
 
@@ -841,7 +839,7 @@ export class TenantIsolationService {
           path,
           employeeName: specificEmployeeName || roleNames[roleUpper] || `موظف معتمد (${roleUpper})`,
           tenantSlug: tenantParam || undefined,
-          companyName: companyName || undefined,
+          companyName: companyName || matchedTenant?.name || undefined,
         };
       }
     } catch (e) {
@@ -856,6 +854,10 @@ export class TenantIsolationService {
   public static setActiveTenant(tenantSlug: string): void {
     if (typeof window !== "undefined") {
       localStorage.setItem(this.ACTIVE_TENANT_KEY, tenantSlug);
+      const matched = findTenantById(tenantSlug);
+      if (matched) {
+        localStorage.setItem("currentTenant", JSON.stringify(matched));
+      }
     }
   }
 
@@ -868,7 +870,7 @@ export class TenantIsolationService {
   }
 
   /**
-   * Checks if the current tenant is one of the 3 trial clients
+   * Checks if the current tenant is one of the trial clients
    */
   public static isTrialClientTenant(tenantSlug?: string): boolean {
     const slug = (tenantSlug || this.resolveActiveTenant()).toLowerCase();
@@ -938,7 +940,7 @@ export class TenantIsolationService {
   /**
    * Resolves the current active tenant details dynamically for rendering custom headers, PDF exports, etc.
    */
-  public static getActiveTenantDetails(): { 
+  public static getActiveTenantDetails(tenantSlugOverride?: string): { 
     nameAr: string; 
     nameEn: string; 
     phone: string; 
@@ -949,39 +951,25 @@ export class TenantIsolationService {
     city: string;
     industry: string;
   } {
-    const slug = this.resolveActiveTenant();
+    const slug = tenantSlugOverride || this.resolveActiveTenant();
 
-    if (slug === "albadr-pharma-2026" || slug === "client-albadr") {
+    // 1. Direct dynamic lookup in preGeneratedTenants (covers alzarqa, bin-ziad, albadr, and all 200 companies)
+    const matched = findTenantById(slug);
+    if (matched) {
       return {
-        nameAr: "شركة البدر للأدوية والمستلزمات الطبية",
-        nameEn: "Al-Badr Pharmaceuticals & Medical Supplies",
-        phone: "+967 1 445566 | 771234567",
-        address: "المركز الرئيسي - شارع حدة، صنعاء",
-        logoText: "AL-BADR",
-        commercialReg: "1029384",
-        taxNumber: "30009827400003",
-        city: "صنعاء",
-        industry: "أدوية ومستلزمات طبية"
+        nameAr: matched.name || matched.companyNameAr,
+        nameEn: matched.nameEn || matched.companyNameEn || matched.name,
+        phone: matched.phone || matched.assignedAdminPhone || "+967 773 586 047",
+        address: matched.address || `المركز الرئيسي - ${matched.city}`,
+        logoText: (matched.slug || slug).toUpperCase(),
+        commercialReg: matched.crNumber || matched.commercialReg || "CR-2026",
+        taxNumber: matched.taxNumber || "300748291000003",
+        city: matched.city || "صنعاء",
+        industry: matched.industry || "تجارة عامة واستيراد"
       };
     }
 
-    if (slug.startsWith("company-")) {
-      const tenant = PRE_GENERATED_200_TENANTS.find((t) => t.slug === slug);
-      if (tenant) {
-        return {
-          nameAr: tenant.companyNameAr,
-          nameEn: tenant.companyNameEn,
-          phone: tenant.assignedAdminPhone,
-          address: `المركز الرئيسي - ${tenant.city}`,
-          logoText: tenant.slug.toUpperCase(),
-          commercialReg: tenant.commercialReg,
-          taxNumber: tenant.taxNumber,
-          city: tenant.city,
-          industry: tenant.industry
-        };
-      }
-    }
-
+    // 2. Check KNOWN_TENANTS
     const known = KNOWN_TENANTS[slug];
     if (known) {
       return {
@@ -997,17 +985,40 @@ export class TenantIsolationService {
       };
     }
 
-    // Default Fallback (Matches Bin Ziyad if no custom tenant resolved)
+    // 3. Check currentTenant stored in localStorage
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("currentTenant");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.name || parsed.companyNameAr)) {
+            return {
+              nameAr: parsed.name || parsed.companyNameAr,
+              nameEn: parsed.nameEn || parsed.companyNameEn || parsed.name,
+              phone: parsed.phone || parsed.assignedAdminPhone || "+967 773 586 047",
+              address: parsed.address || `المركز الرئيسي - ${parsed.city || "اليمن"}`,
+              logoText: (parsed.slug || slug || "MEDO").toUpperCase(),
+              commercialReg: parsed.crNumber || parsed.commercialReg || "CR-2026",
+              taxNumber: parsed.taxNumber || "300748291000003",
+              city: parsed.city || "صنعاء",
+              industry: parsed.industry || "تجارة عامة واستيراد"
+            };
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. Default Fallback
     return {
-      nameAr: "مجموعة بن زياد التجارية المتحدة",
-      nameEn: "Bin Ziad United Commercial Group",
-      phone: "+967 773586047 | 715779976",
-      address: "الكندوي، حمر، عمران",
-      logoText: "MDOtkBZ",
-      commercialReg: "3892710",
-      taxNumber: "30074829100003",
-      city: "عمران",
-      industry: "مواد بناء ومواد زراعية"
+      nameAr: "الشركة الزرقاء النبيلة (ش.م.ي)",
+      nameEn: "Al-Zarqa Al-Nabeela Company",
+      phone: "+967 773 586 047",
+      address: "المنطقة الحرة - عدن، اليمن",
+      logoText: "AL-ZARQA",
+      commercialReg: "CR-AZ-99201",
+      taxNumber: "300748291000003",
+      city: "عدن",
+      industry: "تجارة عامة واستيراد"
     };
   }
 
@@ -1111,5 +1122,21 @@ export class TenantIsolationService {
     }
 
     return false;
+  }
+
+  /**
+   * Returns tenant name by ID
+   */
+  public static getTenantName(tenantId: string): string {
+    const tenant = preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
+    return tenant?.name || 'شركة جديدة';
+  }
+
+  /**
+   * Returns full tenant details object
+   */
+  public static getTenantDetails(tenantId: string): any {
+    const tenant = preGeneratedTenants.find(t => t.id === tenantId || t.slug === tenantId);
+    return tenant || null;
   }
 }

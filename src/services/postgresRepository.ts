@@ -20,10 +20,20 @@ export class PostgresRepository implements ERPRepository {
         return localState;
       }
 
-      // Merge local with remote state
+      // Merge local with remote state, preserving tenant identity
       const merged: ERPFullState = {
         ...localState,
         ...data,
+        systemSettings: {
+          ...localState.systemSettings,
+          ...(data.systemSettings || {}),
+          companyNameAr: localState.systemSettings?.companyNameAr || data.systemSettings?.companyNameAr,
+          companyNameEn: localState.systemSettings?.companyNameEn || data.systemSettings?.companyNameEn,
+          commercialRegister: localState.systemSettings?.commercialRegister || data.systemSettings?.commercialRegister,
+          taxNumber: localState.systemSettings?.taxNumber || data.systemSettings?.taxNumber,
+          phone: localState.systemSettings?.phone || data.systemSettings?.phone,
+          address: localState.systemSettings?.address || data.systemSettings?.address,
+        }
       };
 
       if (Array.isArray(data.inventoryItems) && data.inventoryItems.length > 0) {

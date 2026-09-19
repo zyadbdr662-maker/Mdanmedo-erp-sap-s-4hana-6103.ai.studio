@@ -4,6 +4,10 @@ import { PrivacyPolicyDocument } from "./PrivacyPolicyDocument";
 import { DisclaimerDocument } from "./DisclaimerDocument";
 import { RefundPolicyDocument } from "./RefundPolicyDocument";
 import { CookiesPolicyDocument } from "./CookiesPolicyDocument";
+import { DpaPolicyDocument } from "./DpaPolicyDocument";
+import { SlaPolicyDocument } from "./SlaPolicyDocument";
+import { SubscriptionContractDocument } from "./SubscriptionContractDocument";
+import { UserManualDocument } from "./UserManualDocument";
 import { 
   ShieldCheck, 
   FileText, 
@@ -32,9 +36,12 @@ import {
 export type LegalPolicyType = 
   | "TRIAL_TERMS"
   | "TERMS" 
+  | "CONTRACT"
+  | "MANUAL"
   | "GTC" 
   | "SUPPLEMENT" 
   | "DPA" 
+  | "SLA"
   | "PRIVACY" 
   | "EULA" 
   | "DISCLAIMER" 
@@ -157,6 +164,32 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
           </button>
 
           <button
+            id="tab-subscription-contract"
+            onClick={() => setActivePolicy("CONTRACT")}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
+              activePolicy === "CONTRACT"
+                ? "border-amber-400 text-amber-300 bg-amber-950/40 rounded-t-xl shadow-sm"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>📜</span>
+            <span>عقد الاشتراك الرسمي (Contract)</span>
+          </button>
+
+          <button
+            id="tab-user-manual"
+            onClick={() => setActivePolicy("MANUAL")}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
+              activePolicy === "MANUAL"
+                ? "border-indigo-400 text-indigo-300 bg-indigo-950/40 rounded-t-xl shadow-sm"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <span>📖</span>
+            <span>دليل المستخدم النهائي (Manual)</span>
+          </button>
+
+          <button
             id="tab-gtc-policy"
             onClick={() => setActivePolicy("GTC")}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
@@ -178,8 +211,21 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
+            <span>📑</span>
+            <span>الملحق السحابي (Supplement)</span>
+          </button>
+
+          <button
+            id="tab-sla-policy"
+            onClick={() => setActivePolicy("SLA")}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
+              activePolicy === "SLA"
+                ? "border-indigo-400 text-indigo-300 bg-indigo-950/40 rounded-t-xl shadow-sm"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
             <span>⚡</span>
-            <span>الملحق و SLA (Supplement)</span>
+            <span>مستوى الخدمة (SLA)</span>
           </button>
 
           <button
@@ -187,7 +233,7 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
             onClick={() => setActivePolicy("DPA")}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 border-b-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer ${
               activePolicy === "DPA"
-                ? "border-sap-secondary text-sap-secondary bg-sap-primary/20 rounded-t-xl shadow-sm"
+                ? "border-blue-400 text-blue-300 bg-blue-950/40 rounded-t-xl shadow-sm"
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -737,6 +783,34 @@ export const LegalPoliciesModal: React.FC<LegalPoliciesModalProps> = ({
           {activePolicy === "COOKIES" && (
             <div className="animate-fadeIn">
               <CookiesPolicyDocument />
+            </div>
+          )}
+
+          {/* DPA Policy */}
+          {activePolicy === "DPA" && (
+            <div className="animate-fadeIn">
+              <DpaPolicyDocument />
+            </div>
+          )}
+
+          {/* SLA Policy */}
+          {activePolicy === "SLA" && (
+            <div className="animate-fadeIn">
+              <SlaPolicyDocument />
+            </div>
+          )}
+
+          {/* Subscription Contract (عقد الاشتراك الرسمي) */}
+          {activePolicy === "CONTRACT" && (
+            <div className="animate-fadeIn">
+              <SubscriptionContractDocument />
+            </div>
+          )}
+
+          {/* User Manual (دليل المستخدم النهائي) */}
+          {activePolicy === "MANUAL" && (
+            <div className="animate-fadeIn">
+              <UserManualDocument />
             </div>
           )}
 

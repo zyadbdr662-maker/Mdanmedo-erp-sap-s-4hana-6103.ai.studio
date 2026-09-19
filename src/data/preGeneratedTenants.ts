@@ -131,6 +131,158 @@ const industries = [
   "طاقة وبيئة",
 ];
 
+export const VERCEL_PRODUCTION_BASE = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
+
+/**
+ * Manual VIP Enterprise Nodes (Added by request)
+ */
+export const MANUAL_VIP_TENANTS: PreGeneratedTenant[] = [
+  {
+    index: 0,
+    id: 'alzarqa',
+    slug: 'alzarqa',
+    name: 'الشركة الزرقاء النبيلة (ش.م.ي)',
+    nameEn: 'Al-Zarqa Al-Nabeela Company',
+    companyNameAr: 'الشركة الزرقاء النبيلة (ش.م.ي)',
+    companyNameEn: 'Al-Zarqa Al-Nabeela Company',
+    crNumber: 'CR-AZ-99201',
+    commercialReg: 'CR-AZ-99201',
+    taxNumber: '300748291000003',
+    phone: '+967 773 586 047',
+    address: 'المنطقة الحرة - عدن، اليمن',
+    city: 'عدن',
+    industry: 'تجارة عامة واستيراد',
+    logo: '/logos/alzarqa.png',
+    masterDomain: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa`,
+    vercelUrl: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa`,
+    status: "PAID_ENTERPRISE",
+    trialDaysRemaining: 365,
+    operationsCount: 1200,
+    maxTrialOperations: 200,
+    assignedAdminName: 'أ. بدر عايض',
+    assignedAdminPhone: '+967 773 586 047',
+    assignedAdminEmail: 'manager@alzarqa.medo-erp.cloud',
+    databaseNode: "PostgreSQL Local",
+    unlockCode: "MEDO-AZ-VIP-2026",
+    roles: {
+      MANAGER: { token: 'AUTH_MGR_AZ', email: 'manager@alzarqa.medo-erp.cloud', password: '1234', roleNameAr: "المدير العام (MANAGER)", path: "/employee/manager", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa&role=MANAGER&token=AUTH_MGR_AZ&path=/employee/manager` },
+      ACCOUNTANT: { token: 'AUTH_ACC_AZ', email: 'accountant@alzarqa.medo-erp.cloud', password: '1234', roleNameAr: "كبير المحاسبين (ACCOUNTANT)", path: "/employee/accountant", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa&role=ACCOUNTANT&token=AUTH_ACC_AZ&path=/employee/accountant` },
+      CASHIER: { token: 'AUTH_SALES_AZ', email: 'sales@alzarqa.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المبيعات (CASHIER)", path: "/employee/sales", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa&role=CASHIER&token=AUTH_SALES_AZ&path=/employee/sales` },
+      PURCHASER: { token: 'AUTH_PUR_AZ', email: 'purchase@alzarqa.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المشتريات (PURCHASER)", path: "/employee/purchase", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa&role=PURCHASER&token=AUTH_PUR_AZ&path=/employee/purchase` },
+      AUDITOR: { token: 'AUTH_AUD_AZ', email: 'auditor@alzarqa.medo-erp.cloud', password: '1234', roleNameAr: "المراجع المالي (AUDITOR)", path: "/employee/auditor", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=alzarqa&role=AUDITOR&token=AUTH_AUD_AZ&path=/employee/auditor` },
+    },
+    employees: []
+  },
+  {
+    index: 0,
+    id: 'bin-ziad',
+    slug: 'bin-ziad',
+    name: 'مجموعة بن زياد التجارية المتحدة',
+    nameEn: 'Bin Ziad United Commercial Group',
+    companyNameAr: 'مجموعة بن زياد التجارية المتحدة',
+    companyNameEn: 'Bin Ziad United Commercial Group',
+    crNumber: '3892710',
+    commercialReg: '3892710',
+    taxNumber: '30074829100003',
+    phone: '+967 773586047 | 715779976',
+    address: 'الكندوي، حمر، عمران - اليمن',
+    city: 'عمران',
+    industry: 'مواد بناء ومواد زراعية',
+    logo: '/logos/binziad.png',
+    masterDomain: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad`,
+    vercelUrl: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad`,
+    status: "PAID_ENTERPRISE",
+    trialDaysRemaining: 365,
+    operationsCount: 1800,
+    maxTrialOperations: 200,
+    assignedAdminName: 'أ. علي بن زياد',
+    assignedAdminPhone: '+967 773 586 047',
+    assignedAdminEmail: 'manager@binziyad.medo-erp.cloud',
+    databaseNode: "PostgreSQL Local",
+    unlockCode: "MEDO-BZ-VIP-2026",
+    roles: {
+      MANAGER: { token: 'AUTH_MGR_BZ', email: 'manager@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "المدير العام (MANAGER)", path: "/employee/manager", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad&role=MANAGER&token=AUTH_MGR_BZ&path=/employee/manager` },
+      ACCOUNTANT: { token: 'AUTH_ACC_BZ', email: 'accountant@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "كبير المحاسبين (ACCOUNTANT)", path: "/employee/accountant", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad&role=ACCOUNTANT&token=AUTH_ACC_BZ&path=/employee/accountant` },
+      CASHIER: { token: 'AUTH_SALES_BZ', email: 'sales@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المبيعات (CASHIER)", path: "/employee/sales", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad&role=CASHIER&token=AUTH_SALES_BZ&path=/employee/sales` },
+      PURCHASER: { token: 'AUTH_PUR_BZ', email: 'purchase@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المشتريات (PURCHASER)", path: "/employee/purchase", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad&role=PURCHASER&token=AUTH_PUR_BZ&path=/employee/purchase` },
+      AUDITOR: { token: 'AUTH_AUD_BZ', email: 'auditor@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "المراجع المالي (AUDITOR)", path: "/employee/auditor", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=bin-ziad&role=AUDITOR&token=AUTH_AUD_BZ&path=/employee/auditor` },
+    },
+    employees: []
+  },
+  {
+    index: 0,
+    id: 'binziyad',
+    slug: 'binziyad',
+    name: 'مجموعة بن زياد التجارية المتحدة',
+    nameEn: 'Bin Ziad United Commercial Group',
+    companyNameAr: 'مجموعة بن زياد التجارية المتحدة',
+    companyNameEn: 'Bin Ziad United Commercial Group',
+    crNumber: '3892710',
+    commercialReg: '3892710',
+    taxNumber: '30074829100003',
+    phone: '+967 773586047 | 715779976',
+    address: 'الكندوي، حمر، عمران - اليمن',
+    city: 'عمران',
+    industry: 'مواد بناء ومواد زراعية',
+    logo: '/logos/binziad.png',
+    masterDomain: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad`,
+    vercelUrl: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad`,
+    status: "PAID_ENTERPRISE",
+    trialDaysRemaining: 365,
+    operationsCount: 1800,
+    maxTrialOperations: 200,
+    assignedAdminName: 'أ. علي بن زياد',
+    assignedAdminPhone: '+967 773 586 047',
+    assignedAdminEmail: 'manager@binziyad.medo-erp.cloud',
+    databaseNode: "PostgreSQL Local",
+    unlockCode: "MEDO-BZ-VIP-2026",
+    roles: {
+      MANAGER: { token: 'AUTH_MGR_BZ', email: 'manager@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "المدير العام (MANAGER)", path: "/employee/manager", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad&role=MANAGER&token=AUTH_MGR_BZ&path=/employee/manager` },
+      ACCOUNTANT: { token: 'AUTH_ACC_BZ', email: 'accountant@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "كبير المحاسبين (ACCOUNTANT)", path: "/employee/accountant", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad&role=ACCOUNTANT&token=AUTH_ACC_BZ&path=/employee/accountant` },
+      CASHIER: { token: 'AUTH_SALES_BZ', email: 'sales@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المبيعات (CASHIER)", path: "/employee/sales", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad&role=CASHIER&token=AUTH_SALES_BZ&path=/employee/sales` },
+      PURCHASER: { token: 'AUTH_PUR_BZ', email: 'purchase@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المشتريات (PURCHASER)", path: "/employee/purchase", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad&role=PURCHASER&token=AUTH_PUR_BZ&path=/employee/purchase` },
+      AUDITOR: { token: 'AUTH_AUD_BZ', email: 'auditor@binziyad.medo-erp.cloud', password: '1234', roleNameAr: "المراجع المالي (AUDITOR)", path: "/employee/auditor", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=binziyad&role=AUDITOR&token=AUTH_AUD_BZ&path=/employee/auditor` },
+    },
+    employees: []
+  },
+  {
+    index: 0,
+    id: 'albadr-pharma-2026',
+    slug: 'albadr-pharma-2026',
+    name: 'شركة البدر للأدوية والمستلزمات الطبية',
+    nameEn: 'Al-Badr Pharmaceuticals & Medical Supplies',
+    companyNameAr: 'شركة البدر للأدوية والمستلزمات الطبية',
+    companyNameEn: 'Al-Badr Pharmaceuticals & Medical Supplies',
+    crNumber: '1029384',
+    commercialReg: '1029384',
+    taxNumber: '30009827400003',
+    phone: '+967 1 445566 | 771234567',
+    address: 'المركز الرئيسي - شارع حدة، صنعاء',
+    city: 'صنعاء',
+    industry: 'أدوية ومستلزمات طبية',
+    logo: '/logos/albadr.png',
+    masterDomain: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026`,
+    vercelUrl: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026`,
+    status: "PAID_ENTERPRISE",
+    trialDaysRemaining: 365,
+    operationsCount: 950,
+    maxTrialOperations: 200,
+    assignedAdminName: 'د. عبدالملك بدر',
+    assignedAdminPhone: '+967 771 234 567',
+    assignedAdminEmail: 'manager@albadr.medo-erp.cloud',
+    databaseNode: "PostgreSQL Local",
+    unlockCode: "MEDO-BADR-VIP-2026",
+    roles: {
+      MANAGER: { token: 'AUTH_MGR_BADR', email: 'manager@albadr.medo-erp.cloud', password: '1234', roleNameAr: "المدير العام (MANAGER)", path: "/employee/manager", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026&role=MANAGER&token=AUTH_MGR_BADR&path=/employee/manager` },
+      ACCOUNTANT: { token: 'AUTH_ACC_BADR', email: 'accountant@albadr.medo-erp.cloud', password: '1234', roleNameAr: "كبير المحاسبين (ACCOUNTANT)", path: "/employee/accountant", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026&role=ACCOUNTANT&token=AUTH_ACC_BADR&path=/employee/accountant` },
+      CASHIER: { token: 'AUTH_SALES_BADR', email: 'sales@albadr.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المبيعات (CASHIER)", path: "/employee/sales", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026&role=CASHIER&token=AUTH_SALES_BADR&path=/employee/sales` },
+      PURCHASER: { token: 'AUTH_PUR_BADR', email: 'purchase@albadr.medo-erp.cloud', password: '1234', roleNameAr: "مسؤول المشتريات (PURCHASER)", path: "/employee/purchase", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026&role=PURCHASER&token=AUTH_PUR_BADR&path=/employee/purchase` },
+      AUDITOR: { token: 'AUTH_AUD_BADR', email: 'auditor@albadr.medo-erp.cloud', password: '1234', roleNameAr: "المراجع المالي (AUDITOR)", path: "/employee/auditor", subLink: `${VERCEL_PRODUCTION_BASE}/?tenant=albadr-pharma-2026&role=AUDITOR&token=AUTH_AUD_BADR&path=/employee/auditor` },
+    },
+    employees: []
+  }
+];
+
 const dbNodes: ("Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebase" | "Qiniu Cloud")[] = [
   "Alibaba Cloud",
   "Huawei Cloud",
@@ -138,8 +290,6 @@ const dbNodes: ("Alibaba Cloud" | "Huawei Cloud" | "PostgreSQL Local" | "Firebas
   "PostgreSQL Local",
   "Qiniu Cloud",
 ];
-
-export const VERCEL_PRODUCTION_BASE = "https://mdanmedo-erp-sap-s-4hana-6103-ai-st-iota.vercel.app";
 
 // Generate exact 200 distinct enterprise nodes with full 5-role credentials
 export const PRE_GENERATED_200_TENANTS: PreGeneratedTenant[] = Array.from({ length: 200 }, (_, i) => {
@@ -290,7 +440,7 @@ export const PRE_GENERATED_200_TENANTS: PreGeneratedTenant[] = Array.from({ leng
 });
 
 // Alias export for standard naming
-export const preGeneratedTenants = PRE_GENERATED_200_TENANTS;
+export const preGeneratedTenants = [...MANUAL_VIP_TENANTS, ...PRE_GENERATED_200_TENANTS];
 
 const TENANTS_STORAGE_KEY = "medo_erp_200_tenants_v3";
 
@@ -324,3 +474,56 @@ export function saveStored200Tenants(tenants: PreGeneratedTenant[]): void {
     console.error("Failed to save tenants", e);
   }
 }
+
+/**
+ * Robust tenant lookup by ID, slug, index or standard aliases
+ */
+export function findTenantById(tenantIdentifier: string | null | undefined): PreGeneratedTenant | null {
+  if (!tenantIdentifier) return null;
+  const clean = tenantIdentifier.toLowerCase().trim();
+
+  // Check in-memory preGeneratedTenants first
+  const allTenants = preGeneratedTenants;
+
+  // Exact ID / Slug match
+  let found = allTenants.find((t) => t.id.toLowerCase() === clean || t.slug.toLowerCase() === clean);
+  if (found) return found;
+
+  // Check aliases
+  if (clean === "alzarqa" || clean === "zarqa" || clean === "az") {
+    return allTenants.find((t) => t.id === "alzarqa") || null;
+  }
+  if (clean === "bin-ziad" || clean === "binziyad" || clean === "binziad" || clean === "bz") {
+    return allTenants.find((t) => t.id === "bin-ziad" || t.id === "binziyad") || null;
+  }
+  if (clean === "albadr" || clean === "albadr-pharma-2026" || clean === "badr" || clean === "client-albadr") {
+    return allTenants.find((t) => t.id === "albadr-pharma-2026") || null;
+  }
+  if (clean === "company-1" || clean === "client-1" || clean === "alamal" || clean === "al-amal" || clean === "amal") {
+    return allTenants.find((t) => t.id === "company-1") || null;
+  }
+  if (clean === "company-2" || clean === "client-2" || clean === "alnoor" || clean === "al-noor") {
+    return allTenants.find((t) => t.id === "company-2") || null;
+  }
+  if (clean === "company-3" || clean === "client-3" || clean === "alqimma" || clean === "al-qimma") {
+    return allTenants.find((t) => t.id === "company-3") || null;
+  }
+
+  // Check numerical pattern e.g. "1" -> "company-1"
+  if (/^\d+$/.test(clean)) {
+    const num = parseInt(clean, 10);
+    found = allTenants.find((t) => t.index === num || t.id === `company-${num}`);
+    if (found) return found;
+  }
+
+  // Check "company_X" or "companyX"
+  const match = clean.match(/^company[_-]?(\d+)$/);
+  if (match) {
+    const num = parseInt(match[1], 10);
+    found = allTenants.find((t) => t.index === num || t.id === `company-${num}`);
+    if (found) return found;
+  }
+
+  return null;
+}
+

@@ -109,16 +109,24 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
   // Synchronize dynamic print fields when systemSettings or documentData changes
   useEffect(() => {
-    if (systemSettings) {
-      if (!localStorage.getItem("mdo_print_header_ar") && systemSettings.companyNameAr) {
-        setHeaderCompanyAr(systemSettings.companyNameAr);
-      }
-      if (!localStorage.getItem("mdo_print_header_en") && systemSettings.companyNameEn) {
-        setHeaderCompanyEn(systemSettings.companyNameEn);
-      }
-      if (!localStorage.getItem("mdo_print_phone") && systemSettings.phone) {
-        setHeaderPhone(systemSettings.phone);
-      }
+    const activeTenantMeta = TenantIsolationService.getActiveTenantDetails();
+    const effectiveCompanyAr = systemSettings?.companyNameAr || activeTenantMeta.nameAr;
+    const effectiveCompanyEn = systemSettings?.companyNameEn || activeTenantMeta.nameEn;
+    const effectivePhone = systemSettings?.phone || activeTenantMeta.phone;
+    const effectiveCr = systemSettings?.commercialRegister || activeTenantMeta.commercialReg;
+    const effectiveTax = systemSettings?.taxNumber || activeTenantMeta.taxNumber;
+
+    if (effectiveCompanyAr) {
+      setHeaderCompanyAr(effectiveCompanyAr);
+    }
+    if (effectiveCompanyEn) {
+      setHeaderCompanyEn(effectiveCompanyEn);
+    }
+    if (effectivePhone) {
+      setHeaderPhone(effectivePhone);
+    }
+    if (effectiveCr || effectiveTax) {
+      setHeaderTaxReg(`س.ت: ${effectiveCr || "---"} | ضريبي: ${effectiveTax || "---"}`);
     }
     if (documentData?.branchName || documentData?.branch) {
       const bName = documentData.branchName || documentData.branch;

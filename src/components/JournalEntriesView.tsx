@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { FormNavigationBar } from "./FormNavigationBar";
 import {
   BookOpenCheck,
@@ -34,6 +34,7 @@ import { BiometricApprovalModal } from "./security/BiometricApprovalModal";
 import { cloudSecurityService } from "../services/cloudSecurityService";
 import { ExportPdfButton } from "./ExportPdfButton";
 import { ColumnCustomizer, useColumnVisibility, ColumnDef } from "./ColumnCustomizer";
+import { Combobox, ComboboxOption } from "./Combobox";
 
 interface JournalEntriesViewProps {
   journalEntries: JournalEntry[];
@@ -92,6 +93,25 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
   const [entryCurrency, setEntryCurrency] = useState<CurrencyCode>("YER_SANAA");
 
   const nonHeaderAccounts = accounts.filter((a) => !a.isHeader);
+
+  const accountOptions: ComboboxOption[] = useMemo(() => {
+    return nonHeaderAccounts.map(acc => ({
+      id: acc.id,
+      label: acc.nameAr,
+      secondaryLabel: acc.code
+    }));
+  }, [nonHeaderAccounts]);
+
+  const costCenterOptions: ComboboxOption[] = useMemo(() => {
+    return [
+      { id: "", label: "بدون مركز تكلفة" },
+      ...costCenters.map(cc => ({
+        id: cc.id,
+        label: cc.nameAr,
+        secondaryLabel: cc.code
+      }))
+    ];
+  }, [costCenters]);
 
   const initialLines: JournalLine[] = [
     {
@@ -577,17 +597,12 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
                     <tr key={line.id} className="hover:bg-slate-800/30">
                       <td className="py-2 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
                       <td className="py-2 px-3">
-                        <select
+                        <Combobox
+                          options={accountOptions}
                           value={line.accountId}
-                          onChange={(e) => updateLine(line.id, "accountId", e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 font-medium focus:outline-none focus:border-emerald-500"
-                        >
-                          {nonHeaderAccounts.map((acc) => (
-                            <option key={acc.id} value={acc.id}>
-                              {acc.code} - {acc.nameAr}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => updateLine(line.id, "accountId", val)}
+                          placeholder="اختر الحساب المحاسبي..."
+                        />
                       </td>
                       <td className="py-2 px-3">
                         <input
@@ -620,18 +635,13 @@ export const JournalEntriesView: React.FC<JournalEntriesViewProps> = ({
                         />
                       </td>
                       <td className="py-2 px-3">
-                        <select
+                        <Combobox
+                          options={costCenterOptions}
                           value={line.costCenterId || ""}
-                          onChange={(e) => updateLine(line.id, "costCenterId", e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-emerald-500"
-                        >
-                          <option value="">بدون مركز تكلفة</option>
-                          {costCenters.map((cc) => (
-                            <option key={cc.id} value={cc.id}>
-                              {cc.code} - {cc.nameAr}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => updateLine(line.id, "costCenterId", val)}
+                          placeholder="بدون مركز تكلفة"
+                          className="min-w-[150px]"
+                        />
                       </td>
                       <td className="py-2 px-3">
                         <input
